@@ -24,5 +24,7 @@ export function getAnimName(
       return char === "shinobi" ? "Walk" : "Idle";
     case "shinobi_idle_wait":
       return "Idle";
+    case "clash":
+      return "Attack_1";
   }
 }

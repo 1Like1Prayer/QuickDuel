@@ -22,6 +22,12 @@ import {
   BLOOD_PARTICLE_GRAVITY,
   BLOOD_PARTICLE_LIFETIME,
   BLOOD_PARTICLE_SIZE,
+  SPARK_PARTICLE_COUNT,
+  SPARK_PARTICLE_SPEED,
+  SPARK_PARTICLE_GRAVITY,
+  SPARK_PARTICLE_LIFETIME,
+  SPARK_PARTICLE_SIZE,
+  CLASH_PAUSE_MS,
 } from "../constants";
 import { getAnimName } from "../utils/phases";
 import type { BloodParticle, CharAnims, Phase } from "../types";
@@ -44,6 +50,9 @@ interface GameLoopParams {
   samuraiAnims: CharAnims | null;
   shinobiAnims: CharAnims | null;
 }
+
+// Reuse BloodParticle shape for sparks (same physics, different color)
+type SparkParticle = BloodParticle;
 
 // ──────────────────────────────────────────────
 //  Blood‑particle helpers
@@ -91,6 +100,49 @@ function updateBloodParticles(
 }
 
 // ──────────────────────────────────────────────
+//  Spark‑particle helpers
+// ──────────────────────────────────────────────
+
+function spawnSparks(particles: SparkParticle[], x: number, y: number) {
+  for (let i = 0; i < SPARK_PARTICLE_COUNT; i++) {
+    // Sparks radiate in all directions
+    const angle = Math.random() * Math.PI * 2;
+    const speed = SPARK_PARTICLE_SPEED * (0.3 + Math.random() * 0.7);
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - SPARK_PARTICLE_SPEED * 0.3,
+      life: SPARK_PARTICLE_LIFETIME * (0.4 + Math.random() * 0.6),
+      size: SPARK_PARTICLE_SIZE * (0.5 + Math.random()),
+    });
+  }
+}
+
+function updateSparkParticles(
+  gfx: Graphics,
+  particles: SparkParticle[],
+  dt: number,
+): SparkParticle[] {
+  gfx.clear();
+  const remaining: SparkParticle[] = [];
+  for (const p of particles) {
+    p.life -= dt;
+    if (p.life <= 0) continue;
+    p.vy += SPARK_PARTICLE_GRAVITY * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    const alpha = Math.max(0, p.life / SPARK_PARTICLE_LIFETIME);
+    // Bright yellow core with white-hot center
+    const color = Math.random() > 0.3 ? 0xffdd00 : 0xffffff;
+    gfx.circle(p.x, p.y, p.size * alpha);
+    gfx.fill({ color, alpha });
+    remaining.push(p);
+  }
+  return remaining;
+}
+
+// ──────────────────────────────────────────────
 //  Hook
 // ──────────────────────────────────────────────
 
@@ -102,6 +154,7 @@ export function useGameLoop({
   shinobiAnims,
 }: GameLoopParams) {
   const bloodGfx = useRef<Graphics | null>(null);
+  const sparkGfx = useRef<Graphics | null>(null);
 
   // Phase state machine
   const phase = useRef<Phase>("run");
@@ -125,22 +178,79 @@ export function useGameLoop({
   const shinobiKnockback = useRef(0);
 
   const bloodParticles = useRef<BloodParticle[]>([]);
+  const sparkParticles = useRef<SparkParticle[]>([]);
 
-  // ── Attach blood‑particle Graphics to the container ──
+  // Track whether clash spark was emitted for current attack cycle
+  const clashSparkEmitted = useRef(false);
+
+  // ── Attach Graphics layers to the container ──
 
   useEffect(() => {
     const container = refs.container.current;
     if (!container) return;
-    const gfx = new Graphics();
-    bloodGfx.current = gfx;
-    container.addChild(gfx);
+
+    const bGfx = new Graphics();
+    const sGfx = new Graphics();
+    bloodGfx.current = bGfx;
+    sparkGfx.current = sGfx;
+    container.addChild(bGfx);
+    container.addChild(sGfx);
+
     return () => {
-      container.removeChild(gfx);
-      gfx.destroy();
+      container.removeChild(bGfx);
+      container.removeChild(sGfx);
+      bGfx.destroy();
+      sGfx.destroy();
     };
-    // refs.container is a stable ref — only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Keyboard listener ──
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Control") {
+        // If still running, compute fight positions from screen center
+        if (phase.current === "run" || samuraiFightX.current === 0) {
+          const cx = app.screen.width / 2;
+          samuraiFightX.current = cx - (FRAME_SIZE * CHAR_SCALE) / 2 - MEET_GAP / 2;
+          shinobiFightX.current = cx + (FRAME_SIZE * CHAR_SCALE) / 2 + MEET_GAP / 2;
+        }
+        // Snap both characters to fight positions
+        samuraiX.current = samuraiFightX.current;
+        shinobiX.current = shinobiFightX.current;
+        samuraiKnockback.current = 0;
+        shinobiKnockback.current = 0;
+        // Enter clash
+        phase.current = "clash";
+        samuraiFrame.current = 0;
+        shinobiFrame.current = 0;
+        samuraiElapsed.current = 0;
+        shinobiElapsed.current = 0;
+        phaseAnimDone.current = false;
+        clashSparkEmitted.current = false;
+      }
+      if (e.key === " ") {
+        e.preventDefault();
+        // Reset to normal battle flow
+        phase.current = "shinobi_attack";
+        samuraiFrame.current = 0;
+        shinobiFrame.current = 0;
+        samuraiElapsed.current = 0;
+        shinobiElapsed.current = 0;
+        phaseAnimDone.current = false;
+        clashSparkEmitted.current = false;
+        // Move characters back to fight positions
+        samuraiX.current = samuraiFightX.current;
+        shinobiX.current = shinobiFightX.current;
+        samuraiKnockback.current = 0;
+        shinobiKnockback.current = 0;
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [app.screen.width]);
 
   // ── Helpers (closures over refs) ──
 
@@ -354,6 +464,44 @@ export function useGameLoop({
         }
         break;
       }
+
+      case "clash": {
+        // Waiting between swings — both characters idle
+        if (phaseAnimDone.current) break;
+
+        // Both attack simultaneously — emit sparks at the impact frame
+        const samImpact = Math.floor(samAnim.length * 0.6);
+        const shinImpact = Math.floor(shinAnim.length * 0.6);
+        const atImpact =
+          samuraiFrame.current >= samImpact ||
+          shinobiFrame.current >= shinImpact;
+
+        if (atImpact && !clashSparkEmitted.current) {
+          clashSparkEmitted.current = true;
+          startShake();
+          const clashX = (samuraiX.current + FRAME_SIZE * CHAR_SCALE + shinobiX.current) / 2;
+          const clashY = groundY + FRAME_SIZE * CHAR_SCALE * 0.35;
+          spawnSparks(sparkParticles.current, clashX, clashY);
+        }
+
+        // When both anims complete, pause before next swing
+        if (
+          samuraiFrame.current === samAnim.length - 1 ||
+          shinobiFrame.current === shinAnim.length - 1
+        ) {
+          phaseAnimDone.current = true;
+          setTimeout(() => {
+            if (phase.current !== "clash") return; // cancelled
+            samuraiFrame.current = 0;
+            shinobiFrame.current = 0;
+            samuraiElapsed.current = 0;
+            shinobiElapsed.current = 0;
+            phaseAnimDone.current = false;
+            clashSparkEmitted.current = false;
+          }, CLASH_PAUSE_MS);
+        }
+        break;
+      }
     }
 
     // ── Apply positions & orientation ──
@@ -385,11 +533,22 @@ export function useGameLoop({
 
     // ── Blood particles ──
 
-    const gfx = bloodGfx.current;
-    if (gfx) {
+    const bGfx = bloodGfx.current;
+    if (bGfx) {
       bloodParticles.current = updateBloodParticles(
-        gfx,
+        bGfx,
         bloodParticles.current,
+        dt,
+      );
+    }
+
+    // ── Spark particles ──
+
+    const sGfx = sparkGfx.current;
+    if (sGfx) {
+      sparkParticles.current = updateSparkParticles(
+        sGfx,
+        sparkParticles.current,
         dt,
       );
     }

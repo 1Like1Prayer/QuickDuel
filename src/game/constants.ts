@@ -25,3 +25,11 @@ export const BLOOD_PARTICLE_SPEED = 500;
 export const BLOOD_PARTICLE_GRAVITY = 700;
 export const BLOOD_PARTICLE_LIFETIME = 0.8;
 export const BLOOD_PARTICLE_SIZE = 6;
+
+// --- Spark Particles (clash) ---
+export const SPARK_PARTICLE_COUNT = 18;
+export const SPARK_PARTICLE_SPEED = 600;
+export const SPARK_PARTICLE_GRAVITY = 400;
+export const SPARK_PARTICLE_LIFETIME = 0.3;
+export const SPARK_PARTICLE_SIZE = 6;
+export const CLASH_PAUSE_MS = 400;

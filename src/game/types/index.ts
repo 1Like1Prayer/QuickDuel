@@ -9,7 +9,8 @@ export type Phase =
   | "samurai_attack"
   | "shinobi_hurt"
   | "shinobi_recover"
-  | "shinobi_idle_wait";
+  | "shinobi_idle_wait"
+  | "clash";
 
 export interface BloodParticle {
   x: number;
