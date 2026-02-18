@@ -230,7 +230,7 @@ export function useGameLoop({
         phaseAnimDone.current = false;
         clashSparkEmitted.current = false;
       }
-      if (e.key === " ") {
+      if (e.key === "Enter") {
         e.preventDefault();
         // Reset to normal battle flow
         phase.current = "shinobi_attack";
