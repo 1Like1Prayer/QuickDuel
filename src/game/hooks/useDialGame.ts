@@ -1,33 +1,18 @@
 import { useCallback, useRef } from "react";
 
-// ──────────────────────────────────────────────
-//  Constants
-// ──────────────────────────────────────────────
-
-/** Each block covers 5% of the full circle = 18°. */
-const BLOCK_ARC = (5 / 100) * Math.PI * 2; // ~0.314 rad
-
-/** Blocks can spawn between 65° and 305° (in standard math degrees, CCW from +x). */
-const SPAWN_MIN_DEG = 65;
-const SPAWN_MAX_DEG = 305;
-const SPAWN_MIN_RAD = (SPAWN_MIN_DEG * Math.PI) / 180;
-const SPAWN_MAX_RAD = (SPAWN_MAX_DEG * Math.PI) / 180;
-
-/** Initial number of hit-zone blocks. */
-const INITIAL_BLOCK_COUNT = 4;
-const MIN_BLOCK_COUNT = 1;
-const MAX_BLOCK_COUNT = 4;
-
-/** Initial speed multiplier. */
-export const INITIAL_SPEED = 1.5;
-
-/** Speed scaling. */
-const SPEED_STEP = 0.2; // 20% per hit/miss
-const MAX_SPEED_BONUS = 0.6; // +60% max
-const MIN_SPEED_BONUS = 0; // back to base
-
-/** Miss if dial completes 2 full rotations without input. */
-const MISS_ROTATION_THRESHOLD = 2;
+import {
+  BLOCK_ARC,
+  INITIAL_BLOCK_COUNT,
+  INITIAL_SPEED,
+  MAX_BLOCK_COUNT,
+  MAX_SPEED_BONUS,
+  MIN_BLOCK_COUNT,
+  MIN_SPEED_BONUS,
+  MISS_ROTATION_THRESHOLD,
+  SPAWN_MAX_RAD,
+  SPAWN_MIN_RAD,
+  SPEED_STEP,
+} from "../constants";
 
 // ──────────────────────────────────────────────
 //  Types
