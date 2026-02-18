@@ -5,24 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import {
   BLOCK_ALPHA,
   BLOCK_ARC_SEGMENTS,
-  CHAR_SCALE,
   DIAL_BASE_SPEED,
-  DIAL_LENGTH,
-  DIAL_LINE_WIDTH,
-  FIGHT_TEXT_STYLE,
-  FRAME_SIZE,
-  GAP_INNER,
-  GAP_OUTER,
   HIT_GLOW_COLOR,
   HIT_GLOW_DURATION,
   HIT_GLOW_MAX_ALPHA,
-  INNER_RING_INNER,
-  INNER_RING_OUTER,
-  KATANA_SIZE,
-  KATANA_SPACING,
   MAX_KATANA_COUNT,
-  OUTER_RADIUS,
-  RING_WIDTH,
 } from "../constants";
 import {
   useBackgroundTexture,
@@ -32,9 +19,13 @@ import {
 import { useDialGame } from "../hooks/useDialGame";
 import { blockColor } from "../hooks/useDialGame";
 import { useGameLoop } from "../hooks/useGameLoop";
+import { useLayout } from "../hooks/useLayout";
 
 export function Scene() {
   const { app } = useApplication();
+
+  // Responsive layout
+  const layout = useLayout(app.screen.width, app.screen.height);
 
   // Sprite refs
   const containerRef = useRef<Container>(null);
@@ -98,6 +89,7 @@ export function Scene() {
     shinobiAnims,
     dialGame,
     showFightText,
+    layout,
   });
 
   // Apply ring masks once refs are ready
@@ -130,8 +122,11 @@ export function Scene() {
     // ── Draw dial line ──
     dial.clear();
     dial.moveTo(0, 0);
-    dial.lineTo(Math.cos(angle) * DIAL_LENGTH, Math.sin(angle) * DIAL_LENGTH);
-    dial.stroke({ color: 0xcc3311, width: DIAL_LINE_WIDTH, alpha: 0.9 });
+    dial.lineTo(
+      Math.cos(angle) * layout.dialLength,
+      Math.sin(angle) * layout.dialLength,
+    );
+    dial.stroke({ color: 0xcc3311, width: layout.dialLineWidth, alpha: 0.9 });
 
     // ── Draw hit-zone blocks with gradient colouring ──
     if (blocksGfx) {
@@ -146,16 +141,22 @@ export function Scene() {
 
         // Build annular wedge path
         blocksGfx.moveTo(
-          Math.cos(block.startAngle) * GAP_OUTER,
-          Math.sin(block.startAngle) * GAP_OUTER,
+          Math.cos(block.startAngle) * layout.gapOuter,
+          Math.sin(block.startAngle) * layout.gapOuter,
         );
         for (let i = 1; i <= steps; i++) {
           const a = block.startAngle + angleStep * i;
-          blocksGfx.lineTo(Math.cos(a) * GAP_OUTER, Math.sin(a) * GAP_OUTER);
+          blocksGfx.lineTo(
+            Math.cos(a) * layout.gapOuter,
+            Math.sin(a) * layout.gapOuter,
+          );
         }
         for (let i = steps; i >= 0; i--) {
           const a = block.startAngle + angleStep * i;
-          blocksGfx.lineTo(Math.cos(a) * GAP_INNER, Math.sin(a) * GAP_INNER);
+          blocksGfx.lineTo(
+            Math.cos(a) * layout.gapInner,
+            Math.sin(a) * layout.gapInner,
+          );
         }
         blocksGfx.closePath();
         blocksGfx.fill({ color, alpha: BLOCK_ALPHA });
@@ -179,16 +180,22 @@ export function Scene() {
         const angleStep = arcSpan / segs;
 
         glowGfx.moveTo(
-          Math.cos(hitAngles.startAngle) * GAP_OUTER,
-          Math.sin(hitAngles.startAngle) * GAP_OUTER,
+          Math.cos(hitAngles.startAngle) * layout.gapOuter,
+          Math.sin(hitAngles.startAngle) * layout.gapOuter,
         );
         for (let i = 1; i <= segs; i++) {
           const a = hitAngles.startAngle + angleStep * i;
-          glowGfx.lineTo(Math.cos(a) * GAP_OUTER, Math.sin(a) * GAP_OUTER);
+          glowGfx.lineTo(
+            Math.cos(a) * layout.gapOuter,
+            Math.sin(a) * layout.gapOuter,
+          );
         }
         for (let i = segs; i >= 0; i--) {
           const a = hitAngles.startAngle + angleStep * i;
-          glowGfx.lineTo(Math.cos(a) * GAP_INNER, Math.sin(a) * GAP_INNER);
+          glowGfx.lineTo(
+            Math.cos(a) * layout.gapInner,
+            Math.sin(a) * layout.gapInner,
+          );
         }
         glowGfx.closePath();
         glowGfx.fill({ color: HIT_GLOW_COLOR, alpha });
@@ -206,8 +213,8 @@ export function Scene() {
       // Add / remove sprites to match count
       while (katanaSpritesRef.current.length < count) {
         const s = new Sprite(katanaTexture);
-        s.width = KATANA_SIZE;
-        s.height = KATANA_SIZE;
+        s.width = layout.katanaSize;
+        s.height = layout.katanaSize;
         s.anchor.set(0.5);
         katanaContainer.addChild(s);
         katanaSpritesRef.current.push(s);
@@ -220,12 +227,15 @@ export function Scene() {
 
       // Position & tint
       const totalWidth =
-        count * KATANA_SIZE + Math.max(0, count - 1) * KATANA_SPACING;
-      const startX = -totalWidth / 2 + KATANA_SIZE / 2;
+        count * layout.katanaSize +
+        Math.max(0, count - 1) * layout.katanaSpacing;
+      const startX = -totalWidth / 2 + layout.katanaSize / 2;
 
       for (let i = 0; i < count; i++) {
         const s = katanaSpritesRef.current[i];
-        s.x = startX + i * (KATANA_SIZE + KATANA_SPACING);
+        s.width = layout.katanaSize;
+        s.height = layout.katanaSize;
+        s.x = startX + i * (layout.katanaSize + layout.katanaSpacing);
         s.y = 0;
         s.tint = colors[i];
       }
@@ -237,9 +247,9 @@ export function Scene() {
       if (katanaBg) {
         katanaBg.clear();
         if (count > 0) {
-          const pad = 10;
+          const pad = layout.katanaSize * 0.22;
           const bgW = totalWidth + pad * 2;
-          const bgH = KATANA_SIZE + pad * 2;
+          const bgH = layout.katanaSize + pad * 2;
           katanaBg.roundRect(-bgW / 2, -bgH / 2, bgW, bgH, bgH / 2);
           katanaBg.fill({ color: 0x000000, alpha: 0.45 });
         }
@@ -248,29 +258,40 @@ export function Scene() {
   });
 
   // Derive initial textures
-  const groundY = app.screen.height - FRAME_SIZE * CHAR_SCALE - 20;
   const samuraiTex = samuraiAnims ? samuraiAnims.Run[0] : Texture.EMPTY;
   const shinobiTex = shinobiAnims ? shinobiAnims.Run[0] : Texture.EMPTY;
 
-  // Meeting point: center of screen, above ground
-  const meetX = app.screen.width / 2;
-  const meetY = groundY - OUTER_RADIUS - 10;
+  // Fight text style (dynamic font size)
+  const fightTextStyle = {
+    fontFamily: "Arial Black, Impact, sans-serif",
+    fontSize: layout.fightFontSize,
+    fontWeight: "bold" as const,
+    fill: 0xffcc00,
+    stroke: { color: 0x000000, width: layout.fightStrokeWidth },
+    dropShadow: {
+      alpha: 0.6,
+      angle: Math.PI / 4,
+      blur: 4,
+      distance: 4,
+      color: 0x000000,
+    },
+  };
 
   return (
     <pixiContainer ref={containerRef}>
       <pixiSprite ref={bgRef} texture={bgTexture} x={0} y={0} />
 
-      {/* Two concentric hollow brick rings above the meeting point */}
+      {/* Two concentric hollow brick rings */}
       {bricksTexture !== Texture.EMPTY && (
-        <pixiContainer x={meetX} y={meetY}>
+        <pixiContainer x={layout.meetX} y={layout.meetY}>
           {/* Outer ring mask (annulus) */}
           <pixiGraphics
             ref={outerRingMaskRef}
             draw={(g: Graphics) => {
               g.clear();
-              g.circle(0, 0, OUTER_RADIUS);
+              g.circle(0, 0, layout.outerRadius);
               g.fill({ color: 0xffffff });
-              g.circle(0, 0, OUTER_RADIUS - RING_WIDTH);
+              g.circle(0, 0, layout.outerRadius - layout.ringWidth);
               g.cut();
             }}
           />
@@ -279,8 +300,8 @@ export function Scene() {
             ref={outerRingSpriteRef}
             texture={bricksTexture}
             anchor={0.5}
-            width={OUTER_RADIUS * 2}
-            height={OUTER_RADIUS * 2}
+            width={layout.outerRadius * 2}
+            height={layout.outerRadius * 2}
           />
 
           {/* Hit-zone blocks between the two rings — redrawn each tick */}
@@ -312,9 +333,9 @@ export function Scene() {
             ref={innerRingMaskRef}
             draw={(g: Graphics) => {
               g.clear();
-              g.circle(0, 0, INNER_RING_OUTER);
+              g.circle(0, 0, layout.innerRingOuter);
               g.fill({ color: 0xffffff });
-              g.circle(0, 0, INNER_RING_INNER);
+              g.circle(0, 0, layout.innerRingInner);
               g.cut();
             }}
           />
@@ -323,8 +344,8 @@ export function Scene() {
             ref={innerRingSpriteRef}
             texture={bricksTexture}
             anchor={0.5}
-            width={INNER_RING_OUTER * 2}
-            height={INNER_RING_OUTER * 2}
+            width={layout.innerRingOuter * 2}
+            height={layout.innerRingOuter * 2}
           />
         </pixiContainer>
       )}
@@ -332,8 +353,8 @@ export function Scene() {
       {/* Katana hit streak below the ring */}
       <pixiContainer
         ref={katanaContainerRef}
-        x={meetX}
-        y={meetY + OUTER_RADIUS + 10 + KATANA_SIZE / 2}
+        x={layout.meetX}
+        y={layout.meetY + layout.outerRadius + layout.katanaSize * 0.4 + layout.katanaSize / 2}
       >
         <pixiGraphics
           ref={katanaBgRef}
@@ -344,16 +365,16 @@ export function Scene() {
       <pixiSprite
         ref={samuraiRef}
         texture={samuraiTex}
-        x={50}
-        y={groundY}
-        scale={CHAR_SCALE}
+        x={layout.charStartX}
+        y={layout.groundY}
+        scale={layout.charScale}
       />
       <pixiSprite
         ref={shinobiRef}
         texture={shinobiTex}
-        x={app.screen.width - 50 - FRAME_SIZE * CHAR_SCALE}
-        y={groundY}
-        scale={CHAR_SCALE}
+        x={layout.charEndX}
+        y={layout.groundY}
+        scale={layout.charScale}
       />
 
       {/* "FIGHT!" text — shown during fight_text phase */}
@@ -362,8 +383,8 @@ export function Scene() {
         text="FIGHT!"
         anchor={0.5}
         x={app.screen.width / 2}
-        y={app.screen.height / 2 - 40}
-        style={FIGHT_TEXT_STYLE}
+        y={app.screen.height / 2 - layout.fightFontSize * 0.5}
+        style={fightTextStyle}
         visible={false}
       />
     </pixiContainer>

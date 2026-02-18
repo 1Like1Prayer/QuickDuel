@@ -1,26 +1,20 @@
 // ──────────────────────────────────────────────
-//  Core game constants (character, movement, combat, particles)
+//  Core game constants (timing, animation, particles)
+//  Pixel sizes for characters/movement are in useLayout.
 // ──────────────────────────────────────────────
 
-// --- Character ---
+// --- Character (asset property, not display size) ---
 export const FRAME_SIZE = 128;
-export const CHAR_SCALE = 2;
 
-// --- Movement ---
-export const RUN_SPEED = 350;
+// --- Animation ---
 export const ANIM_SPEED = 0.065;
-export const MEET_GAP = -80;
-export const RECOVER_SPEED = 450;
 
 // --- Screen Shake ---
-export const SHAKE_INTENSITY = 5;
 export const SHAKE_DURATION = 0.08;
 
-// --- Hit / Knockback ---
+// --- Hit / Knockback (timing only) ---
 export const HIT_FREEZE_MS = 20;
-export const KNOCKBACK_DISTANCE = 30;
 export const RECOVER_IDLE_MS = 100;
-export const KNOCKBACK_SPEED = 600;
 export const HURT_PAUSE_MS = 80;
 
 // --- "FIGHT!" text display ---

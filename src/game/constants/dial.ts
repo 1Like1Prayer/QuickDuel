@@ -1,5 +1,6 @@
 // ──────────────────────────────────────────────
 //  Dial‑game constants (hit zones, speed, difficulty)
+//  Pixel sizes (KATANA_SIZE, KATANA_SPACING) moved to useLayout.
 // ──────────────────────────────────────────────
 
 /** Each block covers 5% of the full circle = 18°. */
@@ -40,5 +41,3 @@ export const BLOCK_COLOR_RIGHT = 0xff2222; // red (strongest, rightmost)
 
 // --- Katana hit streak ---
 export const MAX_KATANA_COUNT = 5;
-export const KATANA_SIZE = 44;
-export const KATANA_SPACING = 6;
