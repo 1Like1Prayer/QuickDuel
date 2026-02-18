@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────
 //  Scene‑level visual constants
-//  (ring geometry, dial, health bar, hit‑zone blocks, fight text)
+//  (ring geometry, dial, hit‑zone blocks, fight text)
 // ──────────────────────────────────────────────
 
 // --- Ring geometry ---
@@ -20,10 +20,6 @@ export const GAP_INNER = INNER_RING_OUTER; // outer edge of inner ring
 export const DIAL_LENGTH = OUTER_RADIUS;
 export const DIAL_LINE_WIDTH = 3;
 export const DIAL_BASE_SPEED = 2.5; // radians per second
-
-// --- Health bar ---
-export const HEALTH_BAR_WIDTH = OUTER_RADIUS * 2.2;
-export const HEALTH_BAR_HEIGHT = 16;
 
 // --- Hit‑zone block appearance ---
 export const BLOCK_ALPHA = 0.75;

@@ -13,8 +13,6 @@ import {
   FRAME_SIZE,
   GAP_INNER,
   GAP_OUTER,
-  HEALTH_BAR_HEIGHT,
-  HEALTH_BAR_WIDTH,
   HIT_GLOW_COLOR,
   HIT_GLOW_DURATION,
   HIT_GLOW_MAX_ALPHA,
@@ -30,7 +28,6 @@ import {
   useBackgroundTexture,
   useBricksTexture,
   useCharacterAnims,
-  useHealthBarTexture,
 } from "../hooks/useAssets";
 import { useDialGame } from "../hooks/useDialGame";
 import { blockColor } from "../hooks/useDialGame";
@@ -64,6 +61,9 @@ export function Scene() {
   // Hit glow layer
   const glowGfxRef = useRef<Graphics>(null);
 
+  // Katana background
+  const katanaBgRef = useRef<Graphics>(null);
+
   // Katana streak
   const [katanaTexture, setKatanaTexture] = useState(Texture.EMPTY);
   const katanaContainerRef = useRef<Container>(null);
@@ -73,7 +73,7 @@ export function Scene() {
   // Load assets
   const bgTexture = useBackgroundTexture();
   const bricksTexture = useBricksTexture();
-  const healthBarTexture = useHealthBarTexture();
+
   const { samuraiAnims, shinobiAnims } = useCharacterAnims();
 
   // Load katana texture
@@ -142,7 +142,7 @@ export function Scene() {
       for (const block of currentBlocks) {
         const arcSpan = block.endAngle - block.startAngle;
         const angleStep = arcSpan / steps;
-        const color = blockColor(block);
+        const color = blockColor(block, dialGame.colorStack.current);
 
         // Build annular wedge path
         blocksGfx.moveTo(
@@ -162,28 +162,32 @@ export function Scene() {
       }
     }
 
-    // ── Hit glow pulse ──
+    // ── Hit glow pulse (targeted to hit block only) ──
     if (glowGfx) {
       glowGfx.clear();
       const glowT = dialGame.hitGlowTimer.current;
-      if (glowT > 0) {
+      const hitAngles = dialGame.hitBlockAngles.current;
+      if (glowT > 0 && hitAngles) {
         const progress = glowT / HIT_GLOW_DURATION; // 1 → 0
         const alpha = progress * HIT_GLOW_MAX_ALPHA;
         const scale = 1 + 0.1 * progress;
         glowGfx.scale.set(scale);
 
-        // Draw a full annular ring in the gap
-        const segs = 64;
+        // Draw an annular wedge over only the hit block
+        const segs = 16;
+        const arcSpan = hitAngles.endAngle - hitAngles.startAngle;
+        const angleStep = arcSpan / segs;
+
         glowGfx.moveTo(
-          Math.cos(0) * GAP_OUTER,
-          Math.sin(0) * GAP_OUTER,
+          Math.cos(hitAngles.startAngle) * GAP_OUTER,
+          Math.sin(hitAngles.startAngle) * GAP_OUTER,
         );
         for (let i = 1; i <= segs; i++) {
-          const a = (i / segs) * Math.PI * 2;
+          const a = hitAngles.startAngle + angleStep * i;
           glowGfx.lineTo(Math.cos(a) * GAP_OUTER, Math.sin(a) * GAP_OUTER);
         }
         for (let i = segs; i >= 0; i--) {
-          const a = (i / segs) * Math.PI * 2;
+          const a = hitAngles.startAngle + angleStep * i;
           glowGfx.lineTo(Math.cos(a) * GAP_INNER, Math.sin(a) * GAP_INNER);
         }
         glowGfx.closePath();
@@ -227,6 +231,19 @@ export function Scene() {
       }
 
       prevKatanaCount.current = count;
+
+      // Draw katana background pill
+      const katanaBg = katanaBgRef.current;
+      if (katanaBg) {
+        katanaBg.clear();
+        if (count > 0) {
+          const pad = 10;
+          const bgW = totalWidth + pad * 2;
+          const bgH = KATANA_SIZE + pad * 2;
+          katanaBg.roundRect(-bgW / 2, -bgH / 2, bgW, bgH, bgH / 2);
+          katanaBg.fill({ color: 0x000000, alpha: 0.45 });
+        }
+      }
     }
   });
 
@@ -242,18 +259,6 @@ export function Scene() {
   return (
     <pixiContainer ref={containerRef}>
       <pixiSprite ref={bgRef} texture={bgTexture} x={0} y={0} />
-
-      {/* Health bar above the ring */}
-      {healthBarTexture !== Texture.EMPTY && (
-        <pixiSprite
-          texture={healthBarTexture}
-          anchor={0.5}
-          x={meetX}
-          y={meetY - OUTER_RADIUS - HEALTH_BAR_HEIGHT}
-          width={HEALTH_BAR_WIDTH}
-          height={HEALTH_BAR_HEIGHT}
-        />
-      )}
 
       {/* Two concentric hollow brick rings above the meeting point */}
       {bricksTexture !== Texture.EMPTY && (
@@ -329,7 +334,12 @@ export function Scene() {
         ref={katanaContainerRef}
         x={meetX}
         y={meetY + OUTER_RADIUS + 10 + KATANA_SIZE / 2}
-      />
+      >
+        <pixiGraphics
+          ref={katanaBgRef}
+          draw={() => { /* redrawn each tick */ }}
+        />
+      </pixiContainer>
 
       <pixiSprite
         ref={samuraiRef}

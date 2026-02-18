@@ -27,6 +27,8 @@ export interface HitZoneBlock {
   startAngle: number;
   /** End angle = startAngle + BLOCK_ARC. */
   endAngle: number;
+  /** Index of this block within the group (0 = leftmost). */
+  index: number;
 }
 
 // ──────────────────────────────────────────────
@@ -46,7 +48,7 @@ function generateBlocks(count: number): HitZoneBlock[] {
   const blocks: HitZoneBlock[] = [];
   for (let i = 0; i < count; i++) {
     const s = startAngle + i * BLOCK_ARC;
-    blocks.push({ startAngle: s, endAngle: s + BLOCK_ARC });
+    blocks.push({ startAngle: s, endAngle: s + BLOCK_ARC, index: i });
   }
   return blocks;
 }
@@ -91,14 +93,26 @@ function lerpColor(a: number, b: number, t: number): number {
   return (r << 16) | (g << 8) | bl;
 }
 
-/** Compute the gradient colour for a block based on its position in the spawn range. */
-export function blockColor(block: HitZoneBlock): number {
-  const mid = (block.startAngle + block.endAngle) / 2;
-  const t = Math.max(
-    0,
-    Math.min(1, (mid - SPAWN_MIN_RAD) / (SPAWN_MAX_RAD - SPAWN_MIN_RAD)),
-  );
-  return lerpColor(BLOCK_COLOR_LEFT, BLOCK_COLOR_RIGHT, t);
+/** Build the colour array for `count` blocks, always using the rightmost
+ *  colours from the full MAX_BLOCK_COUNT gradient.
+ *  Index 0 = palest (left), index count-1 = strongest red (right). */
+function buildColorStack(count: number): number[] {
+  const total = MAX_BLOCK_COUNT;
+  const startIdx = total - count;
+  const colors: number[] = [];
+  for (let i = startIdx; i < total; i++) {
+    const t = total > 1 ? i / (total - 1) : 1;
+    colors.push(lerpColor(BLOCK_COLOR_LEFT, BLOCK_COLOR_RIGHT, t));
+  }
+  return colors;
+}
+
+/** Compute the colour for a block based on its index within the color stack. */
+export function blockColor(
+  block: HitZoneBlock,
+  colorStack: number[],
+): number {
+  return colorStack[block.index] ?? 0xffffff;
 }
 
 // ──────────────────────────────────────────────
@@ -127,6 +141,10 @@ export interface UseDialGameReturn {
   hitGlowTimer: React.RefObject<number>;
   /** Rolling array of block colours from each successful hit (max 5, newest last). */
   hitColors: React.RefObject<number[]>;
+  /** Current color stack for the blocks (index-based). */
+  colorStack: React.RefObject<number[]>;
+  /** Angles of the last hit block (for targeted glow). null when no active glow. */
+  hitBlockAngles: React.RefObject<{ startAngle: number; endAngle: number } | null>;
   /** Start the dial game. */
   start: () => void;
   /** Stop the dial game. */
@@ -150,18 +168,31 @@ export function useDialGame({
   // Glow timer (counts down from HIT_GLOW_DURATION on hit)
   const hitGlowTimer = useRef(0);
 
+  // Angles of the last hit block (for targeted glow)
+  const hitBlockAngles = useRef<{ startAngle: number; endAngle: number } | null>(null);
+
   // Rolling hit streak colours
   const hitColors = useRef<number[]>([]);
 
-  // Whether a hit or miss has occurred and blocks should be regenerated at the next 40° crossing.
-  const pendingRegen = useRef(false);
+  // Index-based color stack — consistent across regenerations
+  const colorStack = useRef<number[]>(buildColorStack(INITIAL_BLOCK_COUNT));
 
-  // Track the previous normalised angle to detect the 40° gate crossing.
+  // Whether the player made an attempt (hit or miss tap) this lap.
+  // If no attempt was made by the next gate crossing, it counts as a miss.
+  const attemptedThisLap = useRef(false);
+
+  // Whether a hit occurred and the palest color should be trimmed at the next regen.
+  const pendingColorTrim = useRef(false);
+
+  // Whether the color stack should be restored to full at the next regen (after a miss).
+  const pendingColorRestore = useRef(false);
+
+  // Track the previous normalised angle to detect the 30° gate crossing.
   const prevNorm = useRef(normalizeAngle(-Math.PI / 2));
 
   // Whether the very first gate crossing after start() should be skipped
-  // (the dial starts at top = 270°, which is past 40°, so the first
-  //  forward crossing of 40° is still the "initial spin").
+  // (the dial starts at top = 270°, which is past 30°, so the first
+  //  forward crossing of 30° is still the "initial spin").
   const firstLapDone = useRef(false);
 
   // ── Start / Stop ──
@@ -175,8 +206,12 @@ export function useDialGame({
     blocks.current = generateBlocks(INITIAL_BLOCK_COUNT);
     lastHit.current = null;
     hitGlowTimer.current = 0;
+    hitBlockAngles.current = null;
     hitColors.current = [];
-    pendingRegen.current = false;
+    colorStack.current = buildColorStack(INITIAL_BLOCK_COUNT);
+    attemptedThisLap.current = false;
+    pendingColorTrim.current = false;
+    pendingColorRestore.current = false;
     firstLapDone.current = false;
   }, []);
 
@@ -192,9 +227,11 @@ export function useDialGame({
     const hitBlock = findHitBlock(dialAngle.current, blocks.current);
     const hit = hitBlock !== null;
     lastHit.current = hit;
+    attemptedThisLap.current = true;
 
     if (hit) {
       // Decrease blocks (min 1)
+      const prevCount = blockCount.current;
       blockCount.current = Math.max(
         MIN_BLOCK_COUNT,
         blockCount.current - 1,
@@ -204,14 +241,19 @@ export function useDialGame({
         INITIAL_SPEED + MAX_SPEED_BONUS,
         speedMultiplier.current + SPEED_STEP,
       );
-      // Glow
+      // Glow on the hit block only
       hitGlowTimer.current = HIT_GLOW_DURATION;
+      hitBlockAngles.current = { startAngle: hitBlock.startAngle, endAngle: hitBlock.endAngle };
       // Record colour for katana streak
-      const color = blockColor(hitBlock);
+      const color = blockColor(hitBlock, colorStack.current);
       hitColors.current = [
         ...hitColors.current.slice(-(MAX_KATANA_COUNT - 1)),
         color,
       ];
+      // Defer color removal until blocks regenerate (only if count actually decreased)
+      if (blockCount.current < prevCount) {
+        pendingColorTrim.current = true;
+      }
     } else {
       // Increase blocks back to max
       blockCount.current = Math.min(
@@ -223,10 +265,10 @@ export function useDialGame({
         INITIAL_SPEED + MIN_SPEED_BONUS,
         speedMultiplier.current - SPEED_STEP,
       );
+      // Defer color restore until blocks regenerate
+      pendingColorRestore.current = true;
     }
 
-    // Defer block regeneration until the dial crosses 40°
-    pendingRegen.current = true;
     return hit;
   }, []);
 
@@ -244,7 +286,7 @@ export function useDialGame({
         hitGlowTimer.current = Math.max(0, hitGlowTimer.current - dt);
       }
 
-      // Detect the 40° gate crossing
+      // Detect the 30° gate crossing
       const curNorm = normalizeAngle(dialAngle.current);
       const prev = prevNorm.current;
 
@@ -256,26 +298,36 @@ export function useDialGame({
         if (!firstLapDone.current) {
           // Skip the very first crossing — it's the initial spin
           firstLapDone.current = true;
-        } else if (pendingRegen.current) {
-          // Regenerate blocks at new positions
+        } else {
+          // If the player didn't make an attempt this lap, it's a miss
+          if (!attemptedThisLap.current && blocks.current.length > 0) {
+            lastHit.current = false;
+
+            // Miss penalty
+            blockCount.current = Math.min(
+              MAX_BLOCK_COUNT,
+              blockCount.current + 1,
+            );
+            speedMultiplier.current = Math.max(
+              INITIAL_SPEED + MIN_SPEED_BONUS,
+              speedMultiplier.current - SPEED_STEP,
+            );
+            // Defer color restore to regen
+            pendingColorRestore.current = true;
+          }
+
+          // Always regenerate blocks at new positions
+          // Apply deferred color changes
+          if (pendingColorRestore.current) {
+            colorStack.current = buildColorStack(blockCount.current);
+            pendingColorRestore.current = false;
+            pendingColorTrim.current = false; // restore overrides any pending trim
+          } else if (pendingColorTrim.current) {
+            colorStack.current = colorStack.current.slice(1);
+            pendingColorTrim.current = false;
+          }
           blocks.current = generateBlocks(blockCount.current);
-          pendingRegen.current = false;
-        } else if (blocks.current.length > 0) {
-          // Full lap without any hit/miss → auto-miss
-          lastHit.current = false;
-
-          // Miss penalty
-          blockCount.current = Math.min(
-            MAX_BLOCK_COUNT,
-            blockCount.current + 1,
-          );
-          speedMultiplier.current = Math.max(
-            INITIAL_SPEED + MIN_SPEED_BONUS,
-            speedMultiplier.current - SPEED_STEP,
-          );
-
-          // Defer regen to the next 40° crossing
-          pendingRegen.current = true;
+          attemptedThisLap.current = false;
         }
       }
 
@@ -293,7 +345,9 @@ export function useDialGame({
     lastHit,
     active,
     hitGlowTimer,
+    hitBlockAngles,
     hitColors,
+    colorStack,
     start,
     stop,
     attempt,

@@ -1,4 +1,4 @@
-import { Assets, Rectangle, Texture } from "pixi.js";
+import { Assets, Texture } from "pixi.js";
 import { useEffect, useState } from "react";
 
 import type { CharAnims } from "../types";
@@ -32,28 +32,7 @@ export function useBricksTexture() {
   return bricksTexture;
 }
 
-/** Load the HealthBar spritesheet and return the first row as a texture. */
-export function useHealthBarTexture() {
-  const [hbTexture, setHbTexture] = useState(Texture.EMPTY);
 
-  useEffect(() => {
-    if (hbTexture === Texture.EMPTY) {
-      Assets.load("/HealthBar.png").then((sheet: Texture) => {
-        // The spritesheet has multiple rows; extract the first row.
-        // Assume each row is equal height = sheet.height / number_of_rows.
-        // We take the full width and first row height (sheet.width × rowHeight).
-        const rowHeight = sheet.height / Math.round(sheet.height / (sheet.width / 4));
-        const firstRow = new Texture({
-          source: sheet.source,
-          frame: new Rectangle(0, 0, sheet.width, rowHeight),
-        });
-        setHbTexture(firstRow);
-      });
-    }
-  }, [hbTexture]);
-
-  return hbTexture;
-}
 
 /** Load and return both character animation sets. */
 export function useCharacterAnims() {
