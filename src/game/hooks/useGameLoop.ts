@@ -16,6 +16,7 @@ import {
   KNOCKBACK_DISTANCE,
   RECOVER_IDLE_MS,
   KNOCKBACK_SPEED,
+  HURT_PAUSE_MS,
   BLOOD_PARTICLE_COUNT,
   BLOOD_PARTICLE_SPEED,
   BLOOD_PARTICLE_GRAVITY,
@@ -264,8 +265,10 @@ export function useGameLoop({
       case "samurai_hurt": {
         if (samuraiFrame.current === samAnim.length - 1 && !phaseAnimDone.current) {
           phaseAnimDone.current = true;
-          phase.current = "samurai_recover";
-          resetPhaseFrames();
+          setTimeout(() => {
+            phase.current = "samurai_recover";
+            resetPhaseFrames();
+          }, HURT_PAUSE_MS);
         }
         break;
       }
@@ -306,7 +309,7 @@ export function useGameLoop({
             shinobiKnockback.current = KNOCKBACK_DISTANCE;
             spawnBlood(
               bloodParticles.current,
-              shinobiX.current - FRAME_SIZE * CHAR_SCALE * 0.4,
+              shinobiX.current + FRAME_SIZE * CHAR_SCALE * 0.4,
               groundY + FRAME_SIZE * CHAR_SCALE * 0.4,
               1,
             );
@@ -318,8 +321,10 @@ export function useGameLoop({
       case "shinobi_hurt": {
         if (shinobiFrame.current === shinAnim.length - 1 && !phaseAnimDone.current) {
           phaseAnimDone.current = true;
-          phase.current = "shinobi_recover";
-          resetPhaseFrames();
+          setTimeout(() => {
+            phase.current = "shinobi_recover";
+            resetPhaseFrames();
+          }, HURT_PAUSE_MS);
         }
         break;
       }
