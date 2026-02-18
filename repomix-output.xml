@@ -1,0 +1,953 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+eslint.config.mjs
+index.html
+package.json
+public/assets/Battleground1/Bright/Battleground1.png
+public/assets/Battleground1/Bright/hills&trees.png
+public/assets/Battleground1/Bright/ruins_bg.png
+public/assets/Battleground1/Bright/ruins.png
+public/assets/Battleground1/Bright/ruins2.png
+public/assets/Battleground1/Bright/sky.png
+public/assets/Battleground1/Bright/statue.png
+public/assets/Battleground1/Bright/stones&grass.png
+public/assets/Battleground1/Pale/Battleground1.png
+public/assets/Battleground1/Pale/hills&trees.png
+public/assets/Battleground1/Pale/ruins_bg.png
+public/assets/Battleground1/Pale/ruins.png
+public/assets/Battleground1/Pale/ruins2.png
+public/assets/Battleground1/Pale/sky.png
+public/assets/Battleground1/Pale/statue.png
+public/assets/Battleground1/Pale/stones&grass.png
+public/assets/Battleground2/Bright/Battleground2.png
+public/assets/Battleground2/Bright/bg.png
+public/assets/Battleground2/Bright/candeliar.png
+public/assets/Battleground2/Bright/columns&falgs.png
+public/assets/Battleground2/Bright/dragon.png
+public/assets/Battleground2/Bright/floor.png
+public/assets/Battleground2/Bright/mountaims.png
+public/assets/Battleground2/Bright/wall@windows.png
+public/assets/Battleground2/Pale/Battleground2.png
+public/assets/Battleground2/Pale/bg.png
+public/assets/Battleground2/Pale/candeliar.png
+public/assets/Battleground2/Pale/columns&falgs.png
+public/assets/Battleground2/Pale/dragon.png
+public/assets/Battleground2/Pale/floor.png
+public/assets/Battleground2/Pale/mountaims.png
+public/assets/Battleground2/Pale/wall@windows.png
+public/assets/Battleground3/Bright/Battleground3.png
+public/assets/Battleground3/Bright/fireflys.png
+public/assets/Battleground3/Bright/grass&road.png
+public/assets/Battleground3/Bright/grasses.png
+public/assets/Battleground3/Bright/jungle_bg.png
+public/assets/Battleground3/Bright/lianas.png
+public/assets/Battleground3/Bright/sky.png
+public/assets/Battleground3/Bright/tree_face.png
+public/assets/Battleground3/Bright/trees&bushes.png
+public/assets/Battleground3/Pale/Battleground3.png
+public/assets/Battleground3/Pale/fireflys.png
+public/assets/Battleground3/Pale/grass&road.png
+public/assets/Battleground3/Pale/grasses.png
+public/assets/Battleground3/Pale/jungle_bg.png
+public/assets/Battleground3/Pale/lianas.png
+public/assets/Battleground3/Pale/sky.png
+public/assets/Battleground3/Pale/tree_face.png
+public/assets/Battleground3/Pale/trees&bushes.png
+public/assets/Battleground4/Bright/back_trees.png
+public/assets/Battleground4/Bright/Battleground4.png
+public/assets/Battleground4/Bright/bones.png
+public/assets/Battleground4/Bright/crypt.png
+public/assets/Battleground4/Bright/graves.png
+public/assets/Battleground4/Bright/ground.png
+public/assets/Battleground4/Bright/sky.png
+public/assets/Battleground4/Bright/tree.png
+public/assets/Battleground4/Bright/wall.png
+public/assets/Battleground4/Pale/back_trees.png
+public/assets/Battleground4/Pale/Battleground4.png
+public/assets/Battleground4/Pale/bones.png
+public/assets/Battleground4/Pale/crypt.png
+public/assets/Battleground4/Pale/graves.png
+public/assets/Battleground4/Pale/ground.png
+public/assets/Battleground4/Pale/sky.png
+public/assets/Battleground4/Pale/tree.png
+public/assets/Battleground4/Pale/wall.png
+public/assets/bunny.png
+public/assets/Fighter/Attack_1.png
+public/assets/Fighter/Attack_2.png
+public/assets/Fighter/Attack_3.png
+public/assets/Fighter/Dead.png
+public/assets/Fighter/Hurt.png
+public/assets/Fighter/Idle.png
+public/assets/Fighter/Jump.png
+public/assets/Fighter/Run.png
+public/assets/Fighter/Shield.png
+public/assets/Fighter/Walk.png
+public/assets/logo.svg
+public/assets/Samurai/Attack_1.png
+public/assets/Samurai/Attack_2.png
+public/assets/Samurai/Attack_3.png
+public/assets/Samurai/Dead.png
+public/assets/Samurai/Hurt.png
+public/assets/Samurai/Idle.png
+public/assets/Samurai/Jump.png
+public/assets/Samurai/Run.png
+public/assets/Samurai/Shield.png
+public/assets/Samurai/Walk.png
+public/assets/Shinobi/Attack_1.png
+public/assets/Shinobi/Attack_2.png
+public/assets/Shinobi/Attack_3.png
+public/assets/Shinobi/Dead.png
+public/assets/Shinobi/Hurt.png
+public/assets/Shinobi/Idle.png
+public/assets/Shinobi/Jump.png
+public/assets/Shinobi/Run.png
+public/assets/Shinobi/Shield.png
+public/assets/Shinobi/Walk.png
+public/favicon.png
+public/style.css
+screenshots/battle_close1.png
+screenshots/battle_close2.png
+screenshots/battle_improved1.png
+screenshots/battle_improved2.png
+screenshots/battle1.png
+screenshots/battle2.png
+screenshots/battle3.png
+screenshots/blood_effects.png
+screenshots/final_battle.png
+screenshots/improved_battle.png
+screenshots/recover_phase.png
+screenshots/samurai_walking.png
+src/App.tsx
+src/main.tsx
+src/vite-env.d.ts
+tsconfig.app.json
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+</file>
+
+<file path="eslint.config.mjs">
+import js from "@eslint/js";
+import prettier from "eslint-plugin-prettier/recommended";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+
+export default tseslint.config(
+  { ignores: ["dist"] },
+  {
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      prettier,
+    ],
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      "react-hooks": reactHooks,
+      "react-refresh": reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true },
+      ],
+    },
+  },
+);
+</file>
+
+<file path="index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/style.css">
+    <title>PixiJS - Template</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="pixi-container"></div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="package.json">
+{
+  "name": "shubi",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "vite",
+    "build": "npm run lint && tsc -b && vite build",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@pixi/react": "^8.0.0",
+    "pixi.js": "^8.8.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-prettier": "^5.2.6",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "~5.7.3",
+    "typescript-eslint": "^8.25.0",
+    "vite": "^6.2.0"
+  }
+}
+</file>
+
+<file path="public/assets/logo.svg">
+<svg width="735" height="289" viewBox="0 0 735 289" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_7_84)">
+<path d="M304.17 288.01V89.99H244.97C244.77 89.99 244.56 89.99 244.34 90C233.7 90.37 225.15 99.12 225.05 109.76C225.05 109.82 225.05 109.88 225.05 109.93V268.4C225.05 268.73 225.07 269.1 225.1 269.51C226 279.71 234.54 287.53 244.77 287.97C245.2 287.99 245.61 288 245.99 288H304.17V288.01Z" fill="#E72264"/>
+<path d="M548.21 287.91C559.24 287.08 567.97 278 568.05 266.93C568.05 266.86 568.05 266.79 568.05 266.72V110.16C568.05 110.1 568.05 110.03 568.05 109.97C568 99.03 559.1 90.11 548.16 90C548.08 90 548 90 547.92 90H488.93V288.02H545.74C546.51 288.02 547.34 287.98 548.21 287.92V287.91Z" fill="#E72264"/>
+<path d="M293.07 90H355.07C361.15 90 369.75 94.92 374.29 101L505.76 277C510.3 283.08 509.05 288 502.98 288H440.98C434.9 288 426.3 283.08 421.76 277L290.28 101C285.74 94.93 286.99 90 293.06 90H293.07Z" fill="#E72264"/>
+<path d="M498.07 90H436.07C429.99 90 421.39 94.92 416.85 101L285.38 277C280.84 283.08 282.09 288 288.16 288H350.16C356.24 288 364.84 283.08 369.38 277L500.85 101C505.39 94.93 504.14 90 498.07 90Z" fill="#E72264"/>
+<path d="M529.07 0C550.05 0 567.07 17.01 567.07 38C567.07 58.99 550.06 76 529.07 76C508.08 76 491.07 58.99 491.07 38C491.07 17.01 508.08 0 529.07 0Z" fill="#E72264"/>
+<path d="M265.07 0C286.05 0 303.07 17.01 303.07 38C303.07 58.99 286.06 76 265.07 76C244.08 76 227.07 58.99 227.07 38C227.07 17.01 244.08 0 265.07 0Z" fill="#E72264"/>
+<path d="M695.07 0H635.07C613.53 0 596.07 17.46 596.07 39V99C596.07 120.54 613.53 138 635.07 138H695.07C716.61 138 734.07 120.54 734.07 99V39C734.07 17.46 716.61 0 695.07 0ZM655.44 39.34V79.84C655.44 85.3 654.35 90.04 652.17 94.05C649.99 98.06 646.88 101.17 642.84 103.38C638.8 105.59 634.01 106.7 628.48 106.7C623.78 106.7 619.72 105.85 616.29 104.16C612.86 102.47 609.98 100.1 607.63 97.06C607.63 97.06 601.08 89.99 607.08 85C613.21 79.9 618.52 86.58 618.52 86.58C619.76 88.31 621.23 89.61 622.93 90.47C624.62 91.34 626.54 91.77 628.69 91.77C630.69 91.77 632.46 91.36 633.98 90.53C635.5 89.7 636.71 88.46 637.61 86.8C638.51 85.14 638.96 83.1 638.96 80.68V39.35C638.96 39.35 638.8 31.01 647.08 31.01C655.36 31.01 655.45 39.35 655.45 39.35L655.44 39.34ZM714.35 98.38C709.82 102.86 703.15 105.56 694.35 106.48C688.3 107.12 683.02 106.7 678.52 105.23C674.02 103.76 669.81 101.21 665.88 97.59C665.88 97.59 659.8 92.35 664.7 85.77C668.38 80.82 675.3 85.96 675.3 85.96C677.92 88.4 680.73 90.2 683.74 91.38C686.75 92.56 690.14 92.95 693.93 92.55C697.3 92.2 699.86 91.28 701.62 89.81C703.38 88.34 704.14 86.5 703.91 84.3C703.71 82.38 702.94 80.86 701.61 79.75C700.28 78.64 698.53 77.75 696.37 77.07C694.21 76.39 691.89 75.79 689.4 75.25C686.91 74.71 684.39 74.02 681.83 73.18C679.27 72.34 676.9 71.23 674.7 69.86C672.5 68.49 670.66 66.64 669.16 64.29C667.66 61.94 666.72 58.95 666.34 55.31C665.86 50.77 666.54 46.77 668.36 43.31C670.19 39.85 672.97 37.07 676.71 34.97C680.45 32.87 684.8 31.56 689.75 31.04C694.91 30.5 699.68 30.9 704.06 32.24C708.44 33.59 712.17 35.63 715.24 38.36C715.24 38.36 719.54 41.97 716.05 48.18C713.34 53.01 705.73 50.11 705.73 50.11C703.29 48.07 700.89 46.62 698.55 45.76C696.2 44.9 693.65 44.61 690.9 44.9C688.08 45.2 685.9 45.97 684.36 47.2C682.82 48.44 682.16 50.06 682.37 52.05C682.56 53.84 683.33 55.23 684.69 56.24C686.05 57.24 687.78 58.05 689.9 58.66C692.01 59.27 694.34 59.86 696.86 60.43C699.39 61 701.93 61.69 704.48 62.5C707.03 63.31 709.4 64.47 711.57 65.98C713.74 67.49 715.6 69.45 717.14 71.86C718.68 74.27 719.65 77.4 720.06 81.25C720.79 88.2 718.89 93.91 714.35 98.38Z" fill="#E72264"/>
+<path d="M107.17 0.340088C47.98 0.340088 0 48.3201 0 107.51C0 108.67 0.02 109.82 0.06 110.97V213.96C0.06 213.96 0.06 213.97 0.06 213.98V224.45C0.06 224.45 0.06 224.45 0.07 224.44V250.33C0.07 250.53 0.06 250.72 0.06 250.92C0.06 251.12 0.07 251.32 0.08 251.52V252H0.09C0.66 271.89 16.95 287.84 36.98 287.84C57.01 287.84 73.47 271.89 74.04 252V213.98H104.66C105.49 214 106.33 214.01 107.16 214.01C166.35 214.01 214.33 166.7 214.33 107.51C214.33 48.3201 166.36 0.340088 107.17 0.340088ZM107.17 140.01C100.62 140.01 84.02 140.01 77.13 140.01H74.07V107.52C74.07 89.3101 88.96 74.5401 107.17 74.5401C125.38 74.5401 140.15 89.3101 140.15 107.52C140.15 125.73 125.38 140.02 107.17 140.02V140.01Z" fill="#E72264"/>
+<path opacity="0.15" d="M36.05 214H73.99V252.01H73.82C73.25 271.9 56.96 287.85 36.93 287.85C16.9 287.85 0.6 271.9 0.03 252.01H0.02V251.53C0.02 251.33 0 251.13 0 250.93C0 250.73 0.01 250.54 0.01 250.34V247.66C1.15 229.87 17.94 214 36.04 214H36.05Z" fill="#1D1D1B"/>
+<g opacity="0.05">
+<path opacity="0.5" d="M0.0599976 168.28V213.98C0.0599976 173.72 33.89 140.58 74.05 140.03V125.45C44.2 128.59 17.77 144.66 0.0599976 168.28Z" fill="black"/>
+<path d="M0.119995 248.37C8.84 241.97 19.42 238.2 30.84 238.2H74.06V213.98H37.03C17.47 213.98 1.48 229.15 0.119995 248.37Z" fill="black"/>
+</g>
+<g opacity="0.05">
+<path opacity="0.5" d="M74.05 140.03V126.79C43.95 129.74 17.39 146.16 0.0599976 170.27V213.98C0.0599976 173.72 33.89 140.58 74.05 140.03Z" fill="black"/>
+<path d="M37.03 213.98C18 213.98 2.34001 228.35 0.26001 246.83C8.97001 240.03 19.73 236.01 31.4 236.01H74.05V213.99H37.02L37.03 213.98Z" fill="black"/>
+</g>
+<g opacity="0.05">
+<path opacity="0.5" d="M74.05 140.03V128.12C43.68 130.87 16.95 147.69 0.0599976 172.34V213.97C0.0599976 173.71 33.89 140.57 74.05 140.02V140.03Z" fill="black"/>
+<path d="M37.03 213.98C18.53 213.98 3.22002 227.55 0.460022 245.28C9.12002 238.09 20.06 233.8 31.96 233.8H74.05V213.98H37.02H37.03Z" fill="black"/>
+</g>
+<g opacity="0.05">
+<path opacity="0.5" d="M74.05 140.03V129.46C43.37 132 16.46 149.28 0.0599976 174.53V213.98C0.0599976 173.72 33.89 140.58 74.05 140.03Z" fill="black"/>
+<path d="M37.03 213.98C19.06 213.98 4.08998 226.79 0.72998 243.77C9.31998 236.18 20.41 231.6 32.53 231.6H74.06V213.98H37.03Z" fill="black"/>
+</g>
+<g opacity="0.05">
+<path opacity="0.5" d="M74.05 140.03V130.81C43.01 133.11 15.89 150.93 0.0599976 176.84V213.98C0.0599976 173.72 33.89 140.58 74.05 140.03Z" fill="black"/>
+<path d="M37.03 213.98C19.6 213.98 5.00001 226.03 1.07001 242.24C9.54001 234.26 20.77 229.39 33.09 229.39H74.05V213.97H37.02L37.03 213.98Z" fill="black"/>
+</g>
+<g opacity="0.05">
+<path opacity="0.5" d="M74.05 140.03V132.16C42.6 134.22 15.22 152.65 0.0599976 179.32V213.98C0.0599976 173.72 33.89 140.58 74.05 140.03Z" fill="black"/>
+<path d="M37.03 213.98C20.15 213.98 5.92998 225.28 1.47998 240.71C9.79998 232.34 21.14 227.19 33.66 227.19H74.06V213.98H37.03Z" fill="black"/>
+</g>
+<g opacity="0.05">
+<path opacity="0.5" d="M74.05 140.03V133.52C42.12 135.31 14.43 154.48 0.0599976 182.01V213.98C0.0599976 173.72 33.89 140.58 74.05 140.03Z" fill="black"/>
+<path d="M37.03 213.98C20.72 213.98 6.88001 224.54 1.95001 239.19C10.08 230.44 21.53 224.99 34.21 224.99H74.05V213.98H37.02H37.03Z" fill="black"/>
+</g>
+<g opacity="0.05">
+<path opacity="0.5" d="M74.05 140.03V134.89C41.53 136.39 13.47 156.46 0.0599976 185V213.98C0.0599976 173.72 33.89 140.58 74.05 140.03Z" fill="black"/>
+<path d="M37.03 213.98C21.28 213.98 7.83999 223.83 2.48999 237.7C10.4 228.56 21.92 222.79 34.78 222.79H74.06V213.98H37.03Z" fill="black"/>
+</g>
+<g opacity="0.05">
+<path opacity="0.5" d="M74.05 140.03V136.29C40.78 137.48 12.24 158.68 0.0599976 188.47V213.98C0.0599976 173.72 33.89 140.58 74.05 140.03Z" fill="black"/>
+<path d="M37.03 213.98C21.85 213.98 8.80999 223.13 3.10999 236.21C10.74 226.68 22.34 220.59 35.35 220.59H74.06V213.98H37.03Z" fill="black"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_7_84">
+<rect width="734.07" height="288.01" fill="white"/>
+</clipPath>
+</defs>
+</svg>
+</file>
+
+<file path="public/style.css">
+body {
+    margin: 0;
+    padding: 0;
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #000000;
+}
+
+#app {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+</file>
+
+<file path="src/App.tsx">
+import { Application, extend, useApplication, useTick } from "@pixi/react";
+import {
+  Assets,
+  Container,
+  Graphics,
+  Rectangle,
+  Sprite,
+  Texture,
+} from "pixi.js";
+import { useEffect, useRef, useState } from "react";
+
+extend({ Container, Sprite });
+
+// --- Constants ---
+const FRAME_SIZE = 128;
+const CHAR_SCALE = 2;
+const RUN_SPEED = 350;
+const ANIM_SPEED = 0.1;
+const MEET_GAP = -80;
+const RECOVER_SPEED = 150; // speed to walk back to position
+
+// Screen shake (gentle)
+const SHAKE_INTENSITY = 6;
+const SHAKE_DURATION = 0.15;
+
+// Hit effects
+const HIT_FREEZE_MS = 20;
+const KNOCKBACK_DISTANCE = 60;
+const RECOVER_IDLE_MS = 400; // idle pause after recovering before attacking
+const KNOCKBACK_SPEED = 400;
+
+// Blood particles
+const BLOOD_PARTICLE_COUNT = 12;
+const BLOOD_PARTICLE_SPEED = 300;
+const BLOOD_PARTICLE_GRAVITY = 800;
+const BLOOD_PARTICLE_LIFETIME = 0.5;
+const BLOOD_PARTICLE_SIZE = 4;
+
+const ANIM_FRAMES: Record<string, Record<string, number>> = {
+  Samurai: { Run: 8, Attack_1: 6, Hurt: 2, Idle: 6, Walk: 8 },
+  Shinobi: { Run: 8, Attack_1: 5, Hurt: 2, Idle: 6, Walk: 8 },
+};
+
+type Phase =
+  | "run"
+  | "shinobi_attack"
+  | "samurai_hurt"
+  | "samurai_recover" // samurai walks back while shinobi idles
+  | "samurai_idle_wait" // samurai catches breath before attacking
+  | "samurai_attack"
+  | "shinobi_hurt"
+  | "shinobi_recover" // shinobi walks back while samurai idles
+  | "shinobi_idle_wait"; // shinobi catches breath before attacking
+
+function sliceFrames(sheet: Texture, count: number): Texture[] {
+  const frames: Texture[] = [];
+  for (let i = 0; i < count; i++) {
+    frames.push(
+      new Texture({
+        source: sheet.source,
+        frame: new Rectangle(i * FRAME_SIZE, 0, FRAME_SIZE, FRAME_SIZE),
+      }),
+    );
+  }
+  return frames;
+}
+
+interface BloodParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  size: number;
+}
+
+interface CharAnims {
+  Run: Texture[];
+  Attack_1: Texture[];
+  Hurt: Texture[];
+  Idle: Texture[];
+  Walk: Texture[];
+}
+
+const Scene = () => {
+  const { app } = useApplication();
+  const containerRef = useRef<Container>(null);
+  const bgRef = useRef<Sprite>(null);
+  const samuraiRef = useRef<Sprite>(null);
+  const shinobiRef = useRef<Sprite>(null);
+  const bloodGfx = useRef<Graphics | null>(null);
+
+  const [bgTexture, setBgTexture] = useState(Texture.EMPTY);
+  const [samuraiAnims, setSamuraiAnims] = useState<CharAnims | null>(null);
+  const [shinobiAnims, setShinobiAnims] = useState<CharAnims | null>(null);
+
+  const phase = useRef<Phase>("run");
+  const samuraiX = useRef(50);
+  const shinobiX = useRef(0);
+  const shinobiXInitialized = useRef(false);
+
+  // Fight positions (where they stand during combat)
+  const samuraiFightX = useRef(0);
+  const shinobiFightX = useRef(0);
+
+  const samuraiFrame = useRef(0);
+  const shinobiFrame = useRef(0);
+  const samuraiElapsed = useRef(0);
+  const shinobiElapsed = useRef(0);
+  const phaseAnimDone = useRef(false);
+
+  const shakeTimer = useRef(0);
+  const isShaking = useRef(false);
+
+  const samuraiKnockback = useRef(0);
+  const shinobiKnockback = useRef(0);
+
+  const bloodParticles = useRef<BloodParticle[]>([]);
+
+  // Create blood graphics object
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const gfx = new Graphics();
+    bloodGfx.current = gfx;
+    containerRef.current.addChild(gfx);
+    return () => {
+      containerRef.current?.removeChild(gfx);
+      gfx.destroy();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (bgTexture === Texture.EMPTY) {
+      Assets.load("/assets/Battleground1/Bright/Battleground1.png").then(
+        (result) => setBgTexture(result),
+      );
+    }
+  }, [bgTexture]);
+
+  useEffect(() => {
+    const loadAnims = async (charName: string): Promise<CharAnims> => {
+      const anims: Partial<CharAnims> = {};
+      for (const animName of [
+        "Run",
+        "Attack_1",
+        "Hurt",
+        "Idle",
+        "Walk",
+      ] as const) {
+        const sheet = await Assets.load(`/assets/${charName}/${animName}.png`);
+        anims[animName] = sliceFrames(sheet, ANIM_FRAMES[charName][animName]);
+      }
+      return anims as CharAnims;
+    };
+
+    Promise.all([loadAnims("Samurai"), loadAnims("Shinobi")]).then(
+      ([samurai, shinobi]) => {
+        setSamuraiAnims(samurai);
+        setShinobiAnims(shinobi);
+      },
+    );
+  }, []);
+
+  const getAnimName = (
+    char: "samurai" | "shinobi",
+    p: Phase,
+  ): keyof CharAnims => {
+    switch (p) {
+      case "run":
+        return "Run";
+      case "shinobi_attack":
+        return char === "shinobi" ? "Attack_1" : "Idle";
+      case "samurai_hurt":
+        return char === "samurai" ? "Hurt" : "Idle";
+      case "samurai_recover":
+        return char === "samurai" ? "Walk" : "Idle";
+      case "samurai_idle_wait":
+        return "Idle";
+      case "samurai_attack":
+        return char === "samurai" ? "Attack_1" : "Idle";
+      case "shinobi_hurt":
+        return char === "shinobi" ? "Hurt" : "Idle";
+      case "shinobi_recover":
+        return char === "shinobi" ? "Walk" : "Idle";
+      case "shinobi_idle_wait":
+        return "Idle";
+    }
+  };
+
+  const startShake = () => {
+    shakeTimer.current = SHAKE_DURATION;
+    isShaking.current = true;
+  };
+
+  const resetPhaseFrames = () => {
+    samuraiFrame.current = 0;
+    shinobiFrame.current = 0;
+    samuraiElapsed.current = 0;
+    shinobiElapsed.current = 0;
+    phaseAnimDone.current = false;
+  };
+
+  const spawnBlood = (x: number, y: number, directionSign: number) => {
+    for (let i = 0; i < BLOOD_PARTICLE_COUNT; i++) {
+      const angle = (Math.random() - 0.3) * Math.PI;
+      const speed = BLOOD_PARTICLE_SPEED * (0.5 + Math.random() * 0.5);
+      bloodParticles.current.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed * directionSign,
+        vy: -Math.abs(Math.sin(angle)) * speed * (0.5 + Math.random()),
+        life: BLOOD_PARTICLE_LIFETIME * (0.5 + Math.random() * 0.5),
+        size: BLOOD_PARTICLE_SIZE * (0.5 + Math.random()),
+      });
+    }
+  };
+
+  useTick((ticker) => {
+    if (
+      !samuraiRef.current ||
+      !shinobiRef.current ||
+      !containerRef.current ||
+      !bgRef.current
+    )
+      return;
+    if (!samuraiAnims || !shinobiAnims) return;
+
+    if (!shinobiXInitialized.current) {
+      shinobiX.current = app.screen.width - 50 - FRAME_SIZE * CHAR_SCALE;
+      shinobiXInitialized.current = true;
+    }
+
+    if (bgTexture !== Texture.EMPTY) {
+      const bgScale = Math.max(
+        app.screen.width / bgTexture.width,
+        app.screen.height / bgTexture.height,
+      );
+      bgRef.current.scale.set(bgScale);
+      bgRef.current.x = (app.screen.width - bgTexture.width * bgScale) / 2;
+      bgRef.current.y = (app.screen.height - bgTexture.height * bgScale) / 2;
+    }
+
+    const dt = ticker.deltaTime / 60;
+    const currentPhase = phase.current;
+
+    const samuraiAnimName = getAnimName("samurai", currentPhase);
+    const shinobiAnimName = getAnimName("shinobi", currentPhase);
+    const samuraiFrames = samuraiAnims[samuraiAnimName];
+    const shinobiFrames = shinobiAnims[shinobiAnimName];
+
+    // Animate samurai
+    samuraiElapsed.current += dt;
+    if (samuraiElapsed.current >= ANIM_SPEED) {
+      samuraiElapsed.current = 0;
+      samuraiFrame.current = (samuraiFrame.current + 1) % samuraiFrames.length;
+      samuraiRef.current.texture = samuraiFrames[samuraiFrame.current];
+    }
+
+    // Animate shinobi
+    shinobiElapsed.current += dt;
+    if (shinobiElapsed.current >= ANIM_SPEED) {
+      shinobiElapsed.current = 0;
+      shinobiFrame.current = (shinobiFrame.current + 1) % shinobiFrames.length;
+      shinobiRef.current.texture = shinobiFrames[shinobiFrame.current];
+    }
+
+    // Apply knockback
+    if (samuraiKnockback.current > 0) {
+      const kb = Math.min(samuraiKnockback.current, KNOCKBACK_SPEED * dt);
+      samuraiX.current -= kb;
+      samuraiKnockback.current -= kb;
+    }
+    if (shinobiKnockback.current > 0) {
+      const kb = Math.min(shinobiKnockback.current, KNOCKBACK_SPEED * dt);
+      shinobiX.current += kb;
+      shinobiKnockback.current -= kb;
+    }
+
+    const meetDistance = FRAME_SIZE * CHAR_SCALE + MEET_GAP;
+    const groundY = app.screen.height - FRAME_SIZE * CHAR_SCALE - 20;
+
+    switch (currentPhase) {
+      case "run": {
+        samuraiX.current += RUN_SPEED * dt;
+        shinobiX.current -= RUN_SPEED * dt;
+
+        if (shinobiX.current - samuraiX.current <= meetDistance) {
+          const center = (samuraiX.current + shinobiX.current) / 2;
+          samuraiX.current =
+            center - (FRAME_SIZE * CHAR_SCALE) / 2 - MEET_GAP / 2;
+          shinobiX.current =
+            center + (FRAME_SIZE * CHAR_SCALE) / 2 + MEET_GAP / 2;
+          // Store fight positions
+          samuraiFightX.current = samuraiX.current;
+          shinobiFightX.current = shinobiX.current;
+          phase.current = "shinobi_attack";
+          resetPhaseFrames();
+        }
+        break;
+      }
+      case "shinobi_attack": {
+        if (
+          shinobiFrame.current === shinobiFrames.length - 1 &&
+          !phaseAnimDone.current
+        ) {
+          phaseAnimDone.current = true;
+          setTimeout(() => {
+            phase.current = "samurai_hurt";
+            resetPhaseFrames();
+            startShake();
+            samuraiKnockback.current = KNOCKBACK_DISTANCE;
+            spawnBlood(
+              samuraiX.current + FRAME_SIZE * CHAR_SCALE * 0.4,
+              groundY + FRAME_SIZE * CHAR_SCALE * 0.4,
+              -1,
+            );
+          }, HIT_FREEZE_MS);
+        }
+        break;
+      }
+      case "samurai_hurt": {
+        if (
+          samuraiFrame.current === samuraiFrames.length - 1 &&
+          !phaseAnimDone.current
+        ) {
+          phaseAnimDone.current = true;
+          // Transition to recover — samurai walks back to fight position
+          phase.current = "samurai_recover";
+          resetPhaseFrames();
+        }
+        break;
+      }
+      case "samurai_recover": {
+        // Samurai walks back to fight position
+        if (samuraiX.current < samuraiFightX.current) {
+          samuraiX.current += RECOVER_SPEED * dt;
+          if (samuraiX.current >= samuraiFightX.current) {
+            samuraiX.current = samuraiFightX.current;
+            phase.current = "samurai_idle_wait";
+            resetPhaseFrames();
+          }
+        } else {
+          phase.current = "samurai_idle_wait";
+          resetPhaseFrames();
+        }
+        break;
+      }
+      case "samurai_idle_wait": {
+        // Both idle — samurai catches breath
+        if (!phaseAnimDone.current) {
+          phaseAnimDone.current = true;
+          setTimeout(() => {
+            phase.current = "samurai_attack";
+            resetPhaseFrames();
+          }, RECOVER_IDLE_MS);
+        }
+        break;
+      }
+      case "samurai_attack": {
+        if (
+          samuraiFrame.current === samuraiFrames.length - 1 &&
+          !phaseAnimDone.current
+        ) {
+          phaseAnimDone.current = true;
+          setTimeout(() => {
+            phase.current = "shinobi_hurt";
+            resetPhaseFrames();
+            startShake();
+            shinobiKnockback.current = KNOCKBACK_DISTANCE;
+            spawnBlood(
+              shinobiX.current - FRAME_SIZE * CHAR_SCALE * 0.4,
+              groundY + FRAME_SIZE * CHAR_SCALE * 0.4,
+              1,
+            );
+          }, HIT_FREEZE_MS);
+        }
+        break;
+      }
+      case "shinobi_hurt": {
+        if (
+          shinobiFrame.current === shinobiFrames.length - 1 &&
+          !phaseAnimDone.current
+        ) {
+          phaseAnimDone.current = true;
+          // Transition to recover — shinobi walks back to fight position
+          phase.current = "shinobi_recover";
+          resetPhaseFrames();
+        }
+        break;
+      }
+      case "shinobi_recover": {
+        // Shinobi walks back to fight position (moving left, decreasing X)
+        if (shinobiX.current > shinobiFightX.current) {
+          shinobiX.current -= RECOVER_SPEED * dt;
+          if (shinobiX.current <= shinobiFightX.current) {
+            shinobiX.current = shinobiFightX.current;
+            phase.current = "shinobi_idle_wait";
+            resetPhaseFrames();
+          }
+        } else {
+          phase.current = "shinobi_idle_wait";
+          resetPhaseFrames();
+        }
+        break;
+      }
+      case "shinobi_idle_wait": {
+        // Both idle — shinobi catches breath
+        if (!phaseAnimDone.current) {
+          phaseAnimDone.current = true;
+          setTimeout(() => {
+            phase.current = "shinobi_attack";
+            resetPhaseFrames();
+          }, RECOVER_IDLE_MS);
+        }
+        break;
+      }
+    }
+
+    // Update positions
+    samuraiRef.current.x = samuraiX.current;
+    shinobiRef.current.x = shinobiX.current;
+
+    samuraiRef.current.scale.x = CHAR_SCALE;
+    samuraiRef.current.anchor.x = 0;
+
+    shinobiRef.current.scale.x = -CHAR_SCALE;
+    shinobiRef.current.anchor.x = 1;
+
+    // Screen shake
+    if (isShaking.current) {
+      shakeTimer.current -= dt;
+      if (shakeTimer.current <= 0) {
+        isShaking.current = false;
+        containerRef.current.x = 0;
+        containerRef.current.y = 0;
+      } else {
+        const progress = shakeTimer.current / SHAKE_DURATION;
+        const intensity = SHAKE_INTENSITY * progress;
+        containerRef.current.x = (Math.random() - 0.5) * 2 * intensity;
+        containerRef.current.y = (Math.random() - 0.5) * 2 * intensity;
+      }
+    }
+
+    // Update blood particles
+    const gfx = bloodGfx.current;
+    if (gfx) {
+      gfx.clear();
+      const remaining: BloodParticle[] = [];
+      for (const p of bloodParticles.current) {
+        p.life -= dt;
+        if (p.life <= 0) continue;
+        p.vy += BLOOD_PARTICLE_GRAVITY * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        const alpha = Math.max(0, p.life / BLOOD_PARTICLE_LIFETIME);
+        gfx.circle(p.x, p.y, p.size);
+        gfx.fill({ color: 0xcc0000, alpha });
+        remaining.push(p);
+      }
+      bloodParticles.current = remaining;
+    }
+  });
+
+  const groundY = app.screen.height - FRAME_SIZE * CHAR_SCALE - 20;
+  const samuraiTex = samuraiAnims ? samuraiAnims.Run[0] : Texture.EMPTY;
+  const shinobiTex = shinobiAnims ? shinobiAnims.Run[0] : Texture.EMPTY;
+
+  return (
+    <pixiContainer ref={containerRef}>
+      <pixiSprite ref={bgRef} texture={bgTexture} x={0} y={0} />
+      <pixiSprite
+        ref={samuraiRef}
+        texture={samuraiTex}
+        x={50}
+        y={groundY}
+        scale={CHAR_SCALE}
+      />
+      <pixiSprite
+        ref={shinobiRef}
+        texture={shinobiTex}
+        x={app.screen.width - 50 - FRAME_SIZE * CHAR_SCALE}
+        y={groundY}
+        scale={CHAR_SCALE}
+      />
+    </pixiContainer>
+  );
+};
+
+export default function App() {
+  return (
+    <Application background={"#000000"} resizeTo={window}>
+      <Scene />
+    </Application>
+  );
+}
+</file>
+
+<file path="src/main.tsx">
+import { createRoot } from "react-dom/client";
+
+import App from "./App.tsx";
+
+createRoot(document.getElementById("pixi-container")!).render(<App />);
+</file>
+
+<file path="src/vite-env.d.ts">
+/// <reference types="vite/client" />
+</file>
+
+<file path="tsconfig.app.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src"]
+}
+</file>
+
+<file path="tsconfig.json">
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+</file>
+
+<file path="tsconfig.node.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+</file>
+
+<file path="vite.config.ts">
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+});
+</file>
+
+</files>
