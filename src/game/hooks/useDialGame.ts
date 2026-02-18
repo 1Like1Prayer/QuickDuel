@@ -127,21 +127,23 @@ export function useDialGame({
   const speedMultiplier = useRef(INITIAL_SPEED);
   const blockCount = useRef(INITIAL_BLOCK_COUNT);
   const blocks = useRef<HitZoneBlock[]>(generateBlocks(INITIAL_BLOCK_COUNT));
-  const rotationsSinceInput = useRef(0);
   const lastHit = useRef<boolean | null>(null);
-  const prevAngle = useRef(-Math.PI / 2);
   const active = useRef(false);
+
+  // The origin angle from which the 2-lap auto-miss counter is measured.
+  // Always set to the top (-π/2) after each attempt so that
+  // "2 laps" means 2 full rotations as seen from the initial position.
+  const rotationOrigin = useRef(-Math.PI / 2);
 
   // ── Start / Stop ──
 
   const start = useCallback(() => {
     active.current = true;
     dialAngle.current = -Math.PI / 2;
-    prevAngle.current = -Math.PI / 2;
+    rotationOrigin.current = -Math.PI / 2;
     speedMultiplier.current = INITIAL_SPEED;
     blockCount.current = INITIAL_BLOCK_COUNT;
     blocks.current = generateBlocks(INITIAL_BLOCK_COUNT);
-    rotationsSinceInput.current = 0;
     lastHit.current = null;
   }, []);
 
@@ -156,7 +158,10 @@ export function useDialGame({
 
     const hit = isDialInHitZone(dialAngle.current, blocks.current);
     lastHit.current = hit;
-    rotationsSinceInput.current = 0;
+
+    // Reset the 2‑lap origin to the top so the counter
+    // always measures from the canonical start position.
+    rotationOrigin.current = dialAngle.current;
 
     if (hit) {
       // Decrease blocks (min 1)
@@ -196,14 +201,14 @@ export function useDialGame({
       const speed = baseSpeed * speedMultiplier.current;
       dialAngle.current += speed * dt;
 
-      // Track rotations since last input
-      const angleDelta = Math.abs(dialAngle.current - prevAngle.current);
-      prevAngle.current = dialAngle.current;
-      rotationsSinceInput.current += angleDelta / (Math.PI * 2);
+      // Count full rotations since the origin (set to top after each attempt).
+      const totalRotations =
+        Math.abs(dialAngle.current - rotationOrigin.current) / (Math.PI * 2);
 
       // If 2 full rotations without input → count as miss
-      if (rotationsSinceInput.current >= MISS_ROTATION_THRESHOLD) {
-        rotationsSinceInput.current = 0;
+      if (totalRotations >= MISS_ROTATION_THRESHOLD) {
+        // Reset origin so we don't fire again every tick
+        rotationOrigin.current = dialAngle.current;
         lastHit.current = false;
 
         // Miss penalty: increase blocks, decrease speed

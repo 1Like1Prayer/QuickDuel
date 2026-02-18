@@ -8,20 +8,20 @@ export const CHAR_SCALE = 2;
 
 // --- Movement ---
 export const RUN_SPEED = 350;
-export const ANIM_SPEED = 0.1;
+export const ANIM_SPEED = 0.065;
 export const MEET_GAP = -80;
-export const RECOVER_SPEED = 150;
+export const RECOVER_SPEED = 450;
 
 // --- Screen Shake ---
-export const SHAKE_INTENSITY = 6;
-export const SHAKE_DURATION = 0.15;
+export const SHAKE_INTENSITY = 5;
+export const SHAKE_DURATION = 0.08;
 
 // --- Hit / Knockback ---
-export const HIT_FREEZE_MS = 40;
-export const KNOCKBACK_DISTANCE = 60;
-export const RECOVER_IDLE_MS = 400;
-export const KNOCKBACK_SPEED = 400;
-export const HURT_PAUSE_MS = 300;
+export const HIT_FREEZE_MS = 20;
+export const KNOCKBACK_DISTANCE = 30;
+export const RECOVER_IDLE_MS = 100;
+export const KNOCKBACK_SPEED = 600;
+export const HURT_PAUSE_MS = 80;
 
 // --- "FIGHT!" text display ---
 export const FIGHT_TEXT_DURATION_MS = 1200;

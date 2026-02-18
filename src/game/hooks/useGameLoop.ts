@@ -97,6 +97,9 @@ export function useGameLoop({
   // Track last consumed dial hit result to avoid re-processing
   const lastDialResult = useRef<boolean | null>(null);
 
+  // Track pending phase-transition timeouts so we can cancel on rapid input
+  const pendingTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
+
   // ── Attach Graphics layers to the container ──
 
   useEffect(() => {
@@ -122,21 +125,42 @@ export function useGameLoop({
   // ── Input listener for dial game (Space / click / tap) ──
 
   useEffect(() => {
+    const combatPhases: Phase[] = [
+      "idle",
+      "samurai_attack",
+      "shinobi_hurt",
+      "shinobi_recover",
+      "shinobi_attack",
+      "samurai_hurt",
+      "samurai_recover",
+      "samurai_idle_wait",
+      "shinobi_idle_wait",
+    ];
+
     const handleInput = (e?: KeyboardEvent) => {
       if (e && e.key !== " ") return;
       if (e) e.preventDefault();
 
-      // Only allow input during idle phase (dial is active)
-      if (phase.current !== "idle") return;
+      // Allow input during any combat phase (not run / fight_text / clash)
+      if (!combatPhases.includes(phase.current)) return;
+      if (!dialGame.active.current) return;
 
       const hit = dialGame.attempt();
 
+      // Cancel every pending phase-transition timeout
+      for (const id of pendingTimeouts.current) clearTimeout(id);
+      pendingTimeouts.current = [];
+
+      // Snap characters back to fight positions & clear residual knockback
+      samuraiX.current = samuraiFightX.current;
+      shinobiX.current = shinobiFightX.current;
+      samuraiKnockback.current = 0;
+      shinobiKnockback.current = 0;
+
       if (hit) {
-        // Player hits the zone → enemy (shinobi) takes damage
         phase.current = "samurai_attack";
         resetPhaseFrames();
       } else {
-        // Player misses → player (samurai) takes damage
         phase.current = "shinobi_attack";
         resetPhaseFrames();
       }
@@ -167,6 +191,16 @@ export function useGameLoop({
   const startShake = () => {
     shakeTimer.current = SHAKE_DURATION;
     isShaking.current = true;
+  };
+
+  /** Schedule a timeout and track it so it can be cancelled on rapid input. */
+  const schedulePhase = (fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      // Remove from tracking once it fires
+      pendingTimeouts.current = pendingTimeouts.current.filter((t) => t !== id);
+      fn();
+    }, ms);
+    pendingTimeouts.current.push(id);
   };
 
   // ── Main tick ──
@@ -284,7 +318,7 @@ export function useGameLoop({
       case "samurai_attack": {
         if (samuraiFrame.current === samAnim.length - 1 && !phaseAnimDone.current) {
           phaseAnimDone.current = true;
-          setTimeout(() => {
+          schedulePhase(() => {
             phase.current = "shinobi_hurt";
             resetPhaseFrames();
             startShake();
@@ -303,7 +337,7 @@ export function useGameLoop({
       case "shinobi_attack": {
         if (shinobiFrame.current === shinAnim.length - 1 && !phaseAnimDone.current) {
           phaseAnimDone.current = true;
-          setTimeout(() => {
+          schedulePhase(() => {
             phase.current = "samurai_hurt";
             resetPhaseFrames();
             startShake();
@@ -322,7 +356,7 @@ export function useGameLoop({
       case "samurai_hurt": {
         if (samuraiFrame.current === samAnim.length - 1 && !phaseAnimDone.current) {
           phaseAnimDone.current = true;
-          setTimeout(() => {
+          schedulePhase(() => {
             phase.current = "samurai_recover";
             resetPhaseFrames();
           }, HURT_PAUSE_MS);
@@ -349,7 +383,7 @@ export function useGameLoop({
       case "shinobi_hurt": {
         if (shinobiFrame.current === shinAnim.length - 1 && !phaseAnimDone.current) {
           phaseAnimDone.current = true;
-          setTimeout(() => {
+          schedulePhase(() => {
             phase.current = "shinobi_recover";
             resetPhaseFrames();
           }, HURT_PAUSE_MS);
