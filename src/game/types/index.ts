@@ -2,6 +2,8 @@ import type { Texture } from "pixi.js";
 
 export type Phase =
   | "run"
+  | "idle"
+  | "fight_text"
   | "shinobi_attack"
   | "samurai_hurt"
   | "samurai_recover"

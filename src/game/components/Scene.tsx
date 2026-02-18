@@ -1,34 +1,34 @@
 import { useApplication, useTick } from "@pixi/react";
-import { Container, Graphics, Sprite, Texture } from "pixi.js";
+import { Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { useEffect, useRef } from "react";
 
-import { CHAR_SCALE, FRAME_SIZE } from "../constants";
+import {
+  BLOCK_ALPHA,
+  BLOCK_ARC_SEGMENTS,
+  BLOCK_COLOR,
+  CHAR_SCALE,
+  DIAL_BASE_SPEED,
+  DIAL_LENGTH,
+  DIAL_LINE_WIDTH,
+  FIGHT_TEXT_STYLE,
+  FRAME_SIZE,
+  GAP_INNER,
+  GAP_OUTER,
+  HEALTH_BAR_HEIGHT,
+  HEALTH_BAR_WIDTH,
+  INNER_RING_INNER,
+  INNER_RING_OUTER,
+  OUTER_RADIUS,
+  RING_WIDTH,
+} from "../constants";
 import {
   useBackgroundTexture,
   useBricksTexture,
   useCharacterAnims,
   useHealthBarTexture,
 } from "../hooks/useAssets";
+import { useDialGame } from "../hooks/useDialGame";
 import { useGameLoop } from "../hooks/useGameLoop";
-
-// Ring geometry
-const OUTER_RADIUS = 80;
-const RING_WIDTH = 14;
-const GAP = OUTER_RADIUS * 0.1; // 10% spacing between layers
-
-// Outer ring: OUTER_RADIUS → OUTER_RADIUS - RING_WIDTH
-// Inner ring: (OUTER_RADIUS - RING_WIDTH - GAP) → (OUTER_RADIUS - RING_WIDTH - GAP - RING_WIDTH)
-const INNER_RING_OUTER = OUTER_RADIUS - RING_WIDTH - GAP;
-const INNER_RING_INNER = INNER_RING_OUTER - RING_WIDTH;
-
-// Dial: thin line from center to the outer ring envelope
-const DIAL_LENGTH = OUTER_RADIUS-RING_WIDTH;
-const DIAL_LINE_WIDTH = 4;
-const DIAL_SPEED = 1.5; // radians per second (full rotation ≈ 4.2 s)
-
-// Health bar sizing
-const HEALTH_BAR_WIDTH = OUTER_RADIUS * 2.2;
-const HEALTH_BAR_HEIGHT = 16;
 
 export function Scene() {
   const { app } = useApplication();
@@ -39,6 +39,10 @@ export function Scene() {
   const samuraiRef = useRef<Sprite>(null);
   const shinobiRef = useRef<Sprite>(null);
 
+  // "FIGHT!" text ref & visibility flag (mutated by useGameLoop)
+  const fightTextRef = useRef<Text>(null);
+  const showFightText = useRef(false);
+
   // Bricks ring refs (outer ring)
   const outerRingSpriteRef = useRef<Sprite>(null);
   const outerRingMaskRef = useRef<Graphics>(null);
@@ -47,15 +51,18 @@ export function Scene() {
   const innerRingSpriteRef = useRef<Sprite>(null);
   const innerRingMaskRef = useRef<Graphics>(null);
 
-  // Dial (clock-hand) ref
+  // Dial (clock-hand) and hit-zone blocks ref
   const dialRef = useRef<Graphics>(null);
-  const dialAngle = useRef(-Math.PI / 2); // start at the top
+  const blocksGfxRef = useRef<Graphics>(null);
 
   // Load assets
   const bgTexture = useBackgroundTexture();
   const bricksTexture = useBricksTexture();
   const healthBarTexture = useHealthBarTexture();
   const { samuraiAnims, shinobiAnims } = useCharacterAnims();
+
+  // Dial game logic
+  const dialGame = useDialGame({ baseSpeed: DIAL_BASE_SPEED });
 
   // Run game loop
   useGameLoop({
@@ -69,6 +76,8 @@ export function Scene() {
     bgTexture,
     samuraiAnims,
     shinobiAnims,
+    dialGame,
+    showFightText,
   });
 
   // Apply ring masks once refs are ready
@@ -81,21 +90,55 @@ export function Scene() {
     }
   }, [bricksTexture]);
 
-  // Animate the dial rotation
+  // Animate the dial, redraw hit-zone blocks, and toggle FIGHT text each tick
   useTick((ticker) => {
     const dial = dialRef.current;
+    const blocksGfx = blocksGfxRef.current;
     if (!dial) return;
 
-    const dt = ticker.deltaTime / 60;
-    dialAngle.current += DIAL_SPEED * dt;
+    // Toggle "FIGHT!" text visibility
+    if (fightTextRef.current) {
+      fightTextRef.current.visible = showFightText.current;
+    }
 
+    const dt = ticker.deltaTime / 60;
+
+    // Advance dial via game logic
+    const angle = dialGame.tick(dt);
+
+    // ── Draw dial line ──
     dial.clear();
     dial.moveTo(0, 0);
-    dial.lineTo(
-      Math.cos(dialAngle.current) * DIAL_LENGTH,
-      Math.sin(dialAngle.current) * DIAL_LENGTH,
-    );
+    dial.lineTo(Math.cos(angle) * DIAL_LENGTH, Math.sin(angle) * DIAL_LENGTH);
     dial.stroke({ color: 0xcc3311, width: DIAL_LINE_WIDTH, alpha: 0.9 });
+
+    // ── Draw hit-zone blocks in the gap between rings ──
+    if (blocksGfx) {
+      blocksGfx.clear();
+      const currentBlocks = dialGame.blocks.current;
+      const steps = BLOCK_ARC_SEGMENTS;
+
+      for (const block of currentBlocks) {
+        const arcSpan = block.endAngle - block.startAngle;
+        const angleStep = arcSpan / steps;
+
+        // Build annular wedge path
+        blocksGfx.moveTo(
+          Math.cos(block.startAngle) * GAP_OUTER,
+          Math.sin(block.startAngle) * GAP_OUTER,
+        );
+        for (let i = 1; i <= steps; i++) {
+          const a = block.startAngle + angleStep * i;
+          blocksGfx.lineTo(Math.cos(a) * GAP_OUTER, Math.sin(a) * GAP_OUTER);
+        }
+        for (let i = steps; i >= 0; i--) {
+          const a = block.startAngle + angleStep * i;
+          blocksGfx.lineTo(Math.cos(a) * GAP_INNER, Math.sin(a) * GAP_INNER);
+        }
+        blocksGfx.closePath();
+        blocksGfx.fill({ color: BLOCK_COLOR, alpha: BLOCK_ALPHA });
+      }
+    }
   });
 
   // Derive initial textures
@@ -146,11 +189,19 @@ export function Scene() {
             height={OUTER_RADIUS * 2}
           />
 
+          {/* Hit-zone blocks between the two rings — redrawn each tick */}
+          <pixiGraphics
+            ref={blocksGfxRef}
+            draw={() => {
+              /* initial no-op; redrawn each tick */
+            }}
+          />
+
           {/* Warm red thin dial line — animated via useTick */}
           <pixiGraphics
             ref={dialRef}
             draw={() => {
-              /* initial draw is a no-op; redrawn each tick */
+              /* initial no-op; redrawn each tick */
             }}
           />
 
@@ -189,6 +240,17 @@ export function Scene() {
         x={app.screen.width - 50 - FRAME_SIZE * CHAR_SCALE}
         y={groundY}
         scale={CHAR_SCALE}
+      />
+
+      {/* "FIGHT!" text — shown during fight_text phase */}
+      <pixiText
+        ref={fightTextRef}
+        text="FIGHT!"
+        anchor={0.5}
+        x={app.screen.width / 2}
+        y={app.screen.height / 2 - 40}
+        style={FIGHT_TEXT_STYLE}
+        visible={false}
       />
     </pixiContainer>
   );

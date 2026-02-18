@@ -14,23 +14,21 @@ import {
   SHAKE_DURATION,
   HIT_FREEZE_MS,
   KNOCKBACK_DISTANCE,
-  RECOVER_IDLE_MS,
   KNOCKBACK_SPEED,
   HURT_PAUSE_MS,
-  BLOOD_PARTICLE_COUNT,
-  BLOOD_PARTICLE_SPEED,
-  BLOOD_PARTICLE_GRAVITY,
-  BLOOD_PARTICLE_LIFETIME,
-  BLOOD_PARTICLE_SIZE,
-  SPARK_PARTICLE_COUNT,
-  SPARK_PARTICLE_SPEED,
-  SPARK_PARTICLE_GRAVITY,
-  SPARK_PARTICLE_LIFETIME,
-  SPARK_PARTICLE_SIZE,
+  FIGHT_TEXT_DURATION_MS,
   CLASH_PAUSE_MS,
 } from "../constants";
 import { getAnimName } from "../utils/phases";
+import {
+  spawnBlood,
+  updateBloodParticles,
+  spawnSparks,
+  updateSparkParticles,
+} from "../utils/particles";
+import type { SparkParticle } from "../utils/particles";
 import type { BloodParticle, CharAnims, Phase } from "../types";
+import type { UseDialGameReturn } from "./useDialGame";
 
 // ──────────────────────────────────────────────
 //  Refs bundle — keeps the hook signature clean
@@ -49,97 +47,9 @@ interface GameLoopParams {
   bgTexture: Texture;
   samuraiAnims: CharAnims | null;
   shinobiAnims: CharAnims | null;
-}
-
-// Reuse BloodParticle shape for sparks (same physics, different color)
-type SparkParticle = BloodParticle;
-
-// ──────────────────────────────────────────────
-//  Blood‑particle helpers
-// ──────────────────────────────────────────────
-
-function spawnBlood(
-  particles: BloodParticle[],
-  x: number,
-  y: number,
-  directionSign: number,
-) {
-  for (let i = 0; i < BLOOD_PARTICLE_COUNT; i++) {
-    const angle = (Math.random() - 0.3) * Math.PI;
-    const speed = BLOOD_PARTICLE_SPEED * (0.5 + Math.random() * 0.5);
-    particles.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed * directionSign,
-      vy: -Math.abs(Math.sin(angle)) * speed * (0.5 + Math.random()),
-      life: BLOOD_PARTICLE_LIFETIME * (0.5 + Math.random() * 0.5),
-      size: BLOOD_PARTICLE_SIZE * (0.5 + Math.random()),
-    });
-  }
-}
-
-function updateBloodParticles(
-  gfx: Graphics,
-  particles: BloodParticle[],
-  dt: number,
-): BloodParticle[] {
-  gfx.clear();
-  const remaining: BloodParticle[] = [];
-  for (const p of particles) {
-    p.life -= dt;
-    if (p.life <= 0) continue;
-    p.vy += BLOOD_PARTICLE_GRAVITY * dt;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    const alpha = Math.max(0, p.life / BLOOD_PARTICLE_LIFETIME);
-    gfx.circle(p.x, p.y, p.size);
-    gfx.fill({ color: 0xcc0000, alpha });
-    remaining.push(p);
-  }
-  return remaining;
-}
-
-// ──────────────────────────────────────────────
-//  Spark‑particle helpers
-// ──────────────────────────────────────────────
-
-function spawnSparks(particles: SparkParticle[], x: number, y: number) {
-  for (let i = 0; i < SPARK_PARTICLE_COUNT; i++) {
-    // Sparks radiate in all directions
-    const angle = Math.random() * Math.PI * 2;
-    const speed = SPARK_PARTICLE_SPEED * (0.3 + Math.random() * 0.7);
-    particles.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - SPARK_PARTICLE_SPEED * 0.3,
-      life: SPARK_PARTICLE_LIFETIME * (0.4 + Math.random() * 0.6),
-      size: SPARK_PARTICLE_SIZE * (0.5 + Math.random()),
-    });
-  }
-}
-
-function updateSparkParticles(
-  gfx: Graphics,
-  particles: SparkParticle[],
-  dt: number,
-): SparkParticle[] {
-  gfx.clear();
-  const remaining: SparkParticle[] = [];
-  for (const p of particles) {
-    p.life -= dt;
-    if (p.life <= 0) continue;
-    p.vy += SPARK_PARTICLE_GRAVITY * dt;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    const alpha = Math.max(0, p.life / SPARK_PARTICLE_LIFETIME);
-    // Bright yellow core with white-hot center
-    const color = Math.random() > 0.3 ? 0xffdd00 : 0xffffff;
-    gfx.circle(p.x, p.y, p.size * alpha);
-    gfx.fill({ color, alpha });
-    remaining.push(p);
-  }
-  return remaining;
+  dialGame: UseDialGameReturn;
+  /** Ref that Scene sets to true while "FIGHT!" text should be visible. */
+  showFightText: React.RefObject<boolean>;
 }
 
 // ──────────────────────────────────────────────
@@ -152,6 +62,8 @@ export function useGameLoop({
   bgTexture,
   samuraiAnims,
   shinobiAnims,
+  dialGame,
+  showFightText,
 }: GameLoopParams) {
   const bloodGfx = useRef<Graphics | null>(null);
   const sparkGfx = useRef<Graphics | null>(null);
@@ -180,8 +92,10 @@ export function useGameLoop({
   const bloodParticles = useRef<BloodParticle[]>([]);
   const sparkParticles = useRef<SparkParticle[]>([]);
 
-  // Track whether clash spark was emitted for current attack cycle
   const clashSparkEmitted = useRef(false);
+
+  // Track last consumed dial hit result to avoid re-processing
+  const lastDialResult = useRef<boolean | null>(null);
 
   // ── Attach Graphics layers to the container ──
 
@@ -205,52 +119,40 @@ export function useGameLoop({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Keyboard listener ──
+  // ── Input listener for dial game (Space / click / tap) ──
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Control") {
-        // If still running, compute fight positions from screen center
-        if (phase.current === "run" || samuraiFightX.current === 0) {
-          const cx = app.screen.width / 2;
-          samuraiFightX.current = cx - (FRAME_SIZE * CHAR_SCALE) / 2 - MEET_GAP / 2;
-          shinobiFightX.current = cx + (FRAME_SIZE * CHAR_SCALE) / 2 + MEET_GAP / 2;
-        }
-        // Snap both characters to fight positions
-        samuraiX.current = samuraiFightX.current;
-        shinobiX.current = shinobiFightX.current;
-        samuraiKnockback.current = 0;
-        shinobiKnockback.current = 0;
-        // Enter clash
-        phase.current = "clash";
-        samuraiFrame.current = 0;
-        shinobiFrame.current = 0;
-        samuraiElapsed.current = 0;
-        shinobiElapsed.current = 0;
-        phaseAnimDone.current = false;
-        clashSparkEmitted.current = false;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        // Reset to normal battle flow
+    const handleInput = (e?: KeyboardEvent) => {
+      if (e && e.key !== " ") return;
+      if (e) e.preventDefault();
+
+      // Only allow input during idle phase (dial is active)
+      if (phase.current !== "idle") return;
+
+      const hit = dialGame.attempt();
+
+      if (hit) {
+        // Player hits the zone → enemy (shinobi) takes damage
+        phase.current = "samurai_attack";
+        resetPhaseFrames();
+      } else {
+        // Player misses → player (samurai) takes damage
         phase.current = "shinobi_attack";
-        samuraiFrame.current = 0;
-        shinobiFrame.current = 0;
-        samuraiElapsed.current = 0;
-        shinobiElapsed.current = 0;
-        phaseAnimDone.current = false;
-        clashSparkEmitted.current = false;
-        // Move characters back to fight positions
-        samuraiX.current = samuraiFightX.current;
-        shinobiX.current = shinobiFightX.current;
-        samuraiKnockback.current = 0;
-        shinobiKnockback.current = 0;
+        resetPhaseFrames();
       }
     };
 
+    const onKeyDown = (e: KeyboardEvent) => handleInput(e);
+    const onPointerDown = () => handleInput();
+
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [app.screen.width]);
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointerdown", onPointerDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dialGame]);
 
   // ── Helpers (closures over refs) ──
 
@@ -347,8 +249,53 @@ export function useGameLoop({
           shinobiX.current = cx + (FRAME_SIZE * CHAR_SCALE) / 2 + MEET_GAP / 2;
           samuraiFightX.current = samuraiX.current;
           shinobiFightX.current = shinobiX.current;
-          phase.current = "shinobi_attack";
+          // Show "FIGHT!" text, then transition to idle
+          phase.current = "fight_text";
+          showFightText.current = true;
           resetPhaseFrames();
+          setTimeout(() => {
+            showFightText.current = false;
+            phase.current = "idle";
+            resetPhaseFrames();
+            dialGame.start();
+          }, FIGHT_TEXT_DURATION_MS);
+        }
+        break;
+      }
+
+      case "fight_text":
+      case "idle": {
+        // Characters idle, waiting for dial input.
+        // Check if the dial game auto-missed (2 rotations without input)
+        if (curPhase === "idle") {
+          const dialHit = dialGame.lastHit.current;
+          if (dialHit !== null && dialHit !== lastDialResult.current) {
+            lastDialResult.current = dialHit;
+            if (!dialHit) {
+              // Auto-miss: player takes damage
+              phase.current = "shinobi_attack";
+              resetPhaseFrames();
+            }
+          }
+        }
+        break;
+      }
+
+      case "samurai_attack": {
+        if (samuraiFrame.current === samAnim.length - 1 && !phaseAnimDone.current) {
+          phaseAnimDone.current = true;
+          setTimeout(() => {
+            phase.current = "shinobi_hurt";
+            resetPhaseFrames();
+            startShake();
+            shinobiKnockback.current = KNOCKBACK_DISTANCE;
+            spawnBlood(
+              bloodParticles.current,
+              shinobiX.current + FRAME_SIZE * CHAR_SCALE * 0.4,
+              groundY + FRAME_SIZE * CHAR_SCALE * 0.4,
+              1,
+            );
+          }, HIT_FREEZE_MS);
         }
         break;
       }
@@ -388,42 +335,13 @@ export function useGameLoop({
           samuraiX.current += RECOVER_SPEED * dt;
           if (samuraiX.current >= samuraiFightX.current) {
             samuraiX.current = samuraiFightX.current;
-            phase.current = "samurai_idle_wait";
+            // Return to idle — dial resumes
+            phase.current = "idle";
             resetPhaseFrames();
           }
         } else {
-          phase.current = "samurai_idle_wait";
+          phase.current = "idle";
           resetPhaseFrames();
-        }
-        break;
-      }
-
-      case "samurai_idle_wait": {
-        if (!phaseAnimDone.current) {
-          phaseAnimDone.current = true;
-          setTimeout(() => {
-            phase.current = "samurai_attack";
-            resetPhaseFrames();
-          }, RECOVER_IDLE_MS);
-        }
-        break;
-      }
-
-      case "samurai_attack": {
-        if (samuraiFrame.current === samAnim.length - 1 && !phaseAnimDone.current) {
-          phaseAnimDone.current = true;
-          setTimeout(() => {
-            phase.current = "shinobi_hurt";
-            resetPhaseFrames();
-            startShake();
-            shinobiKnockback.current = KNOCKBACK_DISTANCE;
-            spawnBlood(
-              bloodParticles.current,
-              shinobiX.current + FRAME_SIZE * CHAR_SCALE * 0.4,
-              groundY + FRAME_SIZE * CHAR_SCALE * 0.4,
-              1,
-            );
-          }, HIT_FREEZE_MS);
         }
         break;
       }
@@ -444,11 +362,21 @@ export function useGameLoop({
           shinobiX.current -= RECOVER_SPEED * dt;
           if (shinobiX.current <= shinobiFightX.current) {
             shinobiX.current = shinobiFightX.current;
-            phase.current = "shinobi_idle_wait";
+            // Return to idle — dial resumes
+            phase.current = "idle";
             resetPhaseFrames();
           }
         } else {
-          phase.current = "shinobi_idle_wait";
+          phase.current = "idle";
+          resetPhaseFrames();
+        }
+        break;
+      }
+
+      case "samurai_idle_wait": {
+        if (!phaseAnimDone.current) {
+          phaseAnimDone.current = true;
+          phase.current = "idle";
           resetPhaseFrames();
         }
         break;
@@ -457,19 +385,15 @@ export function useGameLoop({
       case "shinobi_idle_wait": {
         if (!phaseAnimDone.current) {
           phaseAnimDone.current = true;
-          setTimeout(() => {
-            phase.current = "shinobi_attack";
-            resetPhaseFrames();
-          }, RECOVER_IDLE_MS);
+          phase.current = "idle";
+          resetPhaseFrames();
         }
         break;
       }
 
       case "clash": {
-        // Waiting between swings — both characters idle
         if (phaseAnimDone.current) break;
 
-        // Both attack simultaneously — emit sparks at the impact frame
         const samImpact = Math.floor(samAnim.length * 0.6);
         const shinImpact = Math.floor(shinAnim.length * 0.6);
         const atImpact =
@@ -484,14 +408,13 @@ export function useGameLoop({
           spawnSparks(sparkParticles.current, clashX, clashY);
         }
 
-        // When both anims complete, pause before next swing
         if (
           samuraiFrame.current === samAnim.length - 1 ||
           shinobiFrame.current === shinAnim.length - 1
         ) {
           phaseAnimDone.current = true;
           setTimeout(() => {
-            if (phase.current !== "clash") return; // cancelled
+            if (phase.current !== "clash") return;
             samuraiFrame.current = 0;
             shinobiFrame.current = 0;
             samuraiElapsed.current = 0;

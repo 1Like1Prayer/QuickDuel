@@ -1,3 +1,7 @@
+// ──────────────────────────────────────────────
+//  Core game constants (character, movement, combat, particles)
+// ──────────────────────────────────────────────
+
 // --- Character ---
 export const FRAME_SIZE = 128;
 export const CHAR_SCALE = 2;
@@ -14,10 +18,13 @@ export const SHAKE_DURATION = 0.15;
 
 // --- Hit / Knockback ---
 export const HIT_FREEZE_MS = 40;
-export const KNOCKBACK_DISTANCE = 120;
+export const KNOCKBACK_DISTANCE = 60;
 export const RECOVER_IDLE_MS = 400;
 export const KNOCKBACK_SPEED = 400;
 export const HURT_PAUSE_MS = 300;
+
+// --- "FIGHT!" text display ---
+export const FIGHT_TEXT_DURATION_MS = 1200;
 
 // --- Blood Particles ---
 export const BLOOD_PARTICLE_COUNT = 24;
