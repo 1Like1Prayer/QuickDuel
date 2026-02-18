@@ -24,5 +24,20 @@ export const SPEED_STEP = 0.2; // 20% per hit/miss
 export const MAX_SPEED_BONUS = 0.6; // +60% max
 export const MIN_SPEED_BONUS = 0; // back to base
 
-/** Miss if dial completes 2 full rotations without input. */
-export const MISS_ROTATION_THRESHOLD = 2;
+// --- 40° regeneration / auto-miss gate ---
+export const REGEN_GATE_DEG = 40;
+export const REGEN_GATE_RAD = (REGEN_GATE_DEG * Math.PI) / 180;
+
+// --- Hit glow effect ---
+export const HIT_GLOW_DURATION = 0.3; // seconds
+export const HIT_GLOW_COLOR = 0x44ff44;
+export const HIT_GLOW_MAX_ALPHA = 0.7;
+
+// --- Block gradient colors (left → right of spawn range) ---
+export const BLOCK_COLOR_LEFT = 0xff2222; // red
+export const BLOCK_COLOR_RIGHT = 0xffdd00; // yellow
+
+// --- Katana hit streak ---
+export const MAX_KATANA_COUNT = 5;
+export const KATANA_SIZE = 28;
+export const KATANA_SPACING = 6;

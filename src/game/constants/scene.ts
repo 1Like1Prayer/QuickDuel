@@ -26,7 +26,6 @@ export const HEALTH_BAR_WIDTH = OUTER_RADIUS * 2.2;
 export const HEALTH_BAR_HEIGHT = 16;
 
 // --- Hit‑zone block appearance ---
-export const BLOCK_COLOR = 0xff2222; // bright red
 export const BLOCK_ALPHA = 0.75;
 /** Number of line segments used to approximate each block arc. */
 export const BLOCK_ARC_SEGMENTS = 16;

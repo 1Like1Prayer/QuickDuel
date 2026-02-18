@@ -1,11 +1,10 @@
 import { useApplication, useTick } from "@pixi/react";
-import { Container, Graphics, Sprite, Text, Texture } from "pixi.js";
-import { useEffect, useRef } from "react";
+import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
+import { useEffect, useRef, useState } from "react";
 
 import {
   BLOCK_ALPHA,
   BLOCK_ARC_SEGMENTS,
-  BLOCK_COLOR,
   CHAR_SCALE,
   DIAL_BASE_SPEED,
   DIAL_LENGTH,
@@ -16,8 +15,14 @@ import {
   GAP_OUTER,
   HEALTH_BAR_HEIGHT,
   HEALTH_BAR_WIDTH,
+  HIT_GLOW_COLOR,
+  HIT_GLOW_DURATION,
+  HIT_GLOW_MAX_ALPHA,
   INNER_RING_INNER,
   INNER_RING_OUTER,
+  KATANA_SIZE,
+  KATANA_SPACING,
+  MAX_KATANA_COUNT,
   OUTER_RADIUS,
   RING_WIDTH,
 } from "../constants";
@@ -28,6 +33,7 @@ import {
   useHealthBarTexture,
 } from "../hooks/useAssets";
 import { useDialGame } from "../hooks/useDialGame";
+import { blockColor } from "../hooks/useDialGame";
 import { useGameLoop } from "../hooks/useGameLoop";
 
 export function Scene() {
@@ -55,11 +61,25 @@ export function Scene() {
   const dialRef = useRef<Graphics>(null);
   const blocksGfxRef = useRef<Graphics>(null);
 
+  // Hit glow layer
+  const glowGfxRef = useRef<Graphics>(null);
+
+  // Katana streak
+  const [katanaTexture, setKatanaTexture] = useState(Texture.EMPTY);
+  const katanaContainerRef = useRef<Container>(null);
+  const katanaSpritesRef = useRef<Sprite[]>([]);
+  const prevKatanaCount = useRef(0);
+
   // Load assets
   const bgTexture = useBackgroundTexture();
   const bricksTexture = useBricksTexture();
   const healthBarTexture = useHealthBarTexture();
   const { samuraiAnims, shinobiAnims } = useCharacterAnims();
+
+  // Load katana texture
+  useEffect(() => {
+    Assets.load("/katana.png").then(setKatanaTexture);
+  }, []);
 
   // Dial game logic
   const dialGame = useDialGame({ baseSpeed: DIAL_BASE_SPEED });
@@ -90,10 +110,11 @@ export function Scene() {
     }
   }, [bricksTexture]);
 
-  // Animate the dial, redraw hit-zone blocks, and toggle FIGHT text each tick
+  // Animate the dial, redraw hit-zone blocks, glow, katanas, and toggle FIGHT text each tick
   useTick((ticker) => {
     const dial = dialRef.current;
     const blocksGfx = blocksGfxRef.current;
+    const glowGfx = glowGfxRef.current;
     if (!dial) return;
 
     // Toggle "FIGHT!" text visibility
@@ -112,7 +133,7 @@ export function Scene() {
     dial.lineTo(Math.cos(angle) * DIAL_LENGTH, Math.sin(angle) * DIAL_LENGTH);
     dial.stroke({ color: 0xcc3311, width: DIAL_LINE_WIDTH, alpha: 0.9 });
 
-    // ── Draw hit-zone blocks in the gap between rings ──
+    // ── Draw hit-zone blocks with gradient colouring ──
     if (blocksGfx) {
       blocksGfx.clear();
       const currentBlocks = dialGame.blocks.current;
@@ -121,6 +142,7 @@ export function Scene() {
       for (const block of currentBlocks) {
         const arcSpan = block.endAngle - block.startAngle;
         const angleStep = arcSpan / steps;
+        const color = blockColor(block);
 
         // Build annular wedge path
         blocksGfx.moveTo(
@@ -136,8 +158,75 @@ export function Scene() {
           blocksGfx.lineTo(Math.cos(a) * GAP_INNER, Math.sin(a) * GAP_INNER);
         }
         blocksGfx.closePath();
-        blocksGfx.fill({ color: BLOCK_COLOR, alpha: BLOCK_ALPHA });
+        blocksGfx.fill({ color, alpha: BLOCK_ALPHA });
       }
+    }
+
+    // ── Hit glow pulse ──
+    if (glowGfx) {
+      glowGfx.clear();
+      const glowT = dialGame.hitGlowTimer.current;
+      if (glowT > 0) {
+        const progress = glowT / HIT_GLOW_DURATION; // 1 → 0
+        const alpha = progress * HIT_GLOW_MAX_ALPHA;
+        const scale = 1 + 0.1 * progress;
+        glowGfx.scale.set(scale);
+
+        // Draw a full annular ring in the gap
+        const segs = 64;
+        glowGfx.moveTo(
+          Math.cos(0) * GAP_OUTER,
+          Math.sin(0) * GAP_OUTER,
+        );
+        for (let i = 1; i <= segs; i++) {
+          const a = (i / segs) * Math.PI * 2;
+          glowGfx.lineTo(Math.cos(a) * GAP_OUTER, Math.sin(a) * GAP_OUTER);
+        }
+        for (let i = segs; i >= 0; i--) {
+          const a = (i / segs) * Math.PI * 2;
+          glowGfx.lineTo(Math.cos(a) * GAP_INNER, Math.sin(a) * GAP_INNER);
+        }
+        glowGfx.closePath();
+        glowGfx.fill({ color: HIT_GLOW_COLOR, alpha });
+      } else {
+        glowGfx.scale.set(1);
+      }
+    }
+
+    // ── Katana hit streak ──
+    const katanaContainer = katanaContainerRef.current;
+    if (katanaContainer && katanaTexture !== Texture.EMPTY) {
+      const colors = dialGame.hitColors.current;
+      const count = colors.length;
+
+      // Add / remove sprites to match count
+      while (katanaSpritesRef.current.length < count) {
+        const s = new Sprite(katanaTexture);
+        s.width = KATANA_SIZE;
+        s.height = KATANA_SIZE;
+        s.anchor.set(0.5);
+        katanaContainer.addChild(s);
+        katanaSpritesRef.current.push(s);
+      }
+      while (katanaSpritesRef.current.length > count) {
+        const removed = katanaSpritesRef.current.shift()!;
+        katanaContainer.removeChild(removed);
+        removed.destroy();
+      }
+
+      // Position & tint
+      const totalWidth =
+        count * KATANA_SIZE + Math.max(0, count - 1) * KATANA_SPACING;
+      const startX = -totalWidth / 2 + KATANA_SIZE / 2;
+
+      for (let i = 0; i < count; i++) {
+        const s = katanaSpritesRef.current[i];
+        s.x = startX + i * (KATANA_SIZE + KATANA_SPACING);
+        s.y = 0;
+        s.tint = colors[i];
+      }
+
+      prevKatanaCount.current = count;
     }
   });
 
@@ -197,6 +286,14 @@ export function Scene() {
             }}
           />
 
+          {/* Hit glow layer — redrawn each tick */}
+          <pixiGraphics
+            ref={glowGfxRef}
+            draw={() => {
+              /* initial no-op; redrawn each tick */
+            }}
+          />
+
           {/* Warm red thin dial line — animated via useTick */}
           <pixiGraphics
             ref={dialRef}
@@ -226,6 +323,13 @@ export function Scene() {
           />
         </pixiContainer>
       )}
+
+      {/* Katana hit streak below the ring */}
+      <pixiContainer
+        ref={katanaContainerRef}
+        x={meetX}
+        y={meetY + OUTER_RADIUS + 10 + KATANA_SIZE / 2}
+      />
 
       <pixiSprite
         ref={samuraiRef}
