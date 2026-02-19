@@ -259,7 +259,10 @@ export function useGameLoop({
             cx + layout.characters.charSize / 2 + layout.movement.meetGap / 2;
           samuraiFightX.current = samuraiX.current;
           shinobiFightX.current = shinobiX.current;
-          // Show "FIGHT!" text, then transition to idle
+          // Show ring & "FIGHT!" text, then transition to idle
+          if (refs.ringContainer.current) {
+            refs.ringContainer.current.visible = true;
+          }
           phase.current = "fight_text";
           showFightText.current = true;
           resetPhaseFrames();

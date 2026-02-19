@@ -39,6 +39,8 @@ export function Scene({ startGame }: SceneProps) {
   const bgRef = useRef<Sprite>(null);
   const samuraiRef = useRef<Sprite>(null);
   const shinobiRef = useRef<Sprite>(null);
+  const ringContainerRef = useRef<Container>(null);
+  const katanaOuterRef = useRef<Container>(null);
 
   // "FIGHT!" text ref & visibility flag (mutated by useGameLoop)
   const fightTextRef = useRef<Text>(null);
@@ -96,6 +98,8 @@ export function Scene({ startGame }: SceneProps) {
       bg: bgRef,
       samurai: samuraiRef,
       shinobi: shinobiRef,
+      ringContainer: ringContainerRef,
+      katanaContainer: katanaOuterRef,
     },
     bgTexture,
     samuraiAnims,
@@ -356,7 +360,7 @@ export function Scene({ startGame }: SceneProps) {
 
       {/* Two concentric hollow brick rings */}
       {bricksTexture !== Texture.EMPTY && (
-        <pixiContainer x={layout.positions.meetX} y={layout.positions.meetY}>
+        <pixiContainer ref={ringContainerRef} x={layout.positions.meetX} y={layout.positions.meetY} visible={false}>
           {/* Outer ring mask (annulus) */}
           <pixiGraphics
             ref={outerRingMaskRef}
@@ -441,7 +445,7 @@ export function Scene({ startGame }: SceneProps) {
 
       {/* Katana hit streak below the ring */}
       <pixiContainer
-        ref={katanaContainerRef}
+        ref={katanaOuterRef}
         x={layout.positions.meetX}
         y={
           layout.positions.meetY +
@@ -456,6 +460,7 @@ export function Scene({ startGame }: SceneProps) {
             /* redrawn each tick */
           }}
         />
+        <pixiContainer ref={katanaContainerRef} />
       </pixiContainer>
 
       <pixiSprite

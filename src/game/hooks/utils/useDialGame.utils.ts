@@ -1,7 +1,6 @@
 import {
   BLOCK_ARC,
-  BLOCK_COLOR_LEFT,
-  BLOCK_COLOR_RIGHT,
+  BLOCK_COLORS,
   MAX_BLOCK_COUNT,
   SPAWN_MAX_RAD,
   SPAWN_MIN_RAD,
@@ -53,32 +52,13 @@ export function findHitBlock(
   return null;
 }
 
-/** Linearly interpolate each RGB channel between two colours. */
-function lerpColor(a: number, b: number, t: number): number {
-  const ar = (a >> 16) & 0xff,
-    ag = (a >> 8) & 0xff,
-    ab = a & 0xff;
-  const br = (b >> 16) & 0xff,
-    bg = (b >> 8) & 0xff,
-    bb = b & 0xff;
-  const r = Math.round(ar + (br - ar) * t);
-  const g = Math.round(ag + (bg - ag) * t);
-  const bl = Math.round(ab + (bb - ab) * t);
-  return (r << 16) | (g << 8) | bl;
-}
-
 /** Build the colour array for `count` blocks, always using the rightmost
- *  colours from the full MAX_BLOCK_COUNT gradient.
- *  Index 0 = palest (left), index count-1 = strongest red (right). */
+ *  colours from the fixed BLOCK_COLORS palette.
+ *  Index 0 = leftmost remaining, index count-1 = rightmost. */
 export function buildColorStack(count: number): number[] {
   const total = MAX_BLOCK_COUNT;
   const startIdx = total - count;
-  const colors: number[] = [];
-  for (let i = startIdx; i < total; i++) {
-    const t = total > 1 ? i / (total - 1) : 1;
-    colors.push(lerpColor(BLOCK_COLOR_LEFT, BLOCK_COLOR_RIGHT, t));
-  }
-  return colors;
+  return BLOCK_COLORS.slice(startIdx, startIdx + count);
 }
 
 /** Compute the colour for a block based on its index within the color stack. */

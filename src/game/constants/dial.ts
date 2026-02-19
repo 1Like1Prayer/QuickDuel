@@ -41,9 +41,13 @@ export const MISS_PULSE_COLOR = 0xff2222; // red
 export const MISS_PULSE_MAX_ALPHA = 0.8;
 export const MISS_LINE_WIDTH_FACTOR = 0.06; // relative to outerRadius
 
-// --- Block gradient colors (left → right of spawn range) ---
-export const BLOCK_COLOR_LEFT = 0xffdd00; // yellow (palest, leftmost)
-export const BLOCK_COLOR_RIGHT = 0xff2222; // red (strongest, rightmost)
+// --- Block colors (ordered: yellow → red → purple → white) ---
+export const BLOCK_COLORS = [
+  0xffdd00, // yellow
+  0xff2222, // red
+  0x9933ff, // purple
+  0xffffff, // white
+];
 
 // --- Katana hit streak ---
 export const MAX_KATANA_COUNT = 5;

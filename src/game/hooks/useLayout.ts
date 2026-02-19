@@ -4,10 +4,7 @@ import type { Layout } from "./types/useLayout.types";
 
 const FRAME_SIZE = 128;
 
-export function useLayout(
-  screenWidth: number,
-  screenHeight: number,
-): Layout {
+export function useLayout(screenWidth: number, screenHeight: number): Layout {
   return useMemo(() => {
     const unit = Math.min(screenWidth, screenHeight);
 
@@ -58,8 +55,8 @@ export function useLayout(
         meetX: screenWidth / 2,
         // On smaller screens push the circle lower (towards the middle)
         meetY: screenHeight * (unit < 500 ? 0.42 : 0.35),
-        charStartX: screenWidth * 0.05,
-        charEndX: screenWidth * 0.95 - charSize,
+        charStartX: 0 - charSize / 3,
+        charEndX: screenWidth - charSize / 1.5,
       },
       movement: {
         runSpeed: unit * 0.5,
