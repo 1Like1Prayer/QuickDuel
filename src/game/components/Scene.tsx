@@ -9,7 +9,10 @@ import {
   HIT_GLOW_COLOR,
   HIT_GLOW_DURATION,
   HIT_GLOW_MAX_ALPHA,
-  MAX_KATANA_COUNT,
+  MISS_LINE_WIDTH_FACTOR,
+  MISS_PULSE_COLOR,
+  MISS_PULSE_DURATION,
+  MISS_PULSE_MAX_ALPHA,
 } from "../constants";
 import {
   useBackgroundTexture,
@@ -17,7 +20,7 @@ import {
   useCharacterAnims,
 } from "../hooks/useAssets";
 import { useDialGame } from "../hooks/useDialGame";
-import { blockColor } from "../hooks/useDialGame";
+import { blockColor } from "../hooks/utils/useDialGame.utils";
 import { useGameLoop } from "../hooks/useGameLoop";
 import { useLayout } from "../hooks/useLayout";
 
@@ -51,6 +54,12 @@ export function Scene() {
 
   // Hit glow layer
   const glowGfxRef = useRef<Graphics>(null);
+
+  // Miss pulse layer (red hollow ring outlines)
+  const missPulseGfxRef = useRef<Graphics>(null);
+
+  // Miss line layer (red radial line from inner to outer ring)
+  const missLineGfxRef = useRef<Graphics>(null);
 
   // Katana background
   const katanaBgRef = useRef<Graphics>(null);
@@ -102,11 +111,13 @@ export function Scene() {
     }
   }, [bricksTexture]);
 
-  // Animate the dial, redraw hit-zone blocks, glow, katanas, and toggle FIGHT text each tick
+  // Animate the dial, redraw hit-zone blocks, glow, miss pulse, katanas, and toggle FIGHT text each tick
   useTick((ticker) => {
     const dial = dialRef.current;
     const blocksGfx = blocksGfxRef.current;
     const glowGfx = glowGfxRef.current;
+    const missPulseGfx = missPulseGfxRef.current;
+    const missLineGfx = missLineGfxRef.current;
     if (!dial) return;
 
     // Toggle "FIGHT!" text visibility
@@ -123,10 +134,10 @@ export function Scene() {
     dial.clear();
     dial.moveTo(0, 0);
     dial.lineTo(
-      Math.cos(angle) * layout.dialLength,
-      Math.sin(angle) * layout.dialLength,
+      Math.cos(angle) * layout.dial.dialLength,
+      Math.sin(angle) * layout.dial.dialLength,
     );
-    dial.stroke({ color: 0xcc3311, width: layout.dialLineWidth, alpha: 0.9 });
+    dial.stroke({ color: 0xcc3311, width: layout.dial.dialLineWidth, alpha: 0.9 });
 
     // ── Draw hit-zone blocks with gradient colouring ──
     if (blocksGfx) {
@@ -141,21 +152,21 @@ export function Scene() {
 
         // Build annular wedge path
         blocksGfx.moveTo(
-          Math.cos(block.startAngle) * layout.gapOuter,
-          Math.sin(block.startAngle) * layout.gapOuter,
+          Math.cos(block.startAngle) * layout.ring.gapOuter,
+          Math.sin(block.startAngle) * layout.ring.gapOuter,
         );
         for (let i = 1; i <= steps; i++) {
           const a = block.startAngle + angleStep * i;
           blocksGfx.lineTo(
-            Math.cos(a) * layout.gapOuter,
-            Math.sin(a) * layout.gapOuter,
+            Math.cos(a) * layout.ring.gapOuter,
+            Math.sin(a) * layout.ring.gapOuter,
           );
         }
         for (let i = steps; i >= 0; i--) {
           const a = block.startAngle + angleStep * i;
           blocksGfx.lineTo(
-            Math.cos(a) * layout.gapInner,
-            Math.sin(a) * layout.gapInner,
+            Math.cos(a) * layout.ring.gapInner,
+            Math.sin(a) * layout.ring.gapInner,
           );
         }
         blocksGfx.closePath();
@@ -180,27 +191,84 @@ export function Scene() {
         const angleStep = arcSpan / segs;
 
         glowGfx.moveTo(
-          Math.cos(hitAngles.startAngle) * layout.gapOuter,
-          Math.sin(hitAngles.startAngle) * layout.gapOuter,
+          Math.cos(hitAngles.startAngle) * layout.ring.gapOuter,
+          Math.sin(hitAngles.startAngle) * layout.ring.gapOuter,
         );
         for (let i = 1; i <= segs; i++) {
           const a = hitAngles.startAngle + angleStep * i;
           glowGfx.lineTo(
-            Math.cos(a) * layout.gapOuter,
-            Math.sin(a) * layout.gapOuter,
+            Math.cos(a) * layout.ring.gapOuter,
+            Math.sin(a) * layout.ring.gapOuter,
           );
         }
         for (let i = segs; i >= 0; i--) {
           const a = hitAngles.startAngle + angleStep * i;
           glowGfx.lineTo(
-            Math.cos(a) * layout.gapInner,
-            Math.sin(a) * layout.gapInner,
+            Math.cos(a) * layout.ring.gapInner,
+            Math.sin(a) * layout.ring.gapInner,
           );
         }
         glowGfx.closePath();
         glowGfx.fill({ color: HIT_GLOW_COLOR, alpha });
       } else {
         glowGfx.scale.set(1);
+      }
+    }
+
+    // ── Miss pulse (red hollow ring outlines) ──
+    if (missPulseGfx) {
+      missPulseGfx.clear();
+      const missT = dialGame.missPulseTimer.current;
+      if (missT > 0) {
+        const progress = missT / MISS_PULSE_DURATION; // 1 → 0
+        const alpha = progress * MISS_PULSE_MAX_ALPHA;
+        const pulseScale = 1 + 0.08 * (1 - progress); // expand outward as it fades
+        missPulseGfx.scale.set(pulseScale);
+
+        const strokeWidth = Math.max(1.5, layout.ring.outerRadius * 0.03);
+
+        // Outer ring red hollow circle
+        missPulseGfx.circle(0, 0, layout.ring.outerRadius);
+        missPulseGfx.stroke({
+          color: MISS_PULSE_COLOR,
+          width: strokeWidth,
+          alpha,
+        });
+
+        // Inner ring red hollow circle
+        missPulseGfx.circle(0, 0, layout.ring.innerRingOuter);
+        missPulseGfx.stroke({
+          color: MISS_PULSE_COLOR,
+          width: strokeWidth,
+          alpha,
+        });
+      } else {
+        missPulseGfx.scale.set(1);
+      }
+    }
+
+    // ── Miss line (red radial line from inner edge of inner ring to outer edge of outer ring) ──
+    if (missLineGfx) {
+      missLineGfx.clear();
+      const mAngle = dialGame.missAngle.current;
+      if (mAngle !== null) {
+        const lineWidth = Math.max(
+          2,
+          layout.ring.outerRadius * MISS_LINE_WIDTH_FACTOR,
+        );
+        missLineGfx.moveTo(
+          Math.cos(mAngle) * layout.ring.innerRingInner,
+          Math.sin(mAngle) * layout.ring.innerRingInner,
+        );
+        missLineGfx.lineTo(
+          Math.cos(mAngle) * layout.ring.outerRadius,
+          Math.sin(mAngle) * layout.ring.outerRadius,
+        );
+        missLineGfx.stroke({
+          color: MISS_PULSE_COLOR,
+          width: lineWidth,
+          alpha: 0.85,
+        });
       }
     }
 
@@ -213,8 +281,8 @@ export function Scene() {
       // Add / remove sprites to match count
       while (katanaSpritesRef.current.length < count) {
         const s = new Sprite(katanaTexture);
-        s.width = layout.katanaSize;
-        s.height = layout.katanaSize;
+        s.width = layout.katana.katanaSize;
+        s.height = layout.katana.katanaSize;
         s.anchor.set(0.5);
         katanaContainer.addChild(s);
         katanaSpritesRef.current.push(s);
@@ -227,15 +295,15 @@ export function Scene() {
 
       // Position & tint
       const totalWidth =
-        count * layout.katanaSize +
-        Math.max(0, count - 1) * layout.katanaSpacing;
-      const startX = -totalWidth / 2 + layout.katanaSize / 2;
+        count * layout.katana.katanaSize +
+        Math.max(0, count - 1) * layout.katana.katanaSpacing;
+      const startX = -totalWidth / 2 + layout.katana.katanaSize / 2;
 
       for (let i = 0; i < count; i++) {
         const s = katanaSpritesRef.current[i];
-        s.width = layout.katanaSize;
-        s.height = layout.katanaSize;
-        s.x = startX + i * (layout.katanaSize + layout.katanaSpacing);
+        s.width = layout.katana.katanaSize;
+        s.height = layout.katana.katanaSize;
+        s.x = startX + i * (layout.katana.katanaSize + layout.katana.katanaSpacing);
         s.y = 0;
         s.tint = colors[i];
       }
@@ -247,9 +315,9 @@ export function Scene() {
       if (katanaBg) {
         katanaBg.clear();
         if (count > 0) {
-          const pad = layout.katanaSize * 0.22;
+          const pad = layout.katana.katanaSize * 0.22;
           const bgW = totalWidth + pad * 2;
-          const bgH = layout.katanaSize + pad * 2;
+          const bgH = layout.katana.katanaSize + pad * 2;
           katanaBg.roundRect(-bgW / 2, -bgH / 2, bgW, bgH, bgH / 2);
           katanaBg.fill({ color: 0x000000, alpha: 0.45 });
         }
@@ -264,10 +332,10 @@ export function Scene() {
   // Fight text style (dynamic font size)
   const fightTextStyle = {
     fontFamily: "Arial Black, Impact, sans-serif",
-    fontSize: layout.fightFontSize,
+    fontSize: layout.fightText.fightFontSize,
     fontWeight: "bold" as const,
     fill: 0xffcc00,
-    stroke: { color: 0x000000, width: layout.fightStrokeWidth },
+    stroke: { color: 0x000000, width: layout.fightText.fightStrokeWidth },
     dropShadow: {
       alpha: 0.6,
       angle: Math.PI / 4,
@@ -283,15 +351,15 @@ export function Scene() {
 
       {/* Two concentric hollow brick rings */}
       {bricksTexture !== Texture.EMPTY && (
-        <pixiContainer x={layout.meetX} y={layout.meetY}>
+        <pixiContainer x={layout.positions.meetX} y={layout.positions.meetY}>
           {/* Outer ring mask (annulus) */}
           <pixiGraphics
             ref={outerRingMaskRef}
             draw={(g: Graphics) => {
               g.clear();
-              g.circle(0, 0, layout.outerRadius);
+              g.circle(0, 0, layout.ring.outerRadius);
               g.fill({ color: 0xffffff });
-              g.circle(0, 0, layout.outerRadius - layout.ringWidth);
+              g.circle(0, 0, layout.ring.outerRadius - layout.ring.ringWidth);
               g.cut();
             }}
           />
@@ -300,8 +368,8 @@ export function Scene() {
             ref={outerRingSpriteRef}
             texture={bricksTexture}
             anchor={0.5}
-            width={layout.outerRadius * 2}
-            height={layout.outerRadius * 2}
+            width={layout.ring.outerRadius * 2}
+            height={layout.ring.outerRadius * 2}
           />
 
           {/* Hit-zone blocks between the two rings — redrawn each tick */}
@@ -320,6 +388,22 @@ export function Scene() {
             }}
           />
 
+          {/* Miss pulse layer (red hollow ring outlines) — redrawn each tick */}
+          <pixiGraphics
+            ref={missPulseGfxRef}
+            draw={() => {
+              /* initial no-op; redrawn each tick */
+            }}
+          />
+
+          {/* Miss line layer (red radial line) — redrawn each tick */}
+          <pixiGraphics
+            ref={missLineGfxRef}
+            draw={() => {
+              /* initial no-op; redrawn each tick */
+            }}
+          />
+
           {/* Warm red thin dial line — animated via useTick */}
           <pixiGraphics
             ref={dialRef}
@@ -333,9 +417,9 @@ export function Scene() {
             ref={innerRingMaskRef}
             draw={(g: Graphics) => {
               g.clear();
-              g.circle(0, 0, layout.innerRingOuter);
+              g.circle(0, 0, layout.ring.innerRingOuter);
               g.fill({ color: 0xffffff });
-              g.circle(0, 0, layout.innerRingInner);
+              g.circle(0, 0, layout.ring.innerRingInner);
               g.cut();
             }}
           />
@@ -344,8 +428,8 @@ export function Scene() {
             ref={innerRingSpriteRef}
             texture={bricksTexture}
             anchor={0.5}
-            width={layout.innerRingOuter * 2}
-            height={layout.innerRingOuter * 2}
+            width={layout.ring.innerRingOuter * 2}
+            height={layout.ring.innerRingOuter * 2}
           />
         </pixiContainer>
       )}
@@ -353,28 +437,35 @@ export function Scene() {
       {/* Katana hit streak below the ring */}
       <pixiContainer
         ref={katanaContainerRef}
-        x={layout.meetX}
-        y={layout.meetY + layout.outerRadius + layout.katanaSize * 0.4 + layout.katanaSize / 2}
+        x={layout.positions.meetX}
+        y={
+          layout.positions.meetY +
+          layout.ring.outerRadius +
+          layout.katana.katanaSize * 0.4 +
+          layout.katana.katanaSize / 2
+        }
       >
         <pixiGraphics
           ref={katanaBgRef}
-          draw={() => { /* redrawn each tick */ }}
+          draw={() => {
+            /* redrawn each tick */
+          }}
         />
       </pixiContainer>
 
       <pixiSprite
         ref={samuraiRef}
         texture={samuraiTex}
-        x={layout.charStartX}
-        y={layout.groundY}
-        scale={layout.charScale}
+        x={layout.positions.charStartX}
+        y={layout.positions.groundY}
+        scale={layout.characters.charScale}
       />
       <pixiSprite
         ref={shinobiRef}
         texture={shinobiTex}
-        x={layout.charEndX}
-        y={layout.groundY}
-        scale={layout.charScale}
+        x={layout.positions.charEndX}
+        y={layout.positions.groundY}
+        scale={layout.characters.charScale}
       />
 
       {/* "FIGHT!" text — shown during fight_text phase */}
@@ -383,7 +474,7 @@ export function Scene() {
         text="FIGHT!"
         anchor={0.5}
         x={app.screen.width / 2}
-        y={app.screen.height / 2 - layout.fightFontSize * 0.5}
+        y={app.screen.height / 2 - layout.fightText.fightFontSize * 0.5}
         style={fightTextStyle}
         visible={false}
       />

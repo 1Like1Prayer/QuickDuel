@@ -35,6 +35,12 @@ export const HIT_GLOW_DURATION = 0.3; // seconds
 export const HIT_GLOW_COLOR = 0x44ff44;
 export const HIT_GLOW_MAX_ALPHA = 0.7;
 
+// --- Miss pulse effect ---
+export const MISS_PULSE_DURATION = 0.4; // seconds
+export const MISS_PULSE_COLOR = 0xff2222; // red
+export const MISS_PULSE_MAX_ALPHA = 0.8;
+export const MISS_LINE_WIDTH_FACTOR = 0.06; // relative to outerRadius
+
 // --- Block gradient colors (left → right of spawn range) ---
 export const BLOCK_COLOR_LEFT = 0xffdd00; // yellow (palest, leftmost)
 export const BLOCK_COLOR_RIGHT = 0xff2222; // red (strongest, rightmost)

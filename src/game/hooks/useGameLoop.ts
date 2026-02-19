@@ -1,55 +1,25 @@
-import type { Application as PixiApp } from "pixi.js";
-import { Graphics, Sprite, Texture, Container } from "pixi.js";
 import { useTick } from "@pixi/react";
+import { Graphics, Texture } from "pixi.js";
 import { useEffect, useRef } from "react";
 
 import {
   ANIM_SPEED,
+  CLASH_PAUSE_MS,
+  FIGHT_TEXT_DURATION_MS,
   HIT_FREEZE_MS,
   HURT_PAUSE_MS,
-  FIGHT_TEXT_DURATION_MS,
-  CLASH_PAUSE_MS,
   SHAKE_DURATION,
 } from "../constants";
-import { getAnimName } from "../utils/phases";
+import type { BloodParticle, Phase } from "../types";
+import type { SparkParticle } from "../utils/particles";
 import {
   spawnBlood,
-  updateBloodParticles,
   spawnSparks,
+  updateBloodParticles,
   updateSparkParticles,
 } from "../utils/particles";
-import type { SparkParticle } from "../utils/particles";
-import type { BloodParticle, CharAnims, Phase } from "../types";
-import type { UseDialGameReturn } from "./useDialGame";
-import type { Layout } from "./useLayout";
-
-// ──────────────────────────────────────────────
-//  Refs bundle — keeps the hook signature clean
-// ──────────────────────────────────────────────
-
-export interface SceneRefs {
-  container: React.RefObject<Container | null>;
-  bg: React.RefObject<Sprite | null>;
-  samurai: React.RefObject<Sprite | null>;
-  shinobi: React.RefObject<Sprite | null>;
-}
-
-interface GameLoopParams {
-  app: PixiApp;
-  refs: SceneRefs;
-  bgTexture: Texture;
-  samuraiAnims: CharAnims | null;
-  shinobiAnims: CharAnims | null;
-  dialGame: UseDialGameReturn;
-  /** Ref that Scene sets to true while "FIGHT!" text should be visible. */
-  showFightText: React.RefObject<boolean>;
-  /** Responsive layout values. */
-  layout: Layout;
-}
-
-// ──────────────────────────────────────────────
-//  Hook
-// ──────────────────────────────────────────────
+import { getAnimName } from "../utils/phases";
+import type { GameLoopParams } from "./types/useGameLoop.types";
 
 export function useGameLoop({
   app,
@@ -66,7 +36,7 @@ export function useGameLoop({
 
   // Phase state machine
   const phase = useRef<Phase>("run");
-  const samuraiX = useRef(layout.charStartX);
+  const samuraiX = useRef(layout.positions.charStartX);
   const shinobiX = useRef(0);
   const shinobiXInit = useRef(false);
 
@@ -142,6 +112,7 @@ export function useGameLoop({
       if (!dialGame.active.current) return;
 
       const hit = dialGame.attempt();
+      if (hit === null) return; // already attempted this lap — ignore
 
       // Cancel every pending phase-transition timeout
       for (const id of pendingTimeouts.current) clearTimeout(id);
@@ -173,8 +144,6 @@ export function useGameLoop({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dialGame]);
-
-  // ── Helpers (closures over refs) ──
 
   const resetPhaseFrames = () => {
     samuraiFrame.current = 0;
@@ -214,7 +183,7 @@ export function useGameLoop({
 
     // Initialise shinobi start position once we know screen width
     if (!shinobiXInit.current) {
-      shinobiX.current = layout.charEndX;
+      shinobiX.current = layout.positions.charEndX;
       shinobiXInit.current = true;
     }
 
@@ -254,28 +223,36 @@ export function useGameLoop({
     // ── Knockback ──
 
     if (samuraiKnockback.current > 0) {
-      const kb = Math.min(samuraiKnockback.current, layout.knockbackSpeed * dt);
+      const kb = Math.min(
+        samuraiKnockback.current,
+        layout.movement.knockbackSpeed * dt,
+      );
       samuraiX.current -= kb;
       samuraiKnockback.current -= kb;
     }
     if (shinobiKnockback.current > 0) {
-      const kb = Math.min(shinobiKnockback.current, layout.knockbackSpeed * dt);
+      const kb = Math.min(
+        shinobiKnockback.current,
+        layout.movement.knockbackSpeed * dt,
+      );
       shinobiX.current += kb;
       shinobiKnockback.current -= kb;
     }
 
     // ── Phase state machine ──
 
-    const meetDist = layout.charSize + layout.meetGap;
+    const meetDist = layout.characters.charSize + layout.movement.meetGap;
 
     switch (curPhase) {
       case "run": {
-        samuraiX.current += layout.runSpeed * dt;
-        shinobiX.current -= layout.runSpeed * dt;
+        samuraiX.current += layout.movement.runSpeed * dt;
+        shinobiX.current -= layout.movement.runSpeed * dt;
         if (shinobiX.current - samuraiX.current <= meetDist) {
           const cx = (samuraiX.current + shinobiX.current) / 2;
-          samuraiX.current = cx - layout.charSize / 2 - layout.meetGap / 2;
-          shinobiX.current = cx + layout.charSize / 2 + layout.meetGap / 2;
+          samuraiX.current =
+            cx - layout.characters.charSize / 2 - layout.movement.meetGap / 2;
+          shinobiX.current =
+            cx + layout.characters.charSize / 2 + layout.movement.meetGap / 2;
           samuraiFightX.current = samuraiX.current;
           shinobiFightX.current = shinobiX.current;
           // Show "FIGHT!" text, then transition to idle
@@ -294,7 +271,6 @@ export function useGameLoop({
 
       case "fight_text":
       case "idle": {
-        // Characters idle, waiting for dial input.
         // Check if the dial game auto-missed (2 rotations without input)
         if (curPhase === "idle") {
           const dialHit = dialGame.lastHit.current;
@@ -311,17 +287,20 @@ export function useGameLoop({
       }
 
       case "samurai_attack": {
-        if (samuraiFrame.current === samAnim.length - 1 && !phaseAnimDone.current) {
+        if (
+          samuraiFrame.current === samAnim.length - 1 &&
+          !phaseAnimDone.current
+        ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
             phase.current = "shinobi_hurt";
             resetPhaseFrames();
             startShake();
-            shinobiKnockback.current = layout.knockbackDistance;
+            shinobiKnockback.current = layout.movement.knockbackDistance;
             spawnBlood(
               bloodParticles.current,
-              shinobiX.current + layout.charSize * 0.4,
-              layout.groundY + layout.charSize * 0.4,
+              shinobiX.current + layout.characters.charSize * 0.4,
+              layout.positions.groundY + layout.characters.charSize * 0.4,
               1,
             );
           }, HIT_FREEZE_MS);
@@ -330,17 +309,20 @@ export function useGameLoop({
       }
 
       case "shinobi_attack": {
-        if (shinobiFrame.current === shinAnim.length - 1 && !phaseAnimDone.current) {
+        if (
+          shinobiFrame.current === shinAnim.length - 1 &&
+          !phaseAnimDone.current
+        ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
             phase.current = "samurai_hurt";
             resetPhaseFrames();
             startShake();
-            samuraiKnockback.current = layout.knockbackDistance;
+            samuraiKnockback.current = layout.movement.knockbackDistance;
             spawnBlood(
               bloodParticles.current,
-              samuraiX.current + layout.charSize * 0.4,
-              layout.groundY + layout.charSize * 0.4,
+              samuraiX.current + layout.characters.charSize * 0.4,
+              layout.positions.groundY + layout.characters.charSize * 0.4,
               -1,
             );
           }, HIT_FREEZE_MS);
@@ -349,7 +331,10 @@ export function useGameLoop({
       }
 
       case "samurai_hurt": {
-        if (samuraiFrame.current === samAnim.length - 1 && !phaseAnimDone.current) {
+        if (
+          samuraiFrame.current === samAnim.length - 1 &&
+          !phaseAnimDone.current
+        ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
             phase.current = "samurai_recover";
@@ -361,7 +346,7 @@ export function useGameLoop({
 
       case "samurai_recover": {
         if (samuraiX.current < samuraiFightX.current) {
-          samuraiX.current += layout.recoverSpeed * dt;
+          samuraiX.current += layout.movement.recoverSpeed * dt;
           if (samuraiX.current >= samuraiFightX.current) {
             samuraiX.current = samuraiFightX.current;
             // Return to idle — dial resumes
@@ -376,7 +361,10 @@ export function useGameLoop({
       }
 
       case "shinobi_hurt": {
-        if (shinobiFrame.current === shinAnim.length - 1 && !phaseAnimDone.current) {
+        if (
+          shinobiFrame.current === shinAnim.length - 1 &&
+          !phaseAnimDone.current
+        ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
             phase.current = "shinobi_recover";
@@ -388,7 +376,7 @@ export function useGameLoop({
 
       case "shinobi_recover": {
         if (shinobiX.current > shinobiFightX.current) {
-          shinobiX.current -= layout.recoverSpeed * dt;
+          shinobiX.current -= layout.movement.recoverSpeed * dt;
           if (shinobiX.current <= shinobiFightX.current) {
             shinobiX.current = shinobiFightX.current;
             // Return to idle — dial resumes
@@ -432,8 +420,11 @@ export function useGameLoop({
         if (atImpact && !clashSparkEmitted.current) {
           clashSparkEmitted.current = true;
           startShake();
-          const clashX = (samuraiX.current + layout.charSize + shinobiX.current) / 2;
-          const clashY = layout.groundY + layout.charSize * 0.35;
+          const clashX =
+            (samuraiX.current + layout.characters.charSize + shinobiX.current) /
+            2;
+          const clashY =
+            layout.positions.groundY + layout.characters.charSize * 0.35;
           spawnSparks(sparkParticles.current, clashX, clashY);
         }
 
@@ -461,10 +452,10 @@ export function useGameLoop({
     samurai.current.x = samuraiX.current;
     shinobi.current.x = shinobiX.current;
 
-    samurai.current.scale.x = layout.charScale;
+    samurai.current.scale.x = layout.characters.charScale;
     samurai.current.anchor.x = 0;
 
-    shinobi.current.scale.x = -layout.charScale;
+    shinobi.current.scale.x = -layout.characters.charScale;
     shinobi.current.anchor.x = 1;
 
     // ── Screen shake ──
@@ -477,7 +468,7 @@ export function useGameLoop({
         container.current.y = 0;
       } else {
         const progress = shakeTimer.current / SHAKE_DURATION;
-        const intensity = layout.shakeIntensity * progress;
+        const intensity = layout.movement.shakeIntensity * progress;
         container.current.x = (Math.random() - 0.5) * 2 * intensity;
         container.current.y = (Math.random() - 0.5) * 2 * intensity;
       }
