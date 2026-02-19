@@ -16,10 +16,12 @@
   left: 50%;
   transform: translate(-50%, -50%);
   font-family: "Arial Black", Impact, sans-serif;
-  font-size: clamp(3rem, 10vw, 7rem);
+  font-size: clamp(2rem, 10vw, 7rem);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  white-space: nowrap;
+  max-width: 95vw;
   color: #ffcc00;
   text-shadow:
     0 0 12px rgba(255, 204, 0, 0.6),

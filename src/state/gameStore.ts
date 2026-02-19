@@ -35,7 +35,7 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
       // Positive delta → player gains; negative delta → opponent gains
       const nextPlayer = delta > 0 ? s.playerPoints + delta : s.playerPoints;
       const nextOpponent = delta < 0 ? s.opponentPoints + Math.abs(delta) : s.opponentPoints;
-      const ended = nextPlayer > WIN_POINTS || nextOpponent > WIN_POINTS;
+      const ended = nextPlayer >= WIN_POINTS || nextOpponent >= WIN_POINTS;
       return {
         playerPoints: nextPlayer,
         opponentPoints: nextOpponent,

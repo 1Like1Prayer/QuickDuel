@@ -8,12 +8,14 @@ import { Scene } from "./game/components/Scene";
 
 extend({ Container, Graphics, Sprite, Text });
 
+const appContainer = document.getElementById("app")!;
+
 export default function App() {
   const phase = useGameStore((s) => s.phase);
 
   return (
     <>
-      <Application background={"#000000"} resizeTo={window}>
+      <Application background={"#000000"} resizeTo={appContainer}>
         <Scene />
       </Application>
       {phase === "intro" && <IntroScreen />}
