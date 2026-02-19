@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 
 import {
+  BLOCK_POINTS,
   HIT_GLOW_DURATION,
   MISS_PULSE_DURATION,
   INITIAL_BLOCK_COUNT,
@@ -13,6 +14,7 @@ import {
   REGEN_GATE_RAD,
   SPEED_STEP,
 } from "../constants";
+import { useGameStore } from "../../state";
 
 import type { HitZoneBlock, UseDialGameParams, UseDialGameReturn } from "./types/useDialGame.types";
 import {
@@ -116,8 +118,10 @@ export function useDialGame({
       // Glow on the hit block only
       hitGlowTimer.current = HIT_GLOW_DURATION;
       hitBlockAngles.current = { startAngle: hitBlock.startAngle, endAngle: hitBlock.endAngle };
-      // Record colour for katana streak
       const color = blockColor(hitBlock, colorStack.current);
+      const points = BLOCK_POINTS[color] ?? 1;
+      useGameStore.getState().scorePlayer(points);
+
       hitColors.current = [
         ...hitColors.current.slice(-(MAX_KATANA_COUNT - 1)),
         color,
@@ -127,7 +131,8 @@ export function useDialGame({
         pendingColorTrim.current = true;
       }
     } else {
-      // Increase blocks back to max
+      useGameStore.getState().scoreOpponent(1);
+
       blockCount.current = Math.min(
         MAX_BLOCK_COUNT,
         blockCount.current + 1,
@@ -180,8 +185,8 @@ export function useDialGame({
         // (skipped on the first crossing because blocks start empty)
         if (!attemptedThisLap.current && blocks.current.length > 0) {
           lastHit.current = false;
+          useGameStore.getState().scoreOpponent(1);
 
-          // Miss penalty
           blockCount.current = Math.min(
             MAX_BLOCK_COUNT,
             blockCount.current + 1,

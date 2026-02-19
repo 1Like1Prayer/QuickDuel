@@ -31,5 +31,7 @@ export function getAnimName(
       return "Idle";
     case "clash":
       return "Attack_1";
+    case "player_win":
+      return char === "shinobi" ? "Dead" : "Idle";
   }
 }

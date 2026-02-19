@@ -48,6 +48,7 @@ export function useCharacterAnims() {
         "Hurt",
         "Idle",
         "Walk",
+        "Dead",
       ] as const) {
         const sheet = await Assets.load(`/${charName}/${animName}.png`);
         anims[animName] = sliceFrames(sheet, ANIM_FRAMES[charName][animName]);

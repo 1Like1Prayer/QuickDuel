@@ -86,8 +86,11 @@ export function Scene() {
   // Dial game logic
   const dialGame = useDialGame({ baseSpeed: DIAL_BASE_SPEED });
 
+  // Win text ref
+  const winTextRef = useRef<Text>(null);
+
   // Run game loop
-  useGameLoop({
+  const { showWinText, winTextAlpha } = useGameLoop({
     app,
     refs: {
       container: containerRef,
@@ -127,6 +130,12 @@ export function Scene() {
     // Toggle "FIGHT!" text visibility
     if (fightTextRef.current) {
       fightTextRef.current.visible = showFightText.current;
+    }
+
+    // Update "You Win" text
+    if (winTextRef.current) {
+      winTextRef.current.visible = showWinText.current;
+      winTextRef.current.alpha = winTextAlpha.current;
     }
 
     const dt = ticker.deltaTime / 60;
@@ -482,6 +491,31 @@ export function Scene() {
         y={app.screen.height / 2 - layout.fightText.fightFontSize * 0.5}
         style={fightTextStyle}
         visible={false}
+      />
+
+      {/* "You Win" text — fades in after opponent death */}
+      <pixiText
+        ref={winTextRef}
+        text="You Win"
+        anchor={0.5}
+        x={app.screen.width / 2}
+        y={app.screen.height * 0.22}
+        style={{
+          fontFamily: "Arial Black, Impact, sans-serif",
+          fontSize: layout.fightText.fightFontSize * 1.8,
+          fontWeight: "bold" as const,
+          fill: 0xffcc00,
+          stroke: { color: 0x000000, width: layout.fightText.fightStrokeWidth * 1.8 },
+          dropShadow: {
+            alpha: 0.6,
+            angle: Math.PI / 4,
+            blur: 6,
+            distance: 6,
+            color: 0x000000,
+          },
+        }}
+        visible={false}
+        alpha={0}
       />
     </pixiContainer>
   );

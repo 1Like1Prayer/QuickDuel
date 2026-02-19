@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { WIN_POINTS } from "../game/constants";
 import type { GamePhase } from "./types";
 
 export interface GameState {
@@ -9,9 +10,10 @@ export interface GameState {
 
 export interface GameActions {
   startGame: () => void;
-  scorePlayer: () => void;
-  scoreOpponent: () => void;
+  scorePlayer: (points: number) => void;
+  scoreOpponent: (points: number) => void;
   endGame: () => void;
+  playAgain: () => void;
   reset: () => void;
 }
 
@@ -26,11 +28,27 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
 
   startGame: () => set({ phase: "playing" }),
 
-  scorePlayer: () => set((s) => ({ playerPoints: s.playerPoints + 1 })),
+  scorePlayer: (points: number) =>
+    set((s) => {
+      const next = s.playerPoints + points;
+      return {
+        playerPoints: next,
+        ...(next > WIN_POINTS ? { phase: "ended" as const } : {}),
+      };
+    }),
 
-  scoreOpponent: () => set((s) => ({ opponentPoints: s.opponentPoints + 1 })),
+  scoreOpponent: (points: number) =>
+    set((s) => {
+      const next = s.opponentPoints + points;
+      return {
+        opponentPoints: next,
+        ...(next > WIN_POINTS ? { phase: "ended" as const } : {}),
+      };
+    }),
 
   endGame: () => set({ phase: "ended" }),
+
+  playAgain: () => set({ phase: "playing", playerPoints: 0, opponentPoints: 0 }),
 
   reset: () => set(INITIAL_STATE),
 }));

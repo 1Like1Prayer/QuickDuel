@@ -16,9 +16,9 @@ export function IntroScreen() {
 
   return (
     <div className="intro-screen" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="intro-content">
-        <h1 className="intro-title">Quick-Duel</h1>
+      <h1 className="intro-title">Quick-Duel</h1>
 
+      <div className="intro-content">
         {screen === "main" && (
           <div className="intro-buttons">
             <button

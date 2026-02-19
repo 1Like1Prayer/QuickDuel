@@ -20,6 +20,10 @@ export const HURT_PAUSE_MS = 80;
 // --- "FIGHT!" text display ---
 export const FIGHT_TEXT_DURATION_MS = 1200;
 
+// --- Win sequence ---
+export const SLOWMO_ANIM_SPEED = 0.3;
+export const WIN_TEXT_FADE_DURATION = 1.5;
+
 // --- Blood Particles ---
 export const BLOOD_PARTICLE_COUNT = 24;
 export const BLOOD_PARTICLE_SPEED = 500;

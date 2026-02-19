@@ -2,6 +2,7 @@ import { Application, extend } from "@pixi/react";
 import { Container, Graphics, Sprite, Text } from "pixi.js";
 
 import { useGameStore } from "./state";
+import { EndScreen } from "./game/components/EndScreen";
 import { IntroScreen } from "./game/components/IntroScreen";
 import { Scene } from "./game/components/Scene";
 
@@ -16,6 +17,7 @@ export default function App() {
         <Scene />
       </Application>
       {phase === "intro" && <IntroScreen />}
+      {phase === "ended" && <EndScreen />}
     </>
   );
 }

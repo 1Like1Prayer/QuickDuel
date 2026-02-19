@@ -49,5 +49,16 @@ export const BLOCK_COLORS = [
   0xffffff, // white
 ];
 
+// --- Points awarded per block color ---
+export const BLOCK_POINTS: Record<number, number> = {
+  0xffdd00: 1, // yellow
+  0xff2222: 2, // red
+  0x9933ff: 3, // purple
+  0xffffff: 4, // white
+};
+
+/** Points threshold — game ends when a player exceeds this. */
+export const WIN_POINTS = 10;
+
 // --- Katana hit streak ---
 export const MAX_KATANA_COUNT = 5;

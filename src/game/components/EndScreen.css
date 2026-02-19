@@ -1,0 +1,84 @@
+.end-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.end-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 15vh;
+  animation: end-fade-in 0.8s ease-out both;
+  animation-delay: 1.8s;
+}
+
+@keyframes end-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.end-btn {
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.8em 2.5em;
+  border: 2px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 260px;
+  text-transform: uppercase;
+  user-select: none;
+  color: #ffffff;
+}
+
+.end-btn-play-again {
+  background: linear-gradient(180deg, #228833 0%, #115522 100%);
+  border-color: #33aa44;
+  box-shadow:
+    0 0 16px rgba(34, 136, 51, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.end-btn-play-again:hover {
+  background: linear-gradient(180deg, #33aa44 0%, #227733 100%);
+  box-shadow: 0 0 28px rgba(34, 136, 51, 0.7);
+  transform: scale(1.04);
+}
+
+.end-btn-play-again:active {
+  transform: scale(0.97);
+}
+
+.end-btn-main-menu {
+  background: linear-gradient(180deg, #333333 0%, #1a1a1a 100%);
+  border-color: #666666;
+  color: #cccccc;
+  box-shadow:
+    0 0 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.end-btn-main-menu:hover {
+  background: linear-gradient(180deg, #444444 0%, #222222 100%);
+  box-shadow: 0 0 20px rgba(100, 100, 100, 0.4);
+  transform: scale(1.04);
+  color: #ffffff;
+}
+
+.end-btn-main-menu:active {
+  transform: scale(0.97);
+}

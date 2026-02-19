@@ -9,6 +9,8 @@ import {
   HIT_FREEZE_MS,
   HURT_PAUSE_MS,
   SHAKE_DURATION,
+  SLOWMO_ANIM_SPEED,
+  WIN_TEXT_FADE_DURATION,
 } from "../constants";
 import { useGameStore } from "../../state";
 import type { BloodParticle, Phase } from "../types";
@@ -34,6 +36,10 @@ export function useGameLoop({
 }: GameLoopParams) {
   const bloodGfx = useRef<Graphics | null>(null);
   const sparkGfx = useRef<Graphics | null>(null);
+
+  // Win text state (read by Scene for rendering)
+  const showWinText = useRef(false);
+  const winTextAlpha = useRef(0);
 
   // Phase state machine
   const phase = useRef<Phase>("intro");
@@ -200,18 +206,20 @@ export function useGameLoop({
     const samAnim = samuraiAnims[getAnimName("samurai", curPhase)];
     const shinAnim = shinobiAnims[getAnimName("shinobi", curPhase)];
 
-    samuraiElapsed.current += dt;
-    if (samuraiElapsed.current >= ANIM_SPEED) {
-      samuraiElapsed.current = 0;
-      samuraiFrame.current = (samuraiFrame.current + 1) % samAnim.length;
-      samurai.current.texture = samAnim[samuraiFrame.current];
-    }
+    if (curPhase !== "player_win") {
+      samuraiElapsed.current += dt;
+      if (samuraiElapsed.current >= ANIM_SPEED) {
+        samuraiElapsed.current = 0;
+        samuraiFrame.current = (samuraiFrame.current + 1) % samAnim.length;
+        samurai.current.texture = samAnim[samuraiFrame.current];
+      }
 
-    shinobiElapsed.current += dt;
-    if (shinobiElapsed.current >= ANIM_SPEED) {
-      shinobiElapsed.current = 0;
-      shinobiFrame.current = (shinobiFrame.current + 1) % shinAnim.length;
-      shinobi.current.texture = shinAnim[shinobiFrame.current];
+      shinobiElapsed.current += dt;
+      if (shinobiElapsed.current >= ANIM_SPEED) {
+        shinobiElapsed.current = 0;
+        shinobiFrame.current = (shinobiFrame.current + 1) % shinAnim.length;
+        shinobi.current.texture = shinAnim[shinobiFrame.current];
+      }
     }
 
     // ── Knockback ──
@@ -299,6 +307,23 @@ export function useGameLoop({
         ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
+            const isGameOver = useGameStore.getState().phase === "ended";
+            if (isGameOver) {
+              phase.current = "player_win";
+              resetPhaseFrames();
+              dialGame.stop();
+              if (refs.ringContainer.current) refs.ringContainer.current.visible = false;
+              if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
+              startShake();
+              shinobiKnockback.current = layout.movement.knockbackDistance;
+              spawnBlood(
+                bloodParticles.current,
+                shinobiX.current + layout.characters.charSize * 0.4,
+                layout.positions.groundY + layout.characters.charSize * 0.4,
+                1,
+              );
+              return;
+            }
             phase.current = "shinobi_hurt";
             resetPhaseFrames();
             startShake();
@@ -451,6 +476,49 @@ export function useGameLoop({
         }
         break;
       }
+
+      case "player_win": {
+        const storePhase = useGameStore.getState().phase;
+        if (storePhase !== "ended") {
+          showWinText.current = false;
+          winTextAlpha.current = 0;
+          samuraiX.current = layout.positions.charStartX;
+          shinobiX.current = layout.positions.charEndX;
+          samuraiKnockback.current = 0;
+          shinobiKnockback.current = 0;
+          bloodParticles.current = [];
+          sparkParticles.current = [];
+          for (const id of pendingTimeouts.current) clearTimeout(id);
+          pendingTimeouts.current = [];
+          lastDialResult.current = null;
+
+          if (storePhase === "playing") {
+            phase.current = "run";
+            resetPhaseFrames();
+          } else {
+            phase.current = "intro";
+            resetPhaseFrames();
+          }
+          break;
+        }
+
+        shinobiElapsed.current += dt;
+        if (shinobiElapsed.current >= SLOWMO_ANIM_SPEED) {
+          shinobiElapsed.current = 0;
+          if (shinobiFrame.current < shinAnim.length - 1) {
+            shinobiFrame.current++;
+            shinobi.current.texture = shinAnim[shinobiFrame.current];
+          } else if (!phaseAnimDone.current) {
+            phaseAnimDone.current = true;
+            showWinText.current = true;
+          }
+        }
+
+        if (showWinText.current && winTextAlpha.current < 1) {
+          winTextAlpha.current = Math.min(1, winTextAlpha.current + dt / WIN_TEXT_FADE_DURATION);
+        }
+        break;
+      }
     }
 
     // ── Apply positions & orientation ──
@@ -502,4 +570,6 @@ export function useGameLoop({
       );
     }
   });
+
+  return { showWinText, winTextAlpha };
 }
