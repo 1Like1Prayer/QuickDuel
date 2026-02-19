@@ -38,10 +38,6 @@ export function Scene() {
   const ringContainerRef = useRef<Container>(null);
   const katanaOuterRef = useRef<Container>(null);
 
-  // "FIGHT!" text ref & visibility flag (mutated by useGameLoop)
-  const fightTextRef = useRef<Text>(null);
-  const showFightText = useRef(false);
-
   // Bricks ring refs (outer ring)
   const outerRingSpriteRef = useRef<Sprite>(null);
   const outerRingMaskRef = useRef<Graphics>(null);
@@ -89,8 +85,11 @@ export function Scene() {
   // Win text ref
   const winTextRef = useRef<Text>(null);
 
+  // Countdown text ref
+  const countdownTextRef = useRef<Text>(null);
+
   // Run game loop
-  const { showWinText, winTextAlpha } = useGameLoop({
+  const { showWinText, winTextAlpha, countdownText } = useGameLoop({
     app,
     refs: {
       container: containerRef,
@@ -104,7 +103,6 @@ export function Scene() {
     samuraiAnims,
     shinobiAnims,
     dialGame,
-    showFightText,
     layout,
   });
 
@@ -127,9 +125,13 @@ export function Scene() {
     const missLineGfx = missLineGfxRef.current;
     if (!dial) return;
 
-    // Toggle "FIGHT!" text visibility
-    if (fightTextRef.current) {
-      fightTextRef.current.visible = showFightText.current;
+    // Update countdown text
+    if (countdownTextRef.current) {
+      const cdText = countdownText.current;
+      countdownTextRef.current.visible = cdText !== null;
+      if (cdText !== null) {
+        countdownTextRef.current.text = cdText;
+      }
     }
 
     // Update "You Win" text
@@ -342,22 +344,6 @@ export function Scene() {
   const samuraiTex = samuraiAnims ? samuraiAnims.Idle[0] : Texture.EMPTY;
   const shinobiTex = shinobiAnims ? shinobiAnims.Idle[0] : Texture.EMPTY;
 
-  // Fight text style (dynamic font size)
-  const fightTextStyle = {
-    fontFamily: "Arial Black, Impact, sans-serif",
-    fontSize: layout.fightText.fightFontSize,
-    fontWeight: "bold" as const,
-    fill: 0xffcc00,
-    stroke: { color: 0x000000, width: layout.fightText.fightStrokeWidth },
-    dropShadow: {
-      alpha: 0.6,
-      angle: Math.PI / 4,
-      blur: 4,
-      distance: 4,
-      color: 0x000000,
-    },
-  };
-
   return (
     <pixiContainer ref={containerRef}>
       <pixiSprite ref={bgRef} texture={bgTexture} x={0} y={0} />
@@ -482,14 +468,27 @@ export function Scene() {
         scale={layout.characters.charScale}
       />
 
-      {/* "FIGHT!" text — shown during fight_text phase */}
+      {/* Countdown text — "3", "2", "1", "FIGHT!" during countdown phase */}
       <pixiText
-        ref={fightTextRef}
-        text="FIGHT!"
+        ref={countdownTextRef}
+        text="3"
         anchor={0.5}
         x={app.screen.width / 2}
-        y={app.screen.height / 2 - layout.fightText.fightFontSize * 0.5}
-        style={fightTextStyle}
+        y={app.screen.height / 2 - layout.fightText.fightFontSize * 0.8}
+        style={{
+          fontFamily: "Arial Black, Impact, sans-serif",
+          fontSize: layout.fightText.fightFontSize * 1.5,
+          fontWeight: "bold" as const,
+          fill: 0xffffff,
+          stroke: { color: 0x000000, width: layout.fightText.fightStrokeWidth * 1.5 },
+          dropShadow: {
+            alpha: 0.7,
+            angle: Math.PI / 4,
+            blur: 6,
+            distance: 5,
+            color: 0x000000,
+          },
+        }}
         visible={false}
       />
 

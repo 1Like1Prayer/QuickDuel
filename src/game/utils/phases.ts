@@ -10,6 +10,7 @@ export function getAnimName(
       return "Idle";
     case "run":
       return "Run";
+    case "countdown":
     case "idle":
     case "fight_text":
       return "Idle";

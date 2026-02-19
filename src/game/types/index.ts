@@ -3,6 +3,7 @@ import type { Texture } from "pixi.js";
 export type Phase =
   | "intro"
   | "run"
+  | "countdown"
   | "idle"
   | "fight_text"
   | "shinobi_attack"

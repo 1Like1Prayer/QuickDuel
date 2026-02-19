@@ -5,9 +5,11 @@ import { useEffect, useRef } from "react";
 import {
   ANIM_SPEED,
   CLASH_PAUSE_MS,
-  FIGHT_TEXT_DURATION_MS,
+  COUNTDOWN_FIGHT_MS,
+  COUNTDOWN_STEP_MS,
   HIT_FREEZE_MS,
   HURT_PAUSE_MS,
+  RING_FADE_IN_DURATION,
   SHAKE_DURATION,
   SLOWMO_ANIM_SPEED,
   WIN_TEXT_FADE_DURATION,
@@ -31,7 +33,6 @@ export function useGameLoop({
   samuraiAnims,
   shinobiAnims,
   dialGame,
-  showFightText,
   layout,
 }: GameLoopParams) {
   const bloodGfx = useRef<Graphics | null>(null);
@@ -40,6 +41,10 @@ export function useGameLoop({
   // Win text state (read by Scene for rendering)
   const showWinText = useRef(false);
   const winTextAlpha = useRef(0);
+
+  // Countdown state (read by Scene for rendering)
+  const countdownText = useRef<string | null>(null);  // "3", "2", "1", "FIGHT!" or null
+  const ringAlpha = useRef(0);                        // fade-in alpha for the ring container
 
   // Phase state machine
   const phase = useRef<Phase>("intro");
@@ -266,19 +271,42 @@ export function useGameLoop({
             cx + layout.characters.charSize / 2 + layout.movement.meetGap / 2;
           samuraiFightX.current = samuraiX.current;
           shinobiFightX.current = shinobiX.current;
-          // Show ring & "FIGHT!" text, then transition to idle
+          // Make ring & katana containers visible but fully transparent — they will fade in
           if (refs.ringContainer.current) {
             refs.ringContainer.current.visible = true;
+            refs.ringContainer.current.alpha = 0;
           }
-          phase.current = "fight_text";
-          showFightText.current = true;
+          if (refs.katanaContainer.current) {
+            refs.katanaContainer.current.visible = true;
+          }
+          ringAlpha.current = 0;
+          // Start countdown sequence: 3 → 2 → 1 → FIGHT!
+          phase.current = "countdown";
+          countdownText.current = "3";
           resetPhaseFrames();
+          const step = COUNTDOWN_STEP_MS;
+          setTimeout(() => { countdownText.current = "2"; }, step);
+          setTimeout(() => { countdownText.current = "1"; }, step * 2);
           setTimeout(() => {
-            showFightText.current = false;
+            countdownText.current = "FIGHT!";
+          }, step * 3);
+          setTimeout(() => {
+            countdownText.current = null;
             phase.current = "idle";
             resetPhaseFrames();
             dialGame.start();
-          }, FIGHT_TEXT_DURATION_MS);
+          }, step * 3 + COUNTDOWN_FIGHT_MS);
+        }
+        break;
+      }
+
+      case "countdown": {
+        // Fade in ring/dial during countdown
+        if (ringAlpha.current < 1) {
+          ringAlpha.current = Math.min(1, ringAlpha.current + dt / RING_FADE_IN_DURATION);
+          if (refs.ringContainer.current) {
+            refs.ringContainer.current.alpha = ringAlpha.current;
+          }
         }
         break;
       }
@@ -482,6 +510,8 @@ export function useGameLoop({
         if (storePhase !== "ended") {
           showWinText.current = false;
           winTextAlpha.current = 0;
+          countdownText.current = null;
+          ringAlpha.current = 0;
           samuraiX.current = layout.positions.charStartX;
           shinobiX.current = layout.positions.charEndX;
           samuraiKnockback.current = 0;
@@ -491,6 +521,15 @@ export function useGameLoop({
           for (const id of pendingTimeouts.current) clearTimeout(id);
           pendingTimeouts.current = [];
           lastDialResult.current = null;
+          // Fully reset dial game state (blocks, speed, colors, katanas)
+          dialGame.start();
+          dialGame.stop();
+          // Hide ring & katana containers on full reset
+          if (refs.ringContainer.current) {
+            refs.ringContainer.current.visible = false;
+            refs.ringContainer.current.alpha = 0;
+          }
+          if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
 
           if (storePhase === "playing") {
             phase.current = "run";
@@ -571,5 +610,5 @@ export function useGameLoop({
     }
   });
 
-  return { showWinText, winTextAlpha };
+  return { showWinText, winTextAlpha, countdownText, ringAlpha };
 }

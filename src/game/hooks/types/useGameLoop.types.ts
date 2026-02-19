@@ -21,6 +21,5 @@ export interface GameLoopParams {
   samuraiAnims: CharAnims | null;
   shinobiAnims: CharAnims | null;
   dialGame: UseDialGameReturn;
-  showFightText: React.RefObject<boolean>;
   layout: Layout;
 }

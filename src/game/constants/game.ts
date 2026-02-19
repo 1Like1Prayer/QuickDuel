@@ -20,6 +20,11 @@ export const HURT_PAUSE_MS = 80;
 // --- "FIGHT!" text display ---
 export const FIGHT_TEXT_DURATION_MS = 1200;
 
+// --- Countdown (3 → 2 → 1 → FIGHT!) ---
+export const COUNTDOWN_STEP_MS = 700;       // ms per number
+export const COUNTDOWN_FIGHT_MS = 800;      // ms the "FIGHT!" label stays
+export const RING_FADE_IN_DURATION = 1.8;   // seconds for circle/dial fade-in
+
 // --- Win sequence ---
 export const SLOWMO_ANIM_SPEED = 0.3;
 export const WIN_TEXT_FADE_DURATION = 1.5;
