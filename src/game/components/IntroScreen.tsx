@@ -1,19 +1,17 @@
 import { useState } from "react";
 
+import { useGameStore } from "../../state";
 import "./IntroScreen.css";
 
 type Screen = "main" | "difficulty";
 
-interface IntroScreenProps {
-  onStartGame: () => void;
-}
-
-export function IntroScreen({ onStartGame }: IntroScreenProps) {
+export function IntroScreen() {
+  const startGame = useGameStore((s) => s.startGame);
   const [screen, setScreen] = useState<Screen>("main");
 
   const handleDifficultyPick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onStartGame();
+    startGame();
   };
 
   return (

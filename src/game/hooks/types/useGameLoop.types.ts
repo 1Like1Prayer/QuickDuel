@@ -23,6 +23,4 @@ export interface GameLoopParams {
   dialGame: UseDialGameReturn;
   showFightText: React.RefObject<boolean>;
   layout: Layout;
-  /** When set to true by external code, transitions from intro_idle → run */
-  startGame: React.RefObject<boolean>;
 }

@@ -24,11 +24,7 @@ import { blockColor } from "../hooks/utils/useDialGame.utils";
 import { useGameLoop } from "../hooks/useGameLoop";
 import { useLayout } from "../hooks/useLayout";
 
-interface SceneProps {
-  startGame: React.RefObject<boolean>;
-}
-
-export function Scene({ startGame }: SceneProps) {
+export function Scene() {
   const { app } = useApplication();
 
   // Responsive layout
@@ -107,7 +103,6 @@ export function Scene({ startGame }: SceneProps) {
     dialGame,
     showFightText,
     layout,
-    startGame,
   });
 
   // Apply ring masks once refs are ready

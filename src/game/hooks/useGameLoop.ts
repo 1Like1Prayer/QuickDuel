@@ -10,6 +10,7 @@ import {
   HURT_PAUSE_MS,
   SHAKE_DURATION,
 } from "../constants";
+import { useGameStore } from "../../state";
 import type { BloodParticle, Phase } from "../types";
 import type { SparkParticle } from "../utils/particles";
 import {
@@ -30,7 +31,6 @@ export function useGameLoop({
   dialGame,
   showFightText,
   layout,
-  startGame,
 }: GameLoopParams) {
   const bloodGfx = useRef<Graphics | null>(null);
   const sparkGfx = useRef<Graphics | null>(null);
@@ -239,9 +239,8 @@ export function useGameLoop({
 
     switch (curPhase) {
       case "intro": {
-        // Characters visible and idle at screen edges; waiting for "Play Offline"
-        if (startGame.current) {
-          startGame.current = false;
+        // Characters visible and idle at screen edges; waiting for store phase change
+        if (useGameStore.getState().phase === "playing") {
           phase.current = "run";
           resetPhaseFrames();
         }
