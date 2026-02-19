@@ -11,7 +11,8 @@ export function useLayout(
   return useMemo(() => {
     const unit = Math.min(screenWidth, screenHeight);
 
-    const outerRadius = unit * 0.12;
+    // Rings — larger base size, higher floor on phones
+    const outerRadius = Math.max(unit * 0.18, 65);
     const ringWidth = outerRadius * 0.175;
     const ringGap = outerRadius * 0.1;
     const innerRingOuter = outerRadius - ringWidth - ringGap;
@@ -19,11 +20,14 @@ export function useLayout(
     const gapOuter = outerRadius - ringWidth;
     const gapInner = innerRingOuter;
 
-    const charScale = unit / 400;
+    // Characters — bigger sprites, higher floor on phones
+    const charScale = Math.max(unit / 300, 0.65);
     const charSize = FRAME_SIZE * charScale;
 
     const groundY = screenHeight - charSize - screenHeight * 0.03;
-    const katanaSize = unit * 0.06;
+
+    // Katana icons — bigger & wider for vivid colour display
+    const katanaSize = Math.max(unit * 0.09, 34);
 
     return {
       base: {
@@ -52,7 +56,8 @@ export function useLayout(
       positions: {
         groundY,
         meetX: screenWidth / 2,
-        meetY: screenHeight * 0.35,
+        // On smaller screens push the circle lower (towards the middle)
+        meetY: screenHeight * (unit < 500 ? 0.42 : 0.35),
         charStartX: screenWidth * 0.05,
         charEndX: screenWidth * 0.95 - charSize,
       },
@@ -66,7 +71,7 @@ export function useLayout(
       },
       katana: {
         katanaSize,
-        katanaSpacing: katanaSize * 0.15,
+        katanaSpacing: katanaSize * 0.08,
       },
       particles: {
         bloodParticleSize: Math.max(3, unit * 0.008),
