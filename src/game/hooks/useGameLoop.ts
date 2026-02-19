@@ -1,150 +1,25 @@
-import type { Application as PixiApp } from "pixi.js";
-import { Graphics, Sprite, Texture, Container } from "pixi.js";
 import { useTick } from "@pixi/react";
+import { Graphics, Texture } from "pixi.js";
 import { useEffect, useRef } from "react";
 
 import {
-  FRAME_SIZE,
-  CHAR_SCALE,
-  RUN_SPEED,
   ANIM_SPEED,
-  MEET_GAP,
-  RECOVER_SPEED,
-  SHAKE_INTENSITY,
-  SHAKE_DURATION,
-  HIT_FREEZE_MS,
-  KNOCKBACK_DISTANCE,
-  RECOVER_IDLE_MS,
-  KNOCKBACK_SPEED,
-  HURT_PAUSE_MS,
-  BLOOD_PARTICLE_COUNT,
-  BLOOD_PARTICLE_SPEED,
-  BLOOD_PARTICLE_GRAVITY,
-  BLOOD_PARTICLE_LIFETIME,
-  BLOOD_PARTICLE_SIZE,
-  SPARK_PARTICLE_COUNT,
-  SPARK_PARTICLE_SPEED,
-  SPARK_PARTICLE_GRAVITY,
-  SPARK_PARTICLE_LIFETIME,
-  SPARK_PARTICLE_SIZE,
   CLASH_PAUSE_MS,
+  FIGHT_TEXT_DURATION_MS,
+  HIT_FREEZE_MS,
+  HURT_PAUSE_MS,
+  SHAKE_DURATION,
 } from "../constants";
+import type { BloodParticle, Phase } from "../types";
+import type { SparkParticle } from "../utils/particles";
+import {
+  spawnBlood,
+  spawnSparks,
+  updateBloodParticles,
+  updateSparkParticles,
+} from "../utils/particles";
 import { getAnimName } from "../utils/phases";
-import type { BloodParticle, CharAnims, Phase } from "../types";
-
-// ──────────────────────────────────────────────
-//  Refs bundle — keeps the hook signature clean
-// ──────────────────────────────────────────────
-
-export interface SceneRefs {
-  container: React.RefObject<Container | null>;
-  bg: React.RefObject<Sprite | null>;
-  samurai: React.RefObject<Sprite | null>;
-  shinobi: React.RefObject<Sprite | null>;
-}
-
-interface GameLoopParams {
-  app: PixiApp;
-  refs: SceneRefs;
-  bgTexture: Texture;
-  samuraiAnims: CharAnims | null;
-  shinobiAnims: CharAnims | null;
-}
-
-// Reuse BloodParticle shape for sparks (same physics, different color)
-type SparkParticle = BloodParticle;
-
-// ──────────────────────────────────────────────
-//  Blood‑particle helpers
-// ──────────────────────────────────────────────
-
-function spawnBlood(
-  particles: BloodParticle[],
-  x: number,
-  y: number,
-  directionSign: number,
-) {
-  for (let i = 0; i < BLOOD_PARTICLE_COUNT; i++) {
-    const angle = (Math.random() - 0.3) * Math.PI;
-    const speed = BLOOD_PARTICLE_SPEED * (0.5 + Math.random() * 0.5);
-    particles.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed * directionSign,
-      vy: -Math.abs(Math.sin(angle)) * speed * (0.5 + Math.random()),
-      life: BLOOD_PARTICLE_LIFETIME * (0.5 + Math.random() * 0.5),
-      size: BLOOD_PARTICLE_SIZE * (0.5 + Math.random()),
-    });
-  }
-}
-
-function updateBloodParticles(
-  gfx: Graphics,
-  particles: BloodParticle[],
-  dt: number,
-): BloodParticle[] {
-  gfx.clear();
-  const remaining: BloodParticle[] = [];
-  for (const p of particles) {
-    p.life -= dt;
-    if (p.life <= 0) continue;
-    p.vy += BLOOD_PARTICLE_GRAVITY * dt;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    const alpha = Math.max(0, p.life / BLOOD_PARTICLE_LIFETIME);
-    gfx.circle(p.x, p.y, p.size);
-    gfx.fill({ color: 0xcc0000, alpha });
-    remaining.push(p);
-  }
-  return remaining;
-}
-
-// ──────────────────────────────────────────────
-//  Spark‑particle helpers
-// ──────────────────────────────────────────────
-
-function spawnSparks(particles: SparkParticle[], x: number, y: number) {
-  for (let i = 0; i < SPARK_PARTICLE_COUNT; i++) {
-    // Sparks radiate in all directions
-    const angle = Math.random() * Math.PI * 2;
-    const speed = SPARK_PARTICLE_SPEED * (0.3 + Math.random() * 0.7);
-    particles.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - SPARK_PARTICLE_SPEED * 0.3,
-      life: SPARK_PARTICLE_LIFETIME * (0.4 + Math.random() * 0.6),
-      size: SPARK_PARTICLE_SIZE * (0.5 + Math.random()),
-    });
-  }
-}
-
-function updateSparkParticles(
-  gfx: Graphics,
-  particles: SparkParticle[],
-  dt: number,
-): SparkParticle[] {
-  gfx.clear();
-  const remaining: SparkParticle[] = [];
-  for (const p of particles) {
-    p.life -= dt;
-    if (p.life <= 0) continue;
-    p.vy += SPARK_PARTICLE_GRAVITY * dt;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    const alpha = Math.max(0, p.life / SPARK_PARTICLE_LIFETIME);
-    // Bright yellow core with white-hot center
-    const color = Math.random() > 0.3 ? 0xffdd00 : 0xffffff;
-    gfx.circle(p.x, p.y, p.size * alpha);
-    gfx.fill({ color, alpha });
-    remaining.push(p);
-  }
-  return remaining;
-}
-
-// ──────────────────────────────────────────────
-//  Hook
-// ──────────────────────────────────────────────
+import type { GameLoopParams } from "./types/useGameLoop.types";
 
 export function useGameLoop({
   app,
@@ -152,15 +27,18 @@ export function useGameLoop({
   bgTexture,
   samuraiAnims,
   shinobiAnims,
+  dialGame,
+  showFightText,
+  layout,
+  startGame,
 }: GameLoopParams) {
   const bloodGfx = useRef<Graphics | null>(null);
   const sparkGfx = useRef<Graphics | null>(null);
 
   // Phase state machine
-  const phase = useRef<Phase>("run");
-  const samuraiX = useRef(50);
-  const shinobiX = useRef(0);
-  const shinobiXInit = useRef(false);
+  const phase = useRef<Phase>("intro");
+  const samuraiX = useRef(layout.positions.charStartX);
+  const shinobiX = useRef(layout.positions.charEndX);
 
   const samuraiFightX = useRef(0);
   const shinobiFightX = useRef(0);
@@ -180,8 +58,13 @@ export function useGameLoop({
   const bloodParticles = useRef<BloodParticle[]>([]);
   const sparkParticles = useRef<SparkParticle[]>([]);
 
-  // Track whether clash spark was emitted for current attack cycle
   const clashSparkEmitted = useRef(false);
+
+  // Track last consumed dial hit result to avoid re-processing
+  const lastDialResult = useRef<boolean | null>(null);
+
+  // Track pending phase-transition timeouts so we can cancel on rapid input
+  const pendingTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // ── Attach Graphics layers to the container ──
 
@@ -205,54 +88,62 @@ export function useGameLoop({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Keyboard listener ──
+  // ── Input listener for dial game (Space / click / tap) ──
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Control") {
-        // If still running, compute fight positions from screen center
-        if (phase.current === "run" || samuraiFightX.current === 0) {
-          const cx = app.screen.width / 2;
-          samuraiFightX.current = cx - (FRAME_SIZE * CHAR_SCALE) / 2 - MEET_GAP / 2;
-          shinobiFightX.current = cx + (FRAME_SIZE * CHAR_SCALE) / 2 + MEET_GAP / 2;
-        }
-        // Snap both characters to fight positions
-        samuraiX.current = samuraiFightX.current;
-        shinobiX.current = shinobiFightX.current;
-        samuraiKnockback.current = 0;
-        shinobiKnockback.current = 0;
-        // Enter clash
-        phase.current = "clash";
-        samuraiFrame.current = 0;
-        shinobiFrame.current = 0;
-        samuraiElapsed.current = 0;
-        shinobiElapsed.current = 0;
-        phaseAnimDone.current = false;
-        clashSparkEmitted.current = false;
-      }
-      if (e.key === " ") {
-        e.preventDefault();
-        // Reset to normal battle flow
+    const combatPhases: Phase[] = [
+      "idle",
+      "samurai_attack",
+      "shinobi_hurt",
+      "shinobi_recover",
+      "shinobi_attack",
+      "samurai_hurt",
+      "samurai_recover",
+      "samurai_idle_wait",
+      "shinobi_idle_wait",
+    ];
+
+    const handleInput = (e?: KeyboardEvent) => {
+      if (e && e.key !== " ") return;
+      if (e) e.preventDefault();
+
+      // Allow input during any combat phase (not run / fight_text / clash)
+      if (!combatPhases.includes(phase.current)) return;
+      if (!dialGame.active.current) return;
+
+      const hit = dialGame.attempt();
+      if (hit === null) return; // already attempted this lap — ignore
+
+      // Cancel every pending phase-transition timeout
+      for (const id of pendingTimeouts.current) clearTimeout(id);
+      pendingTimeouts.current = [];
+
+      // Snap characters back to fight positions & clear residual knockback
+      samuraiX.current = samuraiFightX.current;
+      shinobiX.current = shinobiFightX.current;
+      samuraiKnockback.current = 0;
+      shinobiKnockback.current = 0;
+
+      if (hit) {
+        phase.current = "samurai_attack";
+        resetPhaseFrames();
+      } else {
         phase.current = "shinobi_attack";
-        samuraiFrame.current = 0;
-        shinobiFrame.current = 0;
-        samuraiElapsed.current = 0;
-        shinobiElapsed.current = 0;
-        phaseAnimDone.current = false;
-        clashSparkEmitted.current = false;
-        // Move characters back to fight positions
-        samuraiX.current = samuraiFightX.current;
-        shinobiX.current = shinobiFightX.current;
-        samuraiKnockback.current = 0;
-        shinobiKnockback.current = 0;
+        resetPhaseFrames();
       }
     };
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [app.screen.width]);
+    const onKeyDown = (e: KeyboardEvent) => handleInput(e);
+    const onPointerDown = () => handleInput();
 
-  // ── Helpers (closures over refs) ──
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointerdown", onPointerDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dialGame]);
 
   const resetPhaseFrames = () => {
     samuraiFrame.current = 0;
@@ -265,6 +156,16 @@ export function useGameLoop({
   const startShake = () => {
     shakeTimer.current = SHAKE_DURATION;
     isShaking.current = true;
+  };
+
+  /** Schedule a timeout and track it so it can be cancelled on rapid input. */
+  const schedulePhase = (fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      // Remove from tracking once it fires
+      pendingTimeouts.current = pendingTimeouts.current.filter((t) => t !== id);
+      fn();
+    }, ms);
+    pendingTimeouts.current.push(id);
   };
 
   // ── Main tick ──
@@ -280,12 +181,6 @@ export function useGameLoop({
       return;
     if (!samuraiAnims || !shinobiAnims) return;
 
-    // Initialise shinobi start position once we know screen width
-    if (!shinobiXInit.current) {
-      shinobiX.current = app.screen.width - 50 - FRAME_SIZE * CHAR_SCALE;
-      shinobiXInit.current = true;
-    }
-
     // Scale background to cover the viewport
     if (bgTexture !== Texture.EMPTY) {
       const s = Math.max(
@@ -299,7 +194,6 @@ export function useGameLoop({
 
     const dt = ticker.deltaTime / 60;
     const curPhase = phase.current;
-    const groundY = app.screen.height - FRAME_SIZE * CHAR_SCALE - 20;
 
     // ── Sprite animation stepping ──
 
@@ -323,48 +217,119 @@ export function useGameLoop({
     // ── Knockback ──
 
     if (samuraiKnockback.current > 0) {
-      const kb = Math.min(samuraiKnockback.current, KNOCKBACK_SPEED * dt);
+      const kb = Math.min(
+        samuraiKnockback.current,
+        layout.movement.knockbackSpeed * dt,
+      );
       samuraiX.current -= kb;
       samuraiKnockback.current -= kb;
     }
     if (shinobiKnockback.current > 0) {
-      const kb = Math.min(shinobiKnockback.current, KNOCKBACK_SPEED * dt);
+      const kb = Math.min(
+        shinobiKnockback.current,
+        layout.movement.knockbackSpeed * dt,
+      );
       shinobiX.current += kb;
       shinobiKnockback.current -= kb;
     }
 
     // ── Phase state machine ──
 
-    const meetDist = FRAME_SIZE * CHAR_SCALE + MEET_GAP;
+    const meetDist = layout.characters.charSize + layout.movement.meetGap;
 
     switch (curPhase) {
-      case "run": {
-        samuraiX.current += RUN_SPEED * dt;
-        shinobiX.current -= RUN_SPEED * dt;
-        if (shinobiX.current - samuraiX.current <= meetDist) {
-          const cx = (samuraiX.current + shinobiX.current) / 2;
-          samuraiX.current = cx - (FRAME_SIZE * CHAR_SCALE) / 2 - MEET_GAP / 2;
-          shinobiX.current = cx + (FRAME_SIZE * CHAR_SCALE) / 2 + MEET_GAP / 2;
-          samuraiFightX.current = samuraiX.current;
-          shinobiFightX.current = shinobiX.current;
-          phase.current = "shinobi_attack";
+      case "intro": {
+        // Characters visible and idle at screen edges; waiting for "Play Offline"
+        if (startGame.current) {
+          startGame.current = false;
+          phase.current = "run";
           resetPhaseFrames();
         }
         break;
       }
 
-      case "shinobi_attack": {
-        if (shinobiFrame.current === shinAnim.length - 1 && !phaseAnimDone.current) {
-          phaseAnimDone.current = true;
+      case "run": {
+        samuraiX.current += layout.movement.runSpeed * dt;
+        shinobiX.current -= layout.movement.runSpeed * dt;
+        if (shinobiX.current - samuraiX.current <= meetDist) {
+          const cx = (samuraiX.current + shinobiX.current) / 2;
+          samuraiX.current =
+            cx - layout.characters.charSize / 2 - layout.movement.meetGap / 2;
+          shinobiX.current =
+            cx + layout.characters.charSize / 2 + layout.movement.meetGap / 2;
+          samuraiFightX.current = samuraiX.current;
+          shinobiFightX.current = shinobiX.current;
+          // Show ring & "FIGHT!" text, then transition to idle
+          if (refs.ringContainer.current) {
+            refs.ringContainer.current.visible = true;
+          }
+          phase.current = "fight_text";
+          showFightText.current = true;
+          resetPhaseFrames();
           setTimeout(() => {
+            showFightText.current = false;
+            phase.current = "idle";
+            resetPhaseFrames();
+            dialGame.start();
+          }, FIGHT_TEXT_DURATION_MS);
+        }
+        break;
+      }
+
+      case "fight_text":
+      case "idle": {
+        // Check if the dial game auto-missed (2 rotations without input)
+        if (curPhase === "idle") {
+          const dialHit = dialGame.lastHit.current;
+          if (dialHit !== null && dialHit !== lastDialResult.current) {
+            lastDialResult.current = dialHit;
+            if (!dialHit) {
+              // Auto-miss: player takes damage
+              phase.current = "shinobi_attack";
+              resetPhaseFrames();
+            }
+          }
+        }
+        break;
+      }
+
+      case "samurai_attack": {
+        if (
+          samuraiFrame.current === samAnim.length - 1 &&
+          !phaseAnimDone.current
+        ) {
+          phaseAnimDone.current = true;
+          schedulePhase(() => {
+            phase.current = "shinobi_hurt";
+            resetPhaseFrames();
+            startShake();
+            shinobiKnockback.current = layout.movement.knockbackDistance;
+            spawnBlood(
+              bloodParticles.current,
+              shinobiX.current + layout.characters.charSize * 0.4,
+              layout.positions.groundY + layout.characters.charSize * 0.4,
+              1,
+            );
+          }, HIT_FREEZE_MS);
+        }
+        break;
+      }
+
+      case "shinobi_attack": {
+        if (
+          shinobiFrame.current === shinAnim.length - 1 &&
+          !phaseAnimDone.current
+        ) {
+          phaseAnimDone.current = true;
+          schedulePhase(() => {
             phase.current = "samurai_hurt";
             resetPhaseFrames();
             startShake();
-            samuraiKnockback.current = KNOCKBACK_DISTANCE;
+            samuraiKnockback.current = layout.movement.knockbackDistance;
             spawnBlood(
               bloodParticles.current,
-              samuraiX.current + FRAME_SIZE * CHAR_SCALE * 0.4,
-              groundY + FRAME_SIZE * CHAR_SCALE * 0.4,
+              samuraiX.current + layout.characters.charSize * 0.4,
+              layout.positions.groundY + layout.characters.charSize * 0.4,
               -1,
             );
           }, HIT_FREEZE_MS);
@@ -373,9 +338,12 @@ export function useGameLoop({
       }
 
       case "samurai_hurt": {
-        if (samuraiFrame.current === samAnim.length - 1 && !phaseAnimDone.current) {
+        if (
+          samuraiFrame.current === samAnim.length - 1 &&
+          !phaseAnimDone.current
+        ) {
           phaseAnimDone.current = true;
-          setTimeout(() => {
+          schedulePhase(() => {
             phase.current = "samurai_recover";
             resetPhaseFrames();
           }, HURT_PAUSE_MS);
@@ -385,53 +353,27 @@ export function useGameLoop({
 
       case "samurai_recover": {
         if (samuraiX.current < samuraiFightX.current) {
-          samuraiX.current += RECOVER_SPEED * dt;
+          samuraiX.current += layout.movement.recoverSpeed * dt;
           if (samuraiX.current >= samuraiFightX.current) {
             samuraiX.current = samuraiFightX.current;
-            phase.current = "samurai_idle_wait";
+            // Return to idle — dial resumes
+            phase.current = "idle";
             resetPhaseFrames();
           }
         } else {
-          phase.current = "samurai_idle_wait";
+          phase.current = "idle";
           resetPhaseFrames();
         }
         break;
       }
 
-      case "samurai_idle_wait": {
-        if (!phaseAnimDone.current) {
-          phaseAnimDone.current = true;
-          setTimeout(() => {
-            phase.current = "samurai_attack";
-            resetPhaseFrames();
-          }, RECOVER_IDLE_MS);
-        }
-        break;
-      }
-
-      case "samurai_attack": {
-        if (samuraiFrame.current === samAnim.length - 1 && !phaseAnimDone.current) {
-          phaseAnimDone.current = true;
-          setTimeout(() => {
-            phase.current = "shinobi_hurt";
-            resetPhaseFrames();
-            startShake();
-            shinobiKnockback.current = KNOCKBACK_DISTANCE;
-            spawnBlood(
-              bloodParticles.current,
-              shinobiX.current + FRAME_SIZE * CHAR_SCALE * 0.4,
-              groundY + FRAME_SIZE * CHAR_SCALE * 0.4,
-              1,
-            );
-          }, HIT_FREEZE_MS);
-        }
-        break;
-      }
-
       case "shinobi_hurt": {
-        if (shinobiFrame.current === shinAnim.length - 1 && !phaseAnimDone.current) {
+        if (
+          shinobiFrame.current === shinAnim.length - 1 &&
+          !phaseAnimDone.current
+        ) {
           phaseAnimDone.current = true;
-          setTimeout(() => {
+          schedulePhase(() => {
             phase.current = "shinobi_recover";
             resetPhaseFrames();
           }, HURT_PAUSE_MS);
@@ -441,14 +383,24 @@ export function useGameLoop({
 
       case "shinobi_recover": {
         if (shinobiX.current > shinobiFightX.current) {
-          shinobiX.current -= RECOVER_SPEED * dt;
+          shinobiX.current -= layout.movement.recoverSpeed * dt;
           if (shinobiX.current <= shinobiFightX.current) {
             shinobiX.current = shinobiFightX.current;
-            phase.current = "shinobi_idle_wait";
+            // Return to idle — dial resumes
+            phase.current = "idle";
             resetPhaseFrames();
           }
         } else {
-          phase.current = "shinobi_idle_wait";
+          phase.current = "idle";
+          resetPhaseFrames();
+        }
+        break;
+      }
+
+      case "samurai_idle_wait": {
+        if (!phaseAnimDone.current) {
+          phaseAnimDone.current = true;
+          phase.current = "idle";
           resetPhaseFrames();
         }
         break;
@@ -457,19 +409,15 @@ export function useGameLoop({
       case "shinobi_idle_wait": {
         if (!phaseAnimDone.current) {
           phaseAnimDone.current = true;
-          setTimeout(() => {
-            phase.current = "shinobi_attack";
-            resetPhaseFrames();
-          }, RECOVER_IDLE_MS);
+          phase.current = "idle";
+          resetPhaseFrames();
         }
         break;
       }
 
       case "clash": {
-        // Waiting between swings — both characters idle
         if (phaseAnimDone.current) break;
 
-        // Both attack simultaneously — emit sparks at the impact frame
         const samImpact = Math.floor(samAnim.length * 0.6);
         const shinImpact = Math.floor(shinAnim.length * 0.6);
         const atImpact =
@@ -479,19 +427,21 @@ export function useGameLoop({
         if (atImpact && !clashSparkEmitted.current) {
           clashSparkEmitted.current = true;
           startShake();
-          const clashX = (samuraiX.current + FRAME_SIZE * CHAR_SCALE + shinobiX.current) / 2;
-          const clashY = groundY + FRAME_SIZE * CHAR_SCALE * 0.35;
+          const clashX =
+            (samuraiX.current + layout.characters.charSize + shinobiX.current) /
+            2;
+          const clashY =
+            layout.positions.groundY + layout.characters.charSize * 0.35;
           spawnSparks(sparkParticles.current, clashX, clashY);
         }
 
-        // When both anims complete, pause before next swing
         if (
           samuraiFrame.current === samAnim.length - 1 ||
           shinobiFrame.current === shinAnim.length - 1
         ) {
           phaseAnimDone.current = true;
           setTimeout(() => {
-            if (phase.current !== "clash") return; // cancelled
+            if (phase.current !== "clash") return;
             samuraiFrame.current = 0;
             shinobiFrame.current = 0;
             samuraiElapsed.current = 0;
@@ -509,10 +459,10 @@ export function useGameLoop({
     samurai.current.x = samuraiX.current;
     shinobi.current.x = shinobiX.current;
 
-    samurai.current.scale.x = CHAR_SCALE;
+    samurai.current.scale.x = layout.characters.charScale;
     samurai.current.anchor.x = 0;
 
-    shinobi.current.scale.x = -CHAR_SCALE;
+    shinobi.current.scale.x = -layout.characters.charScale;
     shinobi.current.anchor.x = 1;
 
     // ── Screen shake ──
@@ -525,7 +475,7 @@ export function useGameLoop({
         container.current.y = 0;
       } else {
         const progress = shakeTimer.current / SHAKE_DURATION;
-        const intensity = SHAKE_INTENSITY * progress;
+        const intensity = layout.movement.shakeIntensity * progress;
         container.current.x = (Math.random() - 0.5) * 2 * intensity;
         container.current.y = (Math.random() - 0.5) * 2 * intensity;
       }

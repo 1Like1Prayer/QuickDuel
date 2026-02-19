@@ -1,0 +1,159 @@
+.intro-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Semi-transparent dark overlay so the game background is visible */
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+
+.intro-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3rem;
+  margin-top: -20vh;
+}
+
+/* ── Title ── */
+.intro-title {
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: clamp(3rem, 10vw, 7rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffcc00;
+  text-shadow:
+    0 0 12px rgba(255, 204, 0, 0.6),
+    0 4px 0 #b8860b,
+    0 6px 8px rgba(0, 0, 0, 0.7);
+  margin: 0;
+  user-select: none;
+  animation: title-pulse 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes title-pulse {
+  0% {
+    text-shadow:
+      0 0 12px rgba(255, 204, 0, 0.6),
+      0 4px 0 #b8860b,
+      0 6px 8px rgba(0, 0, 0, 0.7);
+  }
+  100% {
+    text-shadow:
+      0 0 24px rgba(255, 204, 0, 0.9),
+      0 4px 0 #b8860b,
+      0 6px 12px rgba(0, 0, 0, 0.8),
+      0 0 60px rgba(255, 140, 0, 0.3);
+  }
+}
+
+/* ── Buttons ── */
+.intro-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.intro-btn {
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.8em 2.5em;
+  border: 2px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 260px;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.intro-btn-primary {
+  background: linear-gradient(180deg, #cc3311 0%, #991100 100%);
+  border-color: #ff4422;
+  color: #ffffff;
+  box-shadow:
+    0 0 16px rgba(204, 51, 17, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.intro-btn-primary:hover {
+  background: linear-gradient(180deg, #dd4422 0%, #aa2200 100%);
+  box-shadow:
+    0 0 28px rgba(204, 51, 17, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: scale(1.04);
+}
+
+.intro-btn-primary:active {
+  transform: scale(0.97);
+  box-shadow: 0 0 8px rgba(204, 51, 17, 0.3);
+}
+
+.intro-btn-secondary {
+  background: linear-gradient(180deg, #333333 0%, #1a1a1a 100%);
+  border-color: #555555;
+  color: #888888;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.intro-btn-secondary:hover {
+  transform: none;
+}
+
+/* ── Difficulty buttons ── */
+.intro-btn-difficulty {
+  width: 320px;
+  min-width: 320px;
+  text-align: center;
+  color: #ffffff;
+  box-shadow:
+    0 0 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.intro-btn-difficulty:hover {
+  transform: scale(1.04);
+}
+
+.intro-btn-difficulty:active {
+  transform: scale(0.97);
+}
+
+.intro-btn-beginner {
+  background: linear-gradient(180deg, #228833 0%, #115522 100%);
+  border-color: #33aa44;
+}
+
+.intro-btn-beginner:hover {
+  background: linear-gradient(180deg, #33aa44 0%, #227733 100%);
+  box-shadow: 0 0 24px rgba(34, 136, 51, 0.6);
+}
+
+.intro-btn-intermediate {
+  background: linear-gradient(180deg, #cc8800 0%, #996600 100%);
+  border-color: #ddaa22;
+}
+
+.intro-btn-intermediate:hover {
+  background: linear-gradient(180deg, #ddaa22 0%, #aa7700 100%);
+  box-shadow: 0 0 24px rgba(204, 136, 0, 0.6);
+}
+
+.intro-btn-advanced {
+  background: linear-gradient(180deg, #cc2222 0%, #881111 100%);
+  border-color: #ee3333;
+}
+
+.intro-btn-advanced:hover {
+  background: linear-gradient(180deg, #dd3333 0%, #992222 100%);
+  box-shadow: 0 0 24px rgba(204, 34, 34, 0.6);
+}

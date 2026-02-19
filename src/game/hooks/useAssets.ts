@@ -19,6 +19,21 @@ export function useBackgroundTexture() {
   return bgTexture;
 }
 
+/** Load and return the bricks texture. */
+export function useBricksTexture() {
+  const [bricksTexture, setBricksTexture] = useState(Texture.EMPTY);
+
+  useEffect(() => {
+    if (bricksTexture === Texture.EMPTY) {
+      Assets.load("/Ring_Texture.png").then(setBricksTexture);
+    }
+  }, [bricksTexture]);
+
+  return bricksTexture;
+}
+
+
+
 /** Load and return both character animation sets. */
 export function useCharacterAnims() {
   const [samuraiAnims, setSamuraiAnims] = useState<CharAnims | null>(null);

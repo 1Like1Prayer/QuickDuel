@@ -6,8 +6,13 @@ export function getAnimName(
   phase: Phase,
 ): keyof CharAnims {
   switch (phase) {
+    case "intro":
+      return "Idle";
     case "run":
       return "Run";
+    case "idle":
+    case "fight_text":
+      return "Idle";
     case "shinobi_attack":
       return char === "shinobi" ? "Attack_1" : "Idle";
     case "samurai_hurt":
