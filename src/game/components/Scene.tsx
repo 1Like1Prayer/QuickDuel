@@ -37,6 +37,7 @@ export function Scene() {
   const shinobiRef = useRef<Sprite>(null);
   const ringContainerRef = useRef<Container>(null);
   const katanaOuterRef = useRef<Container>(null);
+  const cpuKatanaOuterRef = useRef<Container>(null);
 
   // Bricks ring refs (outer ring)
   const outerRingSpriteRef = useRef<Sprite>(null);
@@ -62,11 +63,16 @@ export function Scene() {
   // Katana background
   const katanaBgRef = useRef<Graphics>(null);
 
-  // Katana streak
+  // Katana streak (player)
   const [katanaTexture, setKatanaTexture] = useState(Texture.EMPTY);
   const katanaContainerRef = useRef<Container>(null);
   const katanaSpritesRef = useRef<Sprite[]>([]);
   const prevKatanaCount = useRef(0);
+
+  // Katana streak (CPU)
+  const cpuKatanaContainerRef = useRef<Container>(null);
+  const cpuKatanaSpritesRef = useRef<Sprite[]>([]);
+  const cpuKatanaBgRef = useRef<Graphics>(null);
 
   // Load assets
   const bgTexture = useBackgroundTexture();
@@ -89,7 +95,7 @@ export function Scene() {
   const countdownTextRef = useRef<Text>(null);
 
   // Run game loop
-  const { showWinText, winTextAlpha, countdownText } = useGameLoop({
+  const { showWinText, winTextAlpha, winnerText, countdownText, cpuHitColors } = useGameLoop({
     app,
     refs: {
       container: containerRef,
@@ -98,6 +104,7 @@ export function Scene() {
       shinobi: shinobiRef,
       ringContainer: ringContainerRef,
       katanaContainer: katanaOuterRef,
+      cpuKatanaContainer: cpuKatanaOuterRef,
     },
     bgTexture,
     samuraiAnims,
@@ -134,8 +141,9 @@ export function Scene() {
       }
     }
 
-    // Update "You Win" text
+    // Update "You Win" / "You Lose" text
     if (winTextRef.current) {
+      winTextRef.current.text = winnerText.current;
       winTextRef.current.visible = showWinText.current;
       winTextRef.current.alpha = winTextAlpha.current;
     }
@@ -287,7 +295,54 @@ export function Scene() {
       }
     }
 
-    // ── Katana hit streak ──
+    // ── CPU Katana hit streak (above the circle) ──
+    const cpuKatanaContainer = cpuKatanaContainerRef.current;
+    if (cpuKatanaContainer && katanaTexture !== Texture.EMPTY) {
+      const colors = cpuHitColors.current;
+      const count = colors.length;
+
+      while (cpuKatanaSpritesRef.current.length < count) {
+        const s = new Sprite(katanaTexture);
+        s.width = layout.katana.katanaSize;
+        s.height = layout.katana.katanaSize;
+        s.anchor.set(0.5);
+        cpuKatanaContainer.addChild(s);
+        cpuKatanaSpritesRef.current.push(s);
+      }
+      while (cpuKatanaSpritesRef.current.length > count) {
+        const removed = cpuKatanaSpritesRef.current.shift()!;
+        cpuKatanaContainer.removeChild(removed);
+        removed.destroy();
+      }
+
+      const totalWidth =
+        count * layout.katana.katanaSize +
+        Math.max(0, count - 1) * layout.katana.katanaSpacing;
+      const startX = -totalWidth / 2 + layout.katana.katanaSize / 2;
+
+      for (let i = 0; i < count; i++) {
+        const s = cpuKatanaSpritesRef.current[i];
+        s.width = layout.katana.katanaSize;
+        s.height = layout.katana.katanaSize;
+        s.x = startX + i * (layout.katana.katanaSize + layout.katana.katanaSpacing);
+        s.y = 0;
+        s.tint = colors[i];
+      }
+
+      const cpuKatanaBg = cpuKatanaBgRef.current;
+      if (cpuKatanaBg) {
+        cpuKatanaBg.clear();
+        if (count > 0) {
+          const pad = layout.katana.katanaSize * 0.22;
+          const bgW = totalWidth + pad * 2;
+          const bgH = layout.katana.katanaSize + pad * 2;
+          cpuKatanaBg.roundRect(-bgW / 2, -bgH / 2, bgW, bgH, bgH / 2);
+          cpuKatanaBg.fill({ color: 0x000000, alpha: 0.45 });
+        }
+      }
+    }
+
+    // ── Player Katana hit streak (below the circle) ──
     const katanaContainer = katanaContainerRef.current;
     if (katanaContainer && katanaTexture !== Texture.EMPTY) {
       const colors = dialGame.hitColors.current;
@@ -433,7 +488,28 @@ export function Scene() {
         </pixiContainer>
       )}
 
-      {/* Katana hit streak below the ring */}
+      {/* CPU Katana hit streak above the ring */}
+      <pixiContainer
+        ref={cpuKatanaOuterRef}
+        x={layout.positions.meetX}
+        y={
+          layout.positions.meetY -
+          layout.ring.outerRadius -
+          layout.katana.katanaSize * 0.4 -
+          layout.katana.katanaSize / 2
+        }
+        visible={false}
+      >
+        <pixiGraphics
+          ref={cpuKatanaBgRef}
+          draw={() => {
+            /* redrawn each tick */
+          }}
+        />
+        <pixiContainer ref={cpuKatanaContainerRef} />
+      </pixiContainer>
+
+      {/* Player Katana hit streak below the ring */}
       <pixiContainer
         ref={katanaOuterRef}
         x={layout.positions.meetX}

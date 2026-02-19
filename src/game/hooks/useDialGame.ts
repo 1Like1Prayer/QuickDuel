@@ -14,7 +14,6 @@ import {
   REGEN_GATE_RAD,
   SPEED_STEP,
 } from "../constants";
-import { useGameStore } from "../../state";
 
 import type { HitZoneBlock, UseDialGameParams, UseDialGameReturn } from "./types/useDialGame.types";
 import {
@@ -47,6 +46,9 @@ export function useDialGame({
   // Dial angle where the miss occurred (radial red line)
   const missAngle = useRef<number | null>(null);
 
+  // Points scored by the player on the latest hit (0 if miss), consumed by game loop
+  const lastHitPoints = useRef(0);
+
   // Rolling hit streak colours
   const hitColors = useRef<number[]>([]);
 
@@ -65,6 +67,9 @@ export function useDialGame({
 
   // Track the previous normalised angle to detect the 30° gate crossing.
   const prevNorm = useRef(normalizeAngle(-Math.PI / 2));
+
+  // Increments each time blocks regenerate (gate crossing)
+  const regenCount = useRef(0);
 
 
   // ── Start / Stop ──
@@ -86,6 +91,7 @@ export function useDialGame({
     attemptedThisLap.current = false;
     pendingColorTrim.current = false;
     pendingColorRestore.current = false;
+    regenCount.current = 0;
   }, []);
 
   const stop = useCallback(() => {
@@ -120,7 +126,7 @@ export function useDialGame({
       hitBlockAngles.current = { startAngle: hitBlock.startAngle, endAngle: hitBlock.endAngle };
       const color = blockColor(hitBlock, colorStack.current);
       const points = BLOCK_POINTS[color] ?? 1;
-      useGameStore.getState().scorePlayer(points);
+      lastHitPoints.current = points;
 
       hitColors.current = [
         ...hitColors.current.slice(-(MAX_KATANA_COUNT - 1)),
@@ -131,8 +137,7 @@ export function useDialGame({
         pendingColorTrim.current = true;
       }
     } else {
-      useGameStore.getState().scoreOpponent(1);
-
+      lastHitPoints.current = 0;
       blockCount.current = Math.min(
         MAX_BLOCK_COUNT,
         blockCount.current + 1,
@@ -185,7 +190,6 @@ export function useDialGame({
         // (skipped on the first crossing because blocks start empty)
         if (!attemptedThisLap.current && blocks.current.length > 0) {
           lastHit.current = false;
-          useGameStore.getState().scoreOpponent(1);
 
           blockCount.current = Math.min(
             MAX_BLOCK_COUNT,
@@ -215,6 +219,7 @@ export function useDialGame({
         }
         blocks.current = generateBlocks(blockCount.current);
         attemptedThisLap.current = false;
+        regenCount.current++;
       }
 
       prevNorm.current = curNorm;
@@ -235,7 +240,9 @@ export function useDialGame({
     missPulseTimer,
     missAngle,
     hitColors,
+    lastHitPoints,
     colorStack,
+    regenCount,
     start,
     stop,
     attempt,

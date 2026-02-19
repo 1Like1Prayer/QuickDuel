@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { useGameStore } from "../../state";
+import type { Difficulty } from "../../state";
 import "./IntroScreen.css";
 
 type Screen = "main" | "difficulty";
@@ -9,9 +10,9 @@ export function IntroScreen() {
   const startGame = useGameStore((s) => s.startGame);
   const [screen, setScreen] = useState<Screen>("main");
 
-  const handleDifficultyPick = (e: React.MouseEvent) => {
+  const handleDifficultyPick = (difficulty: Difficulty) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    startGame();
+    startGame(difficulty);
   };
 
   return (
@@ -40,19 +41,19 @@ export function IntroScreen() {
           <div className="intro-buttons">
             <button
               className="intro-btn intro-btn-difficulty intro-btn-beginner"
-              onClick={handleDifficultyPick}
+              onClick={handleDifficultyPick("beginner")}
             >
               Beginner
             </button>
             <button
               className="intro-btn intro-btn-difficulty intro-btn-intermediate"
-              onClick={handleDifficultyPick}
+              onClick={handleDifficultyPick("intermediate")}
             >
               Intermediate
             </button>
             <button
               className="intro-btn intro-btn-difficulty intro-btn-advanced"
-              onClick={handleDifficultyPick}
+              onClick={handleDifficultyPick("advanced")}
             >
               Advanced
             </button>

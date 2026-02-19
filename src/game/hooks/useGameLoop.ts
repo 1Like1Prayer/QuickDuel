@@ -24,6 +24,7 @@ import {
   updateSparkParticles,
 } from "../utils/particles";
 import { getAnimName } from "../utils/phases";
+import { cpuTakeTurn, createCpuState } from "../services/cpuService";
 import type { GameLoopParams } from "./types/useGameLoop.types";
 
 export function useGameLoop({
@@ -38,9 +39,10 @@ export function useGameLoop({
   const bloodGfx = useRef<Graphics | null>(null);
   const sparkGfx = useRef<Graphics | null>(null);
 
-  // Win text state (read by Scene for rendering)
+  // Win/Lose text state (read by Scene for rendering)
   const showWinText = useRef(false);
   const winTextAlpha = useRef(0);
+  const winnerText = useRef("You Win");
 
   // Countdown state (read by Scene for rendering)
   const countdownText = useRef<string | null>(null);  // "3", "2", "1", "FIGHT!" or null
@@ -76,6 +78,83 @@ export function useGameLoop({
 
   // Track pending phase-transition timeouts so we can cancel on rapid input
   const pendingTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // CPU state — independent block count & katana streak
+  const cpuState = useRef(createCpuState());
+  const cpuHitColors = useRef<number[]>([]);
+  const lastRegenCount = useRef(0);
+  const cpuTurnTakenThisLap = useRef(false);
+
+  /** Run the CPU's virtual turn and return the points scored (0 if miss). */
+  const doCpuTurn = (): number => {
+    if (useGameStore.getState().phase === "ended") return 0;
+    cpuTurnTakenThisLap.current = true;
+    const difficulty = useGameStore.getState().difficulty;
+    const { result, next } = cpuTakeTurn(cpuState.current, difficulty);
+    cpuState.current = next;
+    cpuHitColors.current = next.hitColors;
+    return result.hit ? result.points : 0;
+  };
+
+  /** Resolve a round and trigger the appropriate attack/clash animation based on delta. */
+  const doResolveRound = (playerHit: number, cpuHit: number) => {
+    const delta = playerHit - cpuHit;
+    useGameStore.getState().resolveRound(playerHit, cpuHit);
+
+    // Check if round resolution triggered game-over
+    const storePhase = useGameStore.getState().phase;
+    if (storePhase === "ended" && phase.current !== "player_lose" && phase.current !== "player_win") {
+      const playerWon = useGameStore.getState().playerPoints > useGameStore.getState().opponentPoints;
+      if (playerWon) {
+        winnerText.current = "You Win";
+        phase.current = "player_win";
+        resetPhaseFrames();
+        dialGame.stop();
+        if (refs.ringContainer.current) refs.ringContainer.current.visible = false;
+        if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
+        if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
+        startShake();
+        shinobiKnockback.current = layout.movement.knockbackDistance;
+        spawnBlood(
+          bloodParticles.current,
+          shinobiX.current + layout.characters.charSize * 0.4,
+          layout.positions.groundY + layout.characters.charSize * 0.4,
+          1,
+        );
+      } else {
+        winnerText.current = "You Lose";
+        phase.current = "player_lose";
+        resetPhaseFrames();
+        dialGame.stop();
+        if (refs.ringContainer.current) refs.ringContainer.current.visible = false;
+        if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
+        if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
+        startShake();
+        samuraiKnockback.current = layout.movement.knockbackDistance;
+        spawnBlood(
+          bloodParticles.current,
+          samuraiX.current + layout.characters.charSize * 0.4,
+          layout.positions.groundY + layout.characters.charSize * 0.4,
+          -1,
+        );
+      }
+      return;
+    }
+
+    // Choose animation based on delta
+    if (delta > 0) {
+      phase.current = "samurai_attack";
+      resetPhaseFrames();
+    } else if (delta < 0) {
+      phase.current = "shinobi_attack";
+      resetPhaseFrames();
+    } else {
+      // delta === 0: clash
+      phase.current = "clash";
+      resetPhaseFrames();
+      clashSparkEmitted.current = false;
+    }
+  };
 
   // ── Attach Graphics layers to the container ──
 
@@ -135,13 +214,10 @@ export function useGameLoop({
       samuraiKnockback.current = 0;
       shinobiKnockback.current = 0;
 
-      if (hit) {
-        phase.current = "samurai_attack";
-        resetPhaseFrames();
-      } else {
-        phase.current = "shinobi_attack";
-        resetPhaseFrames();
-      }
+      // CPU also takes its turn — resolve round together (animation chosen by delta)
+      const cpuHit = doCpuTurn();
+      const playerHit = hit ? dialGame.lastHitPoints.current : 0;
+      doResolveRound(playerHit, cpuHit);
     };
 
     const onKeyDown = (e: KeyboardEvent) => handleInput(e);
@@ -211,7 +287,7 @@ export function useGameLoop({
     const samAnim = samuraiAnims[getAnimName("samurai", curPhase)];
     const shinAnim = shinobiAnims[getAnimName("shinobi", curPhase)];
 
-    if (curPhase !== "player_win") {
+    if (curPhase !== "player_win" && curPhase !== "player_lose") {
       samuraiElapsed.current += dt;
       if (samuraiElapsed.current >= ANIM_SPEED) {
         samuraiElapsed.current = 0;
@@ -279,6 +355,9 @@ export function useGameLoop({
           if (refs.katanaContainer.current) {
             refs.katanaContainer.current.visible = true;
           }
+          if (refs.cpuKatanaContainer.current) {
+            refs.cpuKatanaContainer.current.visible = true;
+          }
           ringAlpha.current = 0;
           // Start countdown sequence: 3 → 2 → 1 → FIGHT!
           phase.current = "countdown";
@@ -313,18 +392,9 @@ export function useGameLoop({
 
       case "fight_text":
       case "idle": {
-        // Check if the dial game auto-missed (2 rotations without input)
-        if (curPhase === "idle") {
-          const dialHit = dialGame.lastHit.current;
-          if (dialHit !== null && dialHit !== lastDialResult.current) {
-            lastDialResult.current = dialHit;
-            if (!dialHit) {
-              // Auto-miss: player takes damage
-              phase.current = "shinobi_attack";
-              resetPhaseFrames();
-            }
-          }
-        }
+        // Auto-miss detection is handled by the regen path (CPU turn on block
+        // regeneration) which calls doResolveRound — that now triggers the
+        // correct attack/clash animation based on delta.
         break;
       }
 
@@ -337,11 +407,13 @@ export function useGameLoop({
           schedulePhase(() => {
             const isGameOver = useGameStore.getState().phase === "ended";
             if (isGameOver) {
+              winnerText.current = "You Win";
               phase.current = "player_win";
               resetPhaseFrames();
               dialGame.stop();
               if (refs.ringContainer.current) refs.ringContainer.current.visible = false;
               if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
+              if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
               startShake();
               shinobiKnockback.current = layout.movement.knockbackDistance;
               spawnBlood(
@@ -374,6 +446,25 @@ export function useGameLoop({
         ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
+            const isGameOver = useGameStore.getState().phase === "ended";
+            if (isGameOver) {
+              winnerText.current = "You Lose";
+              phase.current = "player_lose";
+              resetPhaseFrames();
+              dialGame.stop();
+              if (refs.ringContainer.current) refs.ringContainer.current.visible = false;
+              if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
+              if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
+              startShake();
+              samuraiKnockback.current = layout.movement.knockbackDistance;
+              spawnBlood(
+                bloodParticles.current,
+                samuraiX.current + layout.characters.charSize * 0.4,
+                layout.positions.groundY + layout.characters.charSize * 0.4,
+                -1,
+              );
+              return;
+            }
             phase.current = "samurai_hurt";
             resetPhaseFrames();
             startShake();
@@ -487,19 +578,15 @@ export function useGameLoop({
           spawnSparks(sparkParticles.current, clashX, clashY);
         }
 
+        // Play once — when the animation finishes, return to idle after a short pause
         if (
           samuraiFrame.current === samAnim.length - 1 ||
           shinobiFrame.current === shinAnim.length - 1
         ) {
           phaseAnimDone.current = true;
-          setTimeout(() => {
-            if (phase.current !== "clash") return;
-            samuraiFrame.current = 0;
-            shinobiFrame.current = 0;
-            samuraiElapsed.current = 0;
-            shinobiElapsed.current = 0;
-            phaseAnimDone.current = false;
-            clashSparkEmitted.current = false;
+          schedulePhase(() => {
+            phase.current = "idle";
+            resetPhaseFrames();
           }, CLASH_PAUSE_MS);
         }
         break;
@@ -521,6 +608,10 @@ export function useGameLoop({
           for (const id of pendingTimeouts.current) clearTimeout(id);
           pendingTimeouts.current = [];
           lastDialResult.current = null;
+          cpuState.current = createCpuState();
+          cpuHitColors.current = [];
+          lastRegenCount.current = 0;
+          cpuTurnTakenThisLap.current = false;
           // Fully reset dial game state (blocks, speed, colors, katanas)
           dialGame.start();
           dialGame.stop();
@@ -530,6 +621,7 @@ export function useGameLoop({
             refs.ringContainer.current.alpha = 0;
           }
           if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
+          if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
 
           if (storePhase === "playing") {
             phase.current = "run";
@@ -557,7 +649,82 @@ export function useGameLoop({
           winTextAlpha.current = Math.min(1, winTextAlpha.current + dt / WIN_TEXT_FADE_DURATION);
         }
         break;
+        }
+  
+        case "player_lose": {
+          const storePhase = useGameStore.getState().phase;
+          if (storePhase !== "ended") {
+            showWinText.current = false;
+            winTextAlpha.current = 0;
+            countdownText.current = null;
+            ringAlpha.current = 0;
+            samuraiX.current = layout.positions.charStartX;
+            shinobiX.current = layout.positions.charEndX;
+            samuraiKnockback.current = 0;
+            shinobiKnockback.current = 0;
+            bloodParticles.current = [];
+            sparkParticles.current = [];
+            for (const id of pendingTimeouts.current) clearTimeout(id);
+            pendingTimeouts.current = [];
+            lastDialResult.current = null;
+            cpuState.current = createCpuState();
+            cpuHitColors.current = [];
+            lastRegenCount.current = 0;
+            cpuTurnTakenThisLap.current = false;
+            // Fully reset dial game state (blocks, speed, colors, katanas)
+            dialGame.start();
+            dialGame.stop();
+            // Hide ring & katana containers on full reset
+            if (refs.ringContainer.current) {
+              refs.ringContainer.current.visible = false;
+              refs.ringContainer.current.alpha = 0;
+            }
+            if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
+            if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
+  
+            if (storePhase === "playing") {
+              phase.current = "run";
+              resetPhaseFrames();
+            } else {
+              phase.current = "intro";
+              resetPhaseFrames();
+            }
+            break;
+          }
+  
+          // Slow-motion samurai death animation
+          samuraiElapsed.current += dt;
+          if (samuraiElapsed.current >= SLOWMO_ANIM_SPEED) {
+            samuraiElapsed.current = 0;
+            if (samuraiFrame.current < samAnim.length - 1) {
+              samuraiFrame.current++;
+              samurai.current.texture = samAnim[samuraiFrame.current];
+            } else if (!phaseAnimDone.current) {
+              phaseAnimDone.current = true;
+              showWinText.current = true;
+            }
+          }
+  
+          if (showWinText.current && winTextAlpha.current < 1) {
+            winTextAlpha.current = Math.min(1, winTextAlpha.current + dt / WIN_TEXT_FADE_DURATION);
+          }
+          break;
+        }
+    }
+
+    // ── CPU turn on block regeneration (only if no player hit triggered it already) ──
+    const currentRegen = dialGame.regenCount.current;
+    if (currentRegen > lastRegenCount.current) {
+      const isFirstGate = lastRegenCount.current === 0;
+      lastRegenCount.current = currentRegen;
+      // Skip the very first gate — blocks are just being generated, the player
+      // hasn't had a chance to act yet. Only resolve on subsequent gates.
+      if (!isFirstGate && !cpuTurnTakenThisLap.current) {
+        // Player missed or skipped — player hit = 0, CPU takes a turn
+        const cpuHit = doCpuTurn();
+        doResolveRound(0, cpuHit);
       }
+      cpuTurnTakenThisLap.current = false;
     }
 
     // ── Apply positions & orientation ──
@@ -610,5 +777,5 @@ export function useGameLoop({
     }
   });
 
-  return { showWinText, winTextAlpha, countdownText, ringAlpha };
+  return { showWinText, winTextAlpha, winnerText, countdownText, ringAlpha, cpuHitColors };
 }

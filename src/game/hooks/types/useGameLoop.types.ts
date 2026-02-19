@@ -12,6 +12,7 @@ export interface SceneRefs {
   shinobi: React.RefObject<Sprite | null>;
   ringContainer: React.RefObject<Container | null>;
   katanaContainer: React.RefObject<Container | null>;
+  cpuKatanaContainer: React.RefObject<Container | null>;
 }
 
 export interface GameLoopParams {

@@ -15,7 +15,8 @@ export type Phase =
   | "shinobi_recover"
   | "shinobi_idle_wait"
   | "clash"
-  | "player_win";
+  | "player_win"
+  | "player_lose";
 
 export interface BloodParticle {
   x: number;
