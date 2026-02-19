@@ -9,7 +9,7 @@ export function useLayout(screenWidth: number, screenHeight: number): Layout {
     const unit = Math.min(screenWidth, screenHeight);
 
     // Rings — larger base size, higher floor on phones
-    const outerRadius = Math.max(unit * 0.18, 65);
+    const outerRadius = Math.max(unit * 0.18, 135);
     const ringWidth = outerRadius * 0.175;
     const ringGap = outerRadius * 0.1;
     const innerRingOuter = outerRadius - ringWidth - ringGap;
@@ -24,7 +24,7 @@ export function useLayout(screenWidth: number, screenHeight: number): Layout {
     const groundY = screenHeight - charSize - screenHeight * 0.03;
 
     // Katana icons — bigger & wider for vivid colour display
-    const katanaSize = Math.max(unit * 0.09, 34);
+    const katanaSize = Math.max(unit * 0.09, 64);
 
     return {
       base: {
