@@ -64,7 +64,7 @@ export function useLayout(
       movement: {
         runSpeed: unit * 0.5,
         recoverSpeed: unit * 0.6,
-        meetGap: -charSize * 0.3,
+        meetGap: -charSize * 0.45,
         knockbackDistance: unit * 0.04,
         knockbackSpeed: unit * 0.8,
         shakeIntensity: unit * 0.007,

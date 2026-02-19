@@ -24,7 +24,11 @@ import { blockColor } from "../hooks/utils/useDialGame.utils";
 import { useGameLoop } from "../hooks/useGameLoop";
 import { useLayout } from "../hooks/useLayout";
 
-export function Scene() {
+interface SceneProps {
+  startGame: React.RefObject<boolean>;
+}
+
+export function Scene({ startGame }: SceneProps) {
   const { app } = useApplication();
 
   // Responsive layout
@@ -99,6 +103,7 @@ export function Scene() {
     dialGame,
     showFightText,
     layout,
+    startGame,
   });
 
   // Apply ring masks once refs are ready
@@ -325,9 +330,9 @@ export function Scene() {
     }
   });
 
-  // Derive initial textures
-  const samuraiTex = samuraiAnims ? samuraiAnims.Run[0] : Texture.EMPTY;
-  const shinobiTex = shinobiAnims ? shinobiAnims.Run[0] : Texture.EMPTY;
+  // Derive initial textures (Idle for intro phase)
+  const samuraiTex = samuraiAnims ? samuraiAnims.Idle[0] : Texture.EMPTY;
+  const shinobiTex = shinobiAnims ? shinobiAnims.Idle[0] : Texture.EMPTY;
 
   // Fight text style (dynamic font size)
   const fightTextStyle = {

@@ -30,15 +30,15 @@ export function useGameLoop({
   dialGame,
   showFightText,
   layout,
+  startGame,
 }: GameLoopParams) {
   const bloodGfx = useRef<Graphics | null>(null);
   const sparkGfx = useRef<Graphics | null>(null);
 
   // Phase state machine
-  const phase = useRef<Phase>("run");
+  const phase = useRef<Phase>("intro");
   const samuraiX = useRef(layout.positions.charStartX);
-  const shinobiX = useRef(0);
-  const shinobiXInit = useRef(false);
+  const shinobiX = useRef(layout.positions.charEndX);
 
   const samuraiFightX = useRef(0);
   const shinobiFightX = useRef(0);
@@ -181,12 +181,6 @@ export function useGameLoop({
       return;
     if (!samuraiAnims || !shinobiAnims) return;
 
-    // Initialise shinobi start position once we know screen width
-    if (!shinobiXInit.current) {
-      shinobiX.current = layout.positions.charEndX;
-      shinobiXInit.current = true;
-    }
-
     // Scale background to cover the viewport
     if (bgTexture !== Texture.EMPTY) {
       const s = Math.max(
@@ -244,6 +238,16 @@ export function useGameLoop({
     const meetDist = layout.characters.charSize + layout.movement.meetGap;
 
     switch (curPhase) {
+      case "intro": {
+        // Characters visible and idle at screen edges; waiting for "Play Offline"
+        if (startGame.current) {
+          startGame.current = false;
+          phase.current = "run";
+          resetPhaseFrames();
+        }
+        break;
+      }
+
       case "run": {
         samuraiX.current += layout.movement.runSpeed * dt;
         shinobiX.current -= layout.movement.runSpeed * dt;

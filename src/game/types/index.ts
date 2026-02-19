@@ -1,6 +1,7 @@
 import type { Texture } from "pixi.js";
 
 export type Phase =
+  | "intro"
   | "run"
   | "idle"
   | "fight_text"

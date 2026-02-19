@@ -6,6 +6,8 @@ export function getAnimName(
   phase: Phase,
 ): keyof CharAnims {
   switch (phase) {
+    case "intro":
+      return "Idle";
     case "run":
       return "Run";
     case "idle":
