@@ -1,26 +1,25 @@
 import { useState } from "react";
 
+import { useGameStore } from "../../state";
+import type { Difficulty } from "../../state";
 import "./IntroScreen.css";
 
 type Screen = "main" | "difficulty";
 
-interface IntroScreenProps {
-  onStartGame: () => void;
-}
-
-export function IntroScreen({ onStartGame }: IntroScreenProps) {
+export function IntroScreen() {
+  const startGame = useGameStore((s) => s.startGame);
   const [screen, setScreen] = useState<Screen>("main");
 
-  const handleDifficultyPick = (e: React.MouseEvent) => {
+  const handleDifficultyPick = (difficulty: Difficulty) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    onStartGame();
+    startGame(difficulty);
   };
 
   return (
     <div className="intro-screen" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="intro-content">
-        <h1 className="intro-title">Quick-Duel</h1>
+      <h1 className="intro-title">Quick-Duel</h1>
 
+      <div className="intro-content">
         {screen === "main" && (
           <div className="intro-buttons">
             <button
@@ -42,19 +41,19 @@ export function IntroScreen({ onStartGame }: IntroScreenProps) {
           <div className="intro-buttons">
             <button
               className="intro-btn intro-btn-difficulty intro-btn-beginner"
-              onClick={handleDifficultyPick}
+              onClick={handleDifficultyPick("beginner")}
             >
               Beginner
             </button>
             <button
               className="intro-btn intro-btn-difficulty intro-btn-intermediate"
-              onClick={handleDifficultyPick}
+              onClick={handleDifficultyPick("intermediate")}
             >
               Intermediate
             </button>
             <button
               className="intro-btn intro-btn-difficulty intro-btn-advanced"
-              onClick={handleDifficultyPick}
+              onClick={handleDifficultyPick("advanced")}
             >
               Advanced
             </button>

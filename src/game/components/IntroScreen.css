@@ -10,16 +10,11 @@
   pointer-events: auto;
 }
 
-.intro-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3rem;
-  margin-top: -20vh;
-}
-
-/* ── Title ── */
 .intro-title {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-family: "Arial Black", Impact, sans-serif;
   font-size: clamp(3rem, 10vw, 7rem);
   font-weight: 900;
@@ -33,6 +28,17 @@
   margin: 0;
   user-select: none;
   animation: title-pulse 2.5s ease-in-out infinite alternate;
+}
+
+.intro-content {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
 @keyframes title-pulse {

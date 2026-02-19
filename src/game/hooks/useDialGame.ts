@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 
 import {
+  BLOCK_POINTS,
   HIT_GLOW_DURATION,
   MISS_PULSE_DURATION,
   INITIAL_BLOCK_COUNT,
@@ -45,6 +46,9 @@ export function useDialGame({
   // Dial angle where the miss occurred (radial red line)
   const missAngle = useRef<number | null>(null);
 
+  // Points scored by the player on the latest hit (0 if miss), consumed by game loop
+  const lastHitPoints = useRef(0);
+
   // Rolling hit streak colours
   const hitColors = useRef<number[]>([]);
 
@@ -63,6 +67,9 @@ export function useDialGame({
 
   // Track the previous normalised angle to detect the 30° gate crossing.
   const prevNorm = useRef(normalizeAngle(-Math.PI / 2));
+
+  // Increments each time blocks regenerate (gate crossing)
+  const regenCount = useRef(0);
 
 
   // ── Start / Stop ──
@@ -84,6 +91,7 @@ export function useDialGame({
     attemptedThisLap.current = false;
     pendingColorTrim.current = false;
     pendingColorRestore.current = false;
+    regenCount.current = 0;
   }, []);
 
   const stop = useCallback(() => {
@@ -116,8 +124,10 @@ export function useDialGame({
       // Glow on the hit block only
       hitGlowTimer.current = HIT_GLOW_DURATION;
       hitBlockAngles.current = { startAngle: hitBlock.startAngle, endAngle: hitBlock.endAngle };
-      // Record colour for katana streak
       const color = blockColor(hitBlock, colorStack.current);
+      const points = BLOCK_POINTS[color] ?? 1;
+      lastHitPoints.current = points;
+
       hitColors.current = [
         ...hitColors.current.slice(-(MAX_KATANA_COUNT - 1)),
         color,
@@ -127,7 +137,7 @@ export function useDialGame({
         pendingColorTrim.current = true;
       }
     } else {
-      // Increase blocks back to max
+      lastHitPoints.current = 0;
       blockCount.current = Math.min(
         MAX_BLOCK_COUNT,
         blockCount.current + 1,
@@ -181,7 +191,6 @@ export function useDialGame({
         if (!attemptedThisLap.current && blocks.current.length > 0) {
           lastHit.current = false;
 
-          // Miss penalty
           blockCount.current = Math.min(
             MAX_BLOCK_COUNT,
             blockCount.current + 1,
@@ -210,6 +219,7 @@ export function useDialGame({
         }
         blocks.current = generateBlocks(blockCount.current);
         attemptedThisLap.current = false;
+        regenCount.current++;
       }
 
       prevNorm.current = curNorm;
@@ -230,7 +240,9 @@ export function useDialGame({
     missPulseTimer,
     missAngle,
     hitColors,
+    lastHitPoints,
     colorStack,
+    regenCount,
     start,
     stop,
     attempt,

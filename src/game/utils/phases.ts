@@ -10,6 +10,7 @@ export function getAnimName(
       return "Idle";
     case "run":
       return "Run";
+    case "countdown":
     case "idle":
     case "fight_text":
       return "Idle";
@@ -31,5 +32,9 @@ export function getAnimName(
       return "Idle";
     case "clash":
       return "Attack_1";
+    case "player_win":
+      return char === "shinobi" ? "Dead" : "Idle";
+    case "player_lose":
+      return char === "samurai" ? "Dead" : "Idle";
   }
 }

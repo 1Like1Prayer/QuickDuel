@@ -12,6 +12,7 @@ export interface SceneRefs {
   shinobi: React.RefObject<Sprite | null>;
   ringContainer: React.RefObject<Container | null>;
   katanaContainer: React.RefObject<Container | null>;
+  cpuKatanaContainer: React.RefObject<Container | null>;
 }
 
 export interface GameLoopParams {
@@ -21,8 +22,5 @@ export interface GameLoopParams {
   samuraiAnims: CharAnims | null;
   shinobiAnims: CharAnims | null;
   dialGame: UseDialGameReturn;
-  showFightText: React.RefObject<boolean>;
   layout: Layout;
-  /** When set to true by external code, transitions from intro_idle → run */
-  startGame: React.RefObject<boolean>;
 }

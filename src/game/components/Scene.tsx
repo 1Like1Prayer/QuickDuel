@@ -24,11 +24,7 @@ import { blockColor } from "../hooks/utils/useDialGame.utils";
 import { useGameLoop } from "../hooks/useGameLoop";
 import { useLayout } from "../hooks/useLayout";
 
-interface SceneProps {
-  startGame: React.RefObject<boolean>;
-}
-
-export function Scene({ startGame }: SceneProps) {
+export function Scene() {
   const { app } = useApplication();
 
   // Responsive layout
@@ -41,10 +37,7 @@ export function Scene({ startGame }: SceneProps) {
   const shinobiRef = useRef<Sprite>(null);
   const ringContainerRef = useRef<Container>(null);
   const katanaOuterRef = useRef<Container>(null);
-
-  // "FIGHT!" text ref & visibility flag (mutated by useGameLoop)
-  const fightTextRef = useRef<Text>(null);
-  const showFightText = useRef(false);
+  const cpuKatanaOuterRef = useRef<Container>(null);
 
   // Bricks ring refs (outer ring)
   const outerRingSpriteRef = useRef<Sprite>(null);
@@ -70,11 +63,16 @@ export function Scene({ startGame }: SceneProps) {
   // Katana background
   const katanaBgRef = useRef<Graphics>(null);
 
-  // Katana streak
+  // Katana streak (player)
   const [katanaTexture, setKatanaTexture] = useState(Texture.EMPTY);
   const katanaContainerRef = useRef<Container>(null);
   const katanaSpritesRef = useRef<Sprite[]>([]);
   const prevKatanaCount = useRef(0);
+
+  // Katana streak (CPU)
+  const cpuKatanaContainerRef = useRef<Container>(null);
+  const cpuKatanaSpritesRef = useRef<Sprite[]>([]);
+  const cpuKatanaBgRef = useRef<Graphics>(null);
 
   // Load assets
   const bgTexture = useBackgroundTexture();
@@ -90,8 +88,14 @@ export function Scene({ startGame }: SceneProps) {
   // Dial game logic
   const dialGame = useDialGame({ baseSpeed: DIAL_BASE_SPEED });
 
+  // Win text ref
+  const winTextRef = useRef<Text>(null);
+
+  // Countdown text ref
+  const countdownTextRef = useRef<Text>(null);
+
   // Run game loop
-  useGameLoop({
+  const { showWinText, winTextAlpha, winnerText, countdownText, cpuHitColors } = useGameLoop({
     app,
     refs: {
       container: containerRef,
@@ -100,14 +104,13 @@ export function Scene({ startGame }: SceneProps) {
       shinobi: shinobiRef,
       ringContainer: ringContainerRef,
       katanaContainer: katanaOuterRef,
+      cpuKatanaContainer: cpuKatanaOuterRef,
     },
     bgTexture,
     samuraiAnims,
     shinobiAnims,
     dialGame,
-    showFightText,
     layout,
-    startGame,
   });
 
   // Apply ring masks once refs are ready
@@ -129,9 +132,20 @@ export function Scene({ startGame }: SceneProps) {
     const missLineGfx = missLineGfxRef.current;
     if (!dial) return;
 
-    // Toggle "FIGHT!" text visibility
-    if (fightTextRef.current) {
-      fightTextRef.current.visible = showFightText.current;
+    // Update countdown text
+    if (countdownTextRef.current) {
+      const cdText = countdownText.current;
+      countdownTextRef.current.visible = cdText !== null;
+      if (cdText !== null) {
+        countdownTextRef.current.text = cdText;
+      }
+    }
+
+    // Update "You Win" / "You Lose" text
+    if (winTextRef.current) {
+      winTextRef.current.text = winnerText.current;
+      winTextRef.current.visible = showWinText.current;
+      winTextRef.current.alpha = winTextAlpha.current;
     }
 
     const dt = ticker.deltaTime / 60;
@@ -281,7 +295,54 @@ export function Scene({ startGame }: SceneProps) {
       }
     }
 
-    // ── Katana hit streak ──
+    // ── CPU Katana hit streak (above the circle) ──
+    const cpuKatanaContainer = cpuKatanaContainerRef.current;
+    if (cpuKatanaContainer && katanaTexture !== Texture.EMPTY) {
+      const colors = cpuHitColors.current;
+      const count = colors.length;
+
+      while (cpuKatanaSpritesRef.current.length < count) {
+        const s = new Sprite(katanaTexture);
+        s.width = layout.katana.katanaSize;
+        s.height = layout.katana.katanaSize;
+        s.anchor.set(0.5);
+        cpuKatanaContainer.addChild(s);
+        cpuKatanaSpritesRef.current.push(s);
+      }
+      while (cpuKatanaSpritesRef.current.length > count) {
+        const removed = cpuKatanaSpritesRef.current.shift()!;
+        cpuKatanaContainer.removeChild(removed);
+        removed.destroy();
+      }
+
+      const totalWidth =
+        count * layout.katana.katanaSize +
+        Math.max(0, count - 1) * layout.katana.katanaSpacing;
+      const startX = -totalWidth / 2 + layout.katana.katanaSize / 2;
+
+      for (let i = 0; i < count; i++) {
+        const s = cpuKatanaSpritesRef.current[i];
+        s.width = layout.katana.katanaSize;
+        s.height = layout.katana.katanaSize;
+        s.x = startX + i * (layout.katana.katanaSize + layout.katana.katanaSpacing);
+        s.y = 0;
+        s.tint = colors[i];
+      }
+
+      const cpuKatanaBg = cpuKatanaBgRef.current;
+      if (cpuKatanaBg) {
+        cpuKatanaBg.clear();
+        if (count > 0) {
+          const pad = layout.katana.katanaSize * 0.22;
+          const bgW = totalWidth + pad * 2;
+          const bgH = layout.katana.katanaSize + pad * 2;
+          cpuKatanaBg.roundRect(-bgW / 2, -bgH / 2, bgW, bgH, bgH / 2);
+          cpuKatanaBg.fill({ color: 0x000000, alpha: 0.45 });
+        }
+      }
+    }
+
+    // ── Player Katana hit streak (below the circle) ──
     const katanaContainer = katanaContainerRef.current;
     if (katanaContainer && katanaTexture !== Texture.EMPTY) {
       const colors = dialGame.hitColors.current;
@@ -337,22 +398,6 @@ export function Scene({ startGame }: SceneProps) {
   // Derive initial textures (Idle for intro phase)
   const samuraiTex = samuraiAnims ? samuraiAnims.Idle[0] : Texture.EMPTY;
   const shinobiTex = shinobiAnims ? shinobiAnims.Idle[0] : Texture.EMPTY;
-
-  // Fight text style (dynamic font size)
-  const fightTextStyle = {
-    fontFamily: "Arial Black, Impact, sans-serif",
-    fontSize: layout.fightText.fightFontSize,
-    fontWeight: "bold" as const,
-    fill: 0xffcc00,
-    stroke: { color: 0x000000, width: layout.fightText.fightStrokeWidth },
-    dropShadow: {
-      alpha: 0.6,
-      angle: Math.PI / 4,
-      blur: 4,
-      distance: 4,
-      color: 0x000000,
-    },
-  };
 
   return (
     <pixiContainer ref={containerRef}>
@@ -443,7 +488,28 @@ export function Scene({ startGame }: SceneProps) {
         </pixiContainer>
       )}
 
-      {/* Katana hit streak below the ring */}
+      {/* CPU Katana hit streak above the ring */}
+      <pixiContainer
+        ref={cpuKatanaOuterRef}
+        x={layout.positions.meetX}
+        y={
+          layout.positions.meetY -
+          layout.ring.outerRadius -
+          layout.katana.katanaSize * 0.4 -
+          layout.katana.katanaSize / 2
+        }
+        visible={false}
+      >
+        <pixiGraphics
+          ref={cpuKatanaBgRef}
+          draw={() => {
+            /* redrawn each tick */
+          }}
+        />
+        <pixiContainer ref={cpuKatanaContainerRef} />
+      </pixiContainer>
+
+      {/* Player Katana hit streak below the ring */}
       <pixiContainer
         ref={katanaOuterRef}
         x={layout.positions.meetX}
@@ -478,15 +544,53 @@ export function Scene({ startGame }: SceneProps) {
         scale={layout.characters.charScale}
       />
 
-      {/* "FIGHT!" text — shown during fight_text phase */}
+      {/* Countdown text — "3", "2", "1", "FIGHT!" during countdown phase */}
       <pixiText
-        ref={fightTextRef}
-        text="FIGHT!"
+        ref={countdownTextRef}
+        text="3"
         anchor={0.5}
         x={app.screen.width / 2}
-        y={app.screen.height / 2 - layout.fightText.fightFontSize * 0.5}
-        style={fightTextStyle}
+        y={app.screen.height / 2 - layout.fightText.fightFontSize * 0.8}
+        style={{
+          fontFamily: "Arial Black, Impact, sans-serif",
+          fontSize: layout.fightText.fightFontSize * 1.5,
+          fontWeight: "bold" as const,
+          fill: 0xffffff,
+          stroke: { color: 0x000000, width: layout.fightText.fightStrokeWidth * 1.5 },
+          dropShadow: {
+            alpha: 0.7,
+            angle: Math.PI / 4,
+            blur: 6,
+            distance: 5,
+            color: 0x000000,
+          },
+        }}
         visible={false}
+      />
+
+      {/* "You Win" text — fades in after opponent death */}
+      <pixiText
+        ref={winTextRef}
+        text="You Win"
+        anchor={0.5}
+        x={app.screen.width / 2}
+        y={app.screen.height * 0.22}
+        style={{
+          fontFamily: "Arial Black, Impact, sans-serif",
+          fontSize: layout.fightText.fightFontSize * 1.8,
+          fontWeight: "bold" as const,
+          fill: 0xffcc00,
+          stroke: { color: 0x000000, width: layout.fightText.fightStrokeWidth * 1.8 },
+          dropShadow: {
+            alpha: 0.6,
+            angle: Math.PI / 4,
+            blur: 6,
+            distance: 6,
+            color: 0x000000,
+          },
+        }}
+        visible={false}
+        alpha={0}
       />
     </pixiContainer>
   );

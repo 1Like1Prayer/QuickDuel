@@ -19,10 +19,12 @@ export interface UseDialGameReturn {
   active: React.RefObject<boolean>;
   hitGlowTimer: React.RefObject<number>;
   hitColors: React.RefObject<number[]>;
+  lastHitPoints: React.RefObject<number>;
   colorStack: React.RefObject<number[]>;
   hitBlockAngles: React.RefObject<{ startAngle: number; endAngle: number } | null>;
   missPulseTimer: React.RefObject<number>;
   missAngle: React.RefObject<number | null>;
+  regenCount: React.RefObject<number>;
   start: () => void;
   stop: () => void;
   attempt: () => boolean | null;

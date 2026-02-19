@@ -3,6 +3,7 @@ import type { Texture } from "pixi.js";
 export type Phase =
   | "intro"
   | "run"
+  | "countdown"
   | "idle"
   | "fight_text"
   | "shinobi_attack"
@@ -13,7 +14,9 @@ export type Phase =
   | "shinobi_hurt"
   | "shinobi_recover"
   | "shinobi_idle_wait"
-  | "clash";
+  | "clash"
+  | "player_win"
+  | "player_lose";
 
 export interface BloodParticle {
   x: number;
@@ -30,4 +33,5 @@ export interface CharAnims {
   Hurt: Texture[];
   Idle: Texture[];
   Walk: Texture[];
+  Dead: Texture[];
 }

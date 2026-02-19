@@ -4,8 +4,8 @@ import { FRAME_SIZE } from "../constants";
 
 /** Frame counts per character per animation. */
 export const ANIM_FRAMES: Record<string, Record<string, number>> = {
-  Samurai: { Run: 8, Attack_1: 6, Hurt: 2, Idle: 6, Walk: 8 },
-  Shinobi: { Run: 8, Attack_1: 5, Hurt: 2, Idle: 6, Walk: 8 },
+  Samurai: { Run: 8, Attack_1: 6, Hurt: 2, Idle: 6, Walk: 8, Dead: 3 },
+  Shinobi: { Run: 8, Attack_1: 5, Hurt: 2, Idle: 6, Walk: 8, Dead: 4 },
 };
 
 /** Slice a horizontal spritesheet into individual frame textures. */
