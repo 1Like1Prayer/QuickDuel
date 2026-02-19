@@ -405,25 +405,6 @@ export function useGameLoop({
         ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
-            const isGameOver = useGameStore.getState().phase === "ended";
-            if (isGameOver) {
-              winnerText.current = "You Win";
-              phase.current = "player_win";
-              resetPhaseFrames();
-              dialGame.stop();
-              if (refs.ringContainer.current) refs.ringContainer.current.visible = false;
-              if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
-              if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
-              startShake();
-              shinobiKnockback.current = layout.movement.knockbackDistance;
-              spawnBlood(
-                bloodParticles.current,
-                shinobiX.current + layout.characters.charSize * 0.4,
-                layout.positions.groundY + layout.characters.charSize * 0.4,
-                1,
-              );
-              return;
-            }
             phase.current = "shinobi_hurt";
             resetPhaseFrames();
             startShake();
@@ -446,25 +427,6 @@ export function useGameLoop({
         ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
-            const isGameOver = useGameStore.getState().phase === "ended";
-            if (isGameOver) {
-              winnerText.current = "You Lose";
-              phase.current = "player_lose";
-              resetPhaseFrames();
-              dialGame.stop();
-              if (refs.ringContainer.current) refs.ringContainer.current.visible = false;
-              if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
-              if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
-              startShake();
-              samuraiKnockback.current = layout.movement.knockbackDistance;
-              spawnBlood(
-                bloodParticles.current,
-                samuraiX.current + layout.characters.charSize * 0.4,
-                layout.positions.groundY + layout.characters.charSize * 0.4,
-                -1,
-              );
-              return;
-            }
             phase.current = "samurai_hurt";
             resetPhaseFrames();
             startShake();
