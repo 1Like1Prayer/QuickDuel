@@ -6,15 +6,9 @@ export type Phase =
   | "countdown"
   | "idle"
   | "fight_text"
-  | "shinobi_attack"
-  | "samurai_hurt"
-  | "samurai_recover"
-  | "samurai_idle_wait"
-  | "samurai_attack"
-  | "shinobi_hurt"
-  | "shinobi_recover"
-  | "shinobi_idle_wait"
-  | "clash"
+  | "flamejet"
+  | "light_charge"
+  | "beam"
   | "player_win"
   | "player_lose";
 
@@ -30,6 +24,8 @@ export interface BloodParticle {
 export interface CharAnims {
   Run: Texture[];
   Attack_1: Texture[];
+  Flame_jet: Texture[];
+  Light_charge: Texture[];
   Hurt: Texture[];
   Idle: Texture[];
   Walk: Texture[];
