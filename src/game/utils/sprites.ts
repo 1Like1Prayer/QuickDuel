@@ -6,6 +6,8 @@ import { FRAME_SIZE } from "../constants";
 export const ANIM_FRAMES: Record<string, Record<string, number>> = {
   "Fire Wizard": { Run: 8, Attack_1: 4, Flame_jet: 14, Hurt: 3, Idle: 7, Walk: 6, Dead: 6 },
   "Lightning Mage": { Run: 8, Attack_1: 10, Light_charge: 13, Hurt: 3, Idle: 7, Walk: 7, Dead: 5 },
+  Samurai: { Run: 8, Attack_1: 6, Hurt: 2, Idle: 6, Walk: 8, Dead: 3 },
+  Shinobi: { Run: 8, Attack_1: 5, Hurt: 2, Idle: 6, Walk: 8, Dead: 4 },
 };
 
 /** Slice a horizontal spritesheet into individual frame textures. */
