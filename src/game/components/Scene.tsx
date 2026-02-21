@@ -558,19 +558,19 @@ export function Scene() {
       {/* Laser beam — 3-section: source, middle, impact */}
       <pixiSprite
         ref={laserSourceRef}
-        texture={laserFrames ? laserFrames.source[0] : Texture.EMPTY}
+        texture={laserFrames ? laserFrames.sourceStart[0] : Texture.EMPTY}
         visible={false}
         anchor={{ x: 0, y: 0.5 }}
       />
       <pixiSprite
         ref={laserMiddleRef}
-        texture={laserFrames ? laserFrames.middle[0] : Texture.EMPTY}
+        texture={laserFrames ? laserFrames.middleStart[0] : Texture.EMPTY}
         visible={false}
         anchor={{ x: 0, y: 0.5 }}
       />
       <pixiSprite
         ref={laserImpactRef}
-        texture={laserFrames ? laserFrames.impact[0] : Texture.EMPTY}
+        texture={laserFrames ? laserFrames.impactStart[0] : Texture.EMPTY}
         visible={false}
         anchor={{ x: 0, y: 0.5 }}
       />

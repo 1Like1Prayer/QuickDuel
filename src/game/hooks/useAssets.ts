@@ -32,10 +32,11 @@ export function useBricksTexture() {
   return bricksTexture;
 }
 
-/** Laser spritesheet: 192×288, 6 rows × 1 col, each frame 192×48.
+/** Laser spritesheet: 192×288, 6 rows × 4 cols, each frame 48×48.
  *  Rows 0-1 = source, 2-3 = middle, 4-5 = impact.
- *  Even rows = loop frame, odd rows = start frame. */
-const LASER_FRAME_W = 192;
+ *  Even rows = loop frames, odd rows = start frames. */
+const LASER_COLS = 4;
+const LASER_FRAME_W = 48;
 const LASER_FRAME_H = 48;
 
 /** Load and return laser beam section frames. */
@@ -45,17 +46,27 @@ export function useLaserFrames() {
   useEffect(() => {
     if (!laserFrames) {
       Assets.load("/Laser_Beam_Spritesheet_BLUE.png").then((sheet: Texture) => {
-        const row = (r: number) =>
-          new Texture({
-            source: sheet.source,
-            frame: new Rectangle(
-              0, r * LASER_FRAME_H, LASER_FRAME_W, LASER_FRAME_H,
-            ),
-          });
+        const rowFrames = (r: number): Texture[] => {
+          const frames: Texture[] = [];
+          for (let c = 0; c < LASER_COLS; c++) {
+            frames.push(
+              new Texture({
+                source: sheet.source,
+                frame: new Rectangle(
+                  c * LASER_FRAME_W, r * LASER_FRAME_H, LASER_FRAME_W, LASER_FRAME_H,
+                ),
+              }),
+            );
+          }
+          return frames;
+        };
         setLaserFrames({
-          source: [row(1), row(0)],
-          middle: [row(3), row(2)],
-          impact: [row(5), row(4)],
+          sourceStart: rowFrames(1),
+          sourceLoop: rowFrames(0),
+          middleStart: rowFrames(3),
+          middleLoop: rowFrames(2),
+          impactStart: rowFrames(5),
+          impactLoop: rowFrames(4),
         });
       });
     }

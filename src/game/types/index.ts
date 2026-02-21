@@ -27,12 +27,11 @@ export interface BloodParticle {
 
 export type CharAnims = Record<string, Texture[]>;
 
-/** Laser beam frames: source, middle, and impact sections. */
 export interface LaserFrames {
-  /** [startFrame, loopFrame] for the origin/source section */
-  source: [Texture, Texture];
-  /** [startFrame, loopFrame] for the middle/body section */
-  middle: [Texture, Texture];
-  /** [startFrame, loopFrame] for the impact/hit section */
-  impact: [Texture, Texture];
+  sourceStart: Texture[];
+  sourceLoop: Texture[];
+  middleStart: Texture[];
+  middleLoop: Texture[];
+  impactStart: Texture[];
+  impactLoop: Texture[];
 }
