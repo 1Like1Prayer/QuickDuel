@@ -13,6 +13,9 @@ export interface SceneRefs {
   laserSource: React.RefObject<Sprite | null>;
   laserMiddle: React.RefObject<Container | null>;
   laserImpact: React.RefObject<Sprite | null>;
+  blueLaserSource: React.RefObject<Sprite | null>;
+  blueLaserMiddle: React.RefObject<Container | null>;
+  blueLaserImpact: React.RefObject<Sprite | null>;
   ringContainer: React.RefObject<Container | null>;
   katanaContainer: React.RefObject<Container | null>;
   cpuKatanaContainer: React.RefObject<Container | null>;
@@ -23,6 +26,7 @@ export interface GameLoopParams {
   refs: SceneRefs;
   bgTexture: Texture;
   laserFrames: LaserFrames | null;
+  blueLaserFrames: LaserFrames | null;
   playerAnims: CharAnims | null;
   opponentAnims: CharAnims | null;
   dialGame: UseDialGameReturn;

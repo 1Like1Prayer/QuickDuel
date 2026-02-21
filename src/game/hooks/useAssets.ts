@@ -75,6 +75,42 @@ export function useLaserFrames() {
   return laserFrames;
 }
 
+/** Load and return blue laser beam section frames (for opponent). */
+export function useBlueLaserFrames() {
+  const [laserFrames, setLaserFrames] = useState<LaserFrames | null>(null);
+
+  useEffect(() => {
+    if (!laserFrames) {
+      Assets.load("/Laser_Beam_Spritesheet_BLUE.png").then((sheet: Texture) => {
+        const rowFrames = (r: number): Texture[] => {
+          const frames: Texture[] = [];
+          for (let c = 0; c < LASER_COLS; c++) {
+            frames.push(
+              new Texture({
+                source: sheet.source,
+                frame: new Rectangle(
+                  c * LASER_FRAME_W, r * LASER_FRAME_H, LASER_FRAME_W, LASER_FRAME_H,
+                ),
+              }),
+            );
+          }
+          return frames;
+        };
+        setLaserFrames({
+          sourceStart: rowFrames(1),
+          sourceLoop: rowFrames(0),
+          middleStart: rowFrames(3),
+          middleLoop: rowFrames(2),
+          impactStart: rowFrames(5),
+          impactLoop: rowFrames(4),
+        });
+      });
+    }
+  }, [laserFrames]);
+
+  return laserFrames;
+}
+
 
 
 /** Load and return both character animation sets. */

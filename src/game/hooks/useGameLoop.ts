@@ -33,6 +33,7 @@ export function useGameLoop({
   refs,
   bgTexture,
   laserFrames,
+  blueLaserFrames,
   playerAnims,
   opponentAnims,
   dialGame,
@@ -82,6 +83,11 @@ export function useGameLoop({
   const laserFrame = useRef(0);     // 0 = start frame, 1 = loop frame
   const laserElapsed = useRef(0);
   const laserStarted = useRef(false);
+
+  // Blue laser animation state (opponent)
+  const blueLaserFrame = useRef(0);
+  const blueLaserElapsed = useRef(0);
+  const blueLaserStarted = useRef(false);
 
   // Track last consumed dial hit result to avoid re-processing
   const lastDialResult = useRef<boolean | null>(null);
@@ -734,7 +740,7 @@ export function useGameLoop({
         const beamY = layout.positions.groundY + charSize * 0.66;
 
         // Source: at the fire mage's hands
-        const originX = playerX.current + charSize * 0.258;
+        const originX = playerX.current + charSize * 0.15;
         laserSrc.x = originX;
         laserSrc.y = beamY;
         laserSrc.anchor.set(0, 0.5);
@@ -806,7 +812,112 @@ export function useGameLoop({
         if (laserDebugGfx.current) laserDebugGfx.current.clear();
       }
     }
+    // â"€â"€ Blue laser (opponent â†' left) â"€â"€
 
+    const blueSrc = refs.blueLaserSource.current;
+    const blueMid = refs.blueLaserMiddle.current;
+    const blueImp = refs.blueLaserImpact.current;
+
+    if (blueSrc && blueMid && blueImp && blueLaserFrames) {
+      const showBlueLaser =
+        attackIntroPlayed.current &&
+        curPhase !== "intro" &&
+        curPhase !== "attack_intro" &&
+        curPhase !== "player_win" &&
+        curPhase !== "player_lose";
+
+      if (showBlueLaser) {
+        blueSrc.visible = true;
+        blueMid.visible = true;
+        blueImp.visible = true;
+
+        // Advance blue laser animation at 24 fps
+        blueLaserElapsed.current += dt;
+        if (blueLaserElapsed.current >= LASER_ANIM_SPEED) {
+          blueLaserElapsed.current = 0;
+          if (!blueLaserStarted.current) {
+            blueLaserFrame.current++;
+            if (blueLaserFrame.current >= 4) {
+              blueLaserStarted.current = true;
+              blueLaserFrame.current = 0;
+            }
+          } else {
+            blueLaserFrame.current = (blueLaserFrame.current + 1) % 4;
+          }
+        }
+
+        const bfi = blueLaserFrame.current;
+        const blueMidTex = !blueLaserStarted.current
+          ? blueLaserFrames.middleStart[bfi]
+          : blueLaserFrames.middleLoop[bfi];
+
+        if (!blueLaserStarted.current) {
+          blueSrc.texture = blueLaserFrames.sourceStart[bfi];
+          blueImp.texture = blueLaserFrames.impactStart[bfi];
+        } else {
+          blueSrc.texture = blueLaserFrames.sourceLoop[bfi];
+          blueImp.texture = blueLaserFrames.impactLoop[bfi];
+        }
+
+        const charSize = layout.characters.charSize;
+        const frameW = blueLaserFrames.sourceStart[0].width;
+        const frameH = blueLaserFrames.sourceStart[0].height;
+        const beamHeight = charSize * 0.75;
+        const scaleY = beamHeight / frameH;
+        const scaledW = frameW * scaleY;
+        const beamY = layout.positions.groundY + charSize * 0.66;
+
+        // Source: at the wanderer mage's hands (mirrored — facing left)
+        const blueOriginX = opponentX.current + charSize * 0.65;
+        blueSrc.x = blueOriginX;
+        blueSrc.y = beamY;
+        blueSrc.anchor.set(0, 0.5);
+        blueSrc.scale.set(-scaleY, scaleY); // flip horizontally
+
+        // Impact: a little before the middle of the screen (going left)
+        const blueImpactX = layout.positions.meetX - charSize * 0.2;
+        blueImp.x = blueImpactX;
+        blueImp.y = beamY;
+        blueImp.anchor.set(1, 0.5);
+        blueImp.scale.set(-scaleY, scaleY); // flip horizontally
+
+        // Tiled middle: fill gap going right-to-left (mirrored)
+        const blueMidStartX = blueOriginX - scaledW * 0.30;
+        const blueMidEndX = blueImpactX + scaledW;
+        const blueMidSpan = blueMidStartX - blueMidEndX;
+        const blueTileStep = scaledW * 0.3;
+        const blueTileCount = Math.max(1, Math.ceil(blueMidSpan / blueTileStep));
+
+        while (blueMid.children.length < blueTileCount) {
+          const s = new Sprite();
+          s.anchor.set(0, 0.5);
+          blueMid.addChild(s);
+        }
+        while (blueMid.children.length > blueTileCount) {
+          const removed = blueMid.removeChildAt(blueMid.children.length - 1);
+          removed.destroy();
+        }
+
+        for (let i = 0; i < blueTileCount; i++) {
+          const tile = blueMid.children[i] as Sprite;
+          tile.texture = blueMidTex;
+          tile.x = blueMidStartX - i * blueTileStep;
+          tile.y = beamY;
+          tile.scale.set(-scaleY, scaleY); // flip horizontally
+        }
+
+        blueMid.zIndex = 0;
+        blueSrc.zIndex = 1;
+        blueImp.zIndex = 1;
+      } else {
+        blueSrc.visible = false;
+        blueMid.visible = false;
+        blueImp.visible = false;
+        blueLaserFrame.current = 0;
+        blueLaserElapsed.current = 0;
+        blueLaserStarted.current = false;
+      }
+    }
     // â”€â”€ Screen shake â”€â”€
 
     if (isShaking.current) {

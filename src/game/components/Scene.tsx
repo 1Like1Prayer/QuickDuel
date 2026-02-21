@@ -18,6 +18,7 @@ import {
   useBackgroundTexture,
   useBricksTexture,
   useCharacterAnims,
+  useBlueLaserFrames,
   useLaserFrames,
 } from "../hooks/useAssets";
 import { useDialGame } from "../hooks/useDialGame";
@@ -39,6 +40,9 @@ export function Scene() {
   const laserSourceRef = useRef<Sprite>(null);
   const laserMiddleRef = useRef<Container>(null);
   const laserImpactRef = useRef<Sprite>(null);
+  const blueLaserSourceRef = useRef<Sprite>(null);
+  const blueLaserMiddleRef = useRef<Container>(null);
+  const blueLaserImpactRef = useRef<Sprite>(null);
   const ringContainerRef = useRef<Container>(null);
   const katanaOuterRef = useRef<Container>(null);
   const cpuKatanaOuterRef = useRef<Container>(null);
@@ -86,6 +90,7 @@ export function Scene() {
 
   // Load laser animation frames
   const laserFrames = useLaserFrames();
+  const blueLaserFrames = useBlueLaserFrames();
 
   // Load katana texture
   useEffect(() => {
@@ -112,12 +117,16 @@ export function Scene() {
       laserSource: laserSourceRef,
       laserMiddle: laserMiddleRef,
       laserImpact: laserImpactRef,
+      blueLaserSource: blueLaserSourceRef,
+      blueLaserMiddle: blueLaserMiddleRef,
+      blueLaserImpact: blueLaserImpactRef,
       ringContainer: ringContainerRef,
       katanaContainer: katanaOuterRef,
       cpuKatanaContainer: cpuKatanaOuterRef,
     },
     bgTexture,
     laserFrames,
+    blueLaserFrames,
     playerAnims,
     opponentAnims,
     dialGame,
@@ -566,6 +575,21 @@ export function Scene() {
       <pixiSprite
         ref={laserImpactRef}
         texture={laserFrames ? laserFrames.impactStart[0] : Texture.EMPTY}
+        visible={false}
+        anchor={{ x: 0, y: 0.5 }}
+      />
+
+      {/* Blue laser beam — opponent (Wanderer Magician) */}
+      <pixiSprite
+        ref={blueLaserSourceRef}
+        texture={blueLaserFrames ? blueLaserFrames.sourceStart[0] : Texture.EMPTY}
+        visible={false}
+        anchor={{ x: 0, y: 0.5 }}
+      />
+      <pixiContainer ref={blueLaserMiddleRef} visible={false} />
+      <pixiSprite
+        ref={blueLaserImpactRef}
+        texture={blueLaserFrames ? blueLaserFrames.impactStart[0] : Texture.EMPTY}
         visible={false}
         anchor={{ x: 0, y: 0.5 }}
       />
