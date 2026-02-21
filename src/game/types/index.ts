@@ -6,14 +6,14 @@ export type Phase =
   | "countdown"
   | "idle"
   | "fight_text"
-  | "shinobi_attack"
-  | "samurai_hurt"
-  | "samurai_recover"
-  | "samurai_idle_wait"
-  | "samurai_attack"
-  | "shinobi_hurt"
-  | "shinobi_recover"
-  | "shinobi_idle_wait"
+  | "opponent_attack"
+  | "player_hurt"
+  | "player_recover"
+  | "player_idle_wait"
+  | "player_attack"
+  | "opponent_hurt"
+  | "opponent_recover"
+  | "opponent_idle_wait"
   | "clash"
   | "player_win"
   | "player_lose";
@@ -27,11 +27,4 @@ export interface BloodParticle {
   size: number;
 }
 
-export interface CharAnims {
-  Run: Texture[];
-  Attack_1: Texture[];
-  Hurt: Texture[];
-  Idle: Texture[];
-  Walk: Texture[];
-  Dead: Texture[];
-}
+export type CharAnims = Record<string, Texture[]>;

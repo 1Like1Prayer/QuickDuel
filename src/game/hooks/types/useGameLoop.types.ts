@@ -8,8 +8,8 @@ import type { Layout } from "./useLayout.types";
 export interface SceneRefs {
   container: React.RefObject<Container | null>;
   bg: React.RefObject<Sprite | null>;
-  samurai: React.RefObject<Sprite | null>;
-  shinobi: React.RefObject<Sprite | null>;
+  player: React.RefObject<Sprite | null>;
+  opponent: React.RefObject<Sprite | null>;
   ringContainer: React.RefObject<Container | null>;
   katanaContainer: React.RefObject<Container | null>;
   cpuKatanaContainer: React.RefObject<Container | null>;
@@ -19,8 +19,8 @@ export interface GameLoopParams {
   app: PixiApp;
   refs: SceneRefs;
   bgTexture: Texture;
-  samuraiAnims: CharAnims | null;
-  shinobiAnims: CharAnims | null;
+  playerAnims: CharAnims | null;
+  opponentAnims: CharAnims | null;
   dialGame: UseDialGameReturn;
   layout: Layout;
 }

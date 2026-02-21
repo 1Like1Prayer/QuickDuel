@@ -1,10 +1,10 @@
-import type { CharAnims, Phase } from "../types";
+import type { Phase } from "../types";
 
 /** Map a (character, phase) pair to the correct animation key. */
 export function getAnimName(
-  char: "samurai" | "shinobi",
+  char: "player" | "opponent",
   phase: Phase,
-): keyof CharAnims {
+): string {
   switch (phase) {
     case "intro":
       return "Idle";
@@ -14,27 +14,27 @@ export function getAnimName(
     case "idle":
     case "fight_text":
       return "Idle";
-    case "shinobi_attack":
-      return char === "shinobi" ? "Attack_1" : "Idle";
-    case "samurai_hurt":
-      return char === "samurai" ? "Hurt" : "Idle";
-    case "samurai_recover":
-      return char === "samurai" ? "Walk" : "Idle";
-    case "samurai_idle_wait":
+    case "opponent_attack":
+      return char === "opponent" ? "Attack_1" : "Idle";
+    case "player_hurt":
+      return char === "player" ? "Hurt" : "Idle";
+    case "player_recover":
+      return char === "player" ? "Walk" : "Idle";
+    case "player_idle_wait":
       return "Idle";
-    case "samurai_attack":
-      return char === "samurai" ? "Attack_1" : "Idle";
-    case "shinobi_hurt":
-      return char === "shinobi" ? "Hurt" : "Idle";
-    case "shinobi_recover":
-      return char === "shinobi" ? "Walk" : "Idle";
-    case "shinobi_idle_wait":
+    case "player_attack":
+      return char === "player" ? "Attack_1" : "Idle";
+    case "opponent_hurt":
+      return char === "opponent" ? "Hurt" : "Idle";
+    case "opponent_recover":
+      return char === "opponent" ? "Walk" : "Idle";
+    case "opponent_idle_wait":
       return "Idle";
     case "clash":
       return "Attack_1";
     case "player_win":
-      return char === "shinobi" ? "Dead" : "Idle";
+      return char === "opponent" ? "Dead" : "Idle";
     case "player_lose":
-      return char === "samurai" ? "Dead" : "Idle";
+      return char === "player" ? "Dead" : "Idle";
   }
 }
