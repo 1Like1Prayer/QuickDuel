@@ -36,33 +36,26 @@ export function useBricksTexture() {
 
 /** Load and return both character animation sets. */
 export function useCharacterAnims() {
-  const [samuraiAnims, setSamuraiAnims] = useState<CharAnims | null>(null);
-  const [shinobiAnims, setShinobiAnims] = useState<CharAnims | null>(null);
+  const [playerAnims, setPlayerAnims] = useState<CharAnims | null>(null);
+  const [opponentAnims, setOpponentAnims] = useState<CharAnims | null>(null);
 
   useEffect(() => {
     const loadAnims = async (charName: string): Promise<CharAnims> => {
-      const anims: Partial<CharAnims> = {};
-      for (const animName of [
-        "Run",
-        "Attack_1",
-        "Hurt",
-        "Idle",
-        "Walk",
-        "Dead",
-      ] as const) {
+      const anims: CharAnims = {};
+      for (const [animName, frameCount] of Object.entries(ANIM_FRAMES[charName])) {
         const sheet = await Assets.load(`/${charName}/${animName}.png`);
-        anims[animName] = sliceFrames(sheet, ANIM_FRAMES[charName][animName]);
+        anims[animName] = sliceFrames(sheet, frameCount);
       }
-      return anims as CharAnims;
+      return anims;
     };
 
     Promise.all([loadAnims("Samurai"), loadAnims("Shinobi")]).then(
-      ([samurai, shinobi]) => {
-        setSamuraiAnims(samurai);
-        setShinobiAnims(shinobi);
+      ([player, opponent]) => {
+        setPlayerAnims(player);
+        setOpponentAnims(opponent);
       },
     );
   }, []);
 
-  return { samuraiAnims, shinobiAnims };
+  return { playerAnims, opponentAnims };
 }

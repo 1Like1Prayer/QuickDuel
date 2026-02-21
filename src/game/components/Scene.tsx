@@ -33,8 +33,8 @@ export function Scene() {
   // Sprite refs
   const containerRef = useRef<Container>(null);
   const bgRef = useRef<Sprite>(null);
-  const samuraiRef = useRef<Sprite>(null);
-  const shinobiRef = useRef<Sprite>(null);
+  const playerRef = useRef<Sprite>(null);
+  const opponentRef = useRef<Sprite>(null);
   const ringContainerRef = useRef<Container>(null);
   const katanaOuterRef = useRef<Container>(null);
   const cpuKatanaOuterRef = useRef<Container>(null);
@@ -78,7 +78,7 @@ export function Scene() {
   const bgTexture = useBackgroundTexture();
   const bricksTexture = useBricksTexture();
 
-  const { samuraiAnims, shinobiAnims } = useCharacterAnims();
+  const { playerAnims, opponentAnims } = useCharacterAnims();
 
   // Load katana texture
   useEffect(() => {
@@ -100,15 +100,15 @@ export function Scene() {
     refs: {
       container: containerRef,
       bg: bgRef,
-      samurai: samuraiRef,
-      shinobi: shinobiRef,
+      player: playerRef,
+      opponent: opponentRef,
       ringContainer: ringContainerRef,
       katanaContainer: katanaOuterRef,
       cpuKatanaContainer: cpuKatanaOuterRef,
     },
     bgTexture,
-    samuraiAnims,
-    shinobiAnims,
+    playerAnims,
+    opponentAnims,
     dialGame,
     layout,
   });
@@ -153,7 +153,7 @@ export function Scene() {
     // Advance dial via game logic
     const angle = dialGame.tick(dt);
 
-    // ── Draw dial line ──
+    // â”€â”€ Draw dial line â”€â”€
     dial.clear();
     dial.moveTo(0, 0);
     dial.lineTo(
@@ -162,7 +162,7 @@ export function Scene() {
     );
     dial.stroke({ color: 0xcc3311, width: layout.dial.dialLineWidth, alpha: 0.9 });
 
-    // ── Draw hit-zone blocks with gradient colouring ──
+    // â”€â”€ Draw hit-zone blocks with gradient colouring â”€â”€
     if (blocksGfx) {
       blocksGfx.clear();
       const currentBlocks = dialGame.blocks.current;
@@ -197,13 +197,13 @@ export function Scene() {
       }
     }
 
-    // ── Hit glow pulse (targeted to hit block only) ──
+    // â”€â”€ Hit glow pulse (targeted to hit block only) â”€â”€
     if (glowGfx) {
       glowGfx.clear();
       const glowT = dialGame.hitGlowTimer.current;
       const hitAngles = dialGame.hitBlockAngles.current;
       if (glowT > 0 && hitAngles) {
-        const progress = glowT / HIT_GLOW_DURATION; // 1 → 0
+        const progress = glowT / HIT_GLOW_DURATION; // 1 â†’ 0
         const alpha = progress * HIT_GLOW_MAX_ALPHA;
         const scale = 1 + 0.1 * progress;
         glowGfx.scale.set(scale);
@@ -238,12 +238,12 @@ export function Scene() {
       }
     }
 
-    // ── Miss pulse (red hollow ring outlines) ──
+    // â”€â”€ Miss pulse (red hollow ring outlines) â”€â”€
     if (missPulseGfx) {
       missPulseGfx.clear();
       const missT = dialGame.missPulseTimer.current;
       if (missT > 0) {
-        const progress = missT / MISS_PULSE_DURATION; // 1 → 0
+        const progress = missT / MISS_PULSE_DURATION; // 1 â†’ 0
         const alpha = progress * MISS_PULSE_MAX_ALPHA;
         const pulseScale = 1 + 0.08 * (1 - progress); // expand outward as it fades
         missPulseGfx.scale.set(pulseScale);
@@ -270,7 +270,7 @@ export function Scene() {
       }
     }
 
-    // ── Miss line (red radial line from inner edge of inner ring to outer edge of outer ring) ──
+    // â”€â”€ Miss line (red radial line from inner edge of inner ring to outer edge of outer ring) â”€â”€
     if (missLineGfx) {
       missLineGfx.clear();
       const mAngle = dialGame.missAngle.current;
@@ -295,7 +295,7 @@ export function Scene() {
       }
     }
 
-    // ── CPU Katana hit streak (above the circle) ──
+    // â”€â”€ CPU Katana hit streak (above the circle) â”€â”€
     const cpuKatanaContainer = cpuKatanaContainerRef.current;
     if (cpuKatanaContainer && katanaTexture !== Texture.EMPTY) {
       const colors = cpuHitColors.current;
@@ -342,7 +342,7 @@ export function Scene() {
       }
     }
 
-    // ── Player Katana hit streak (below the circle) ──
+    // â”€â”€ Player Katana hit streak (below the circle) â”€â”€
     const katanaContainer = katanaContainerRef.current;
     if (katanaContainer && katanaTexture !== Texture.EMPTY) {
       const colors = dialGame.hitColors.current;
@@ -396,8 +396,8 @@ export function Scene() {
   });
 
   // Derive initial textures (Idle for intro phase)
-  const samuraiTex = samuraiAnims ? samuraiAnims.Idle[0] : Texture.EMPTY;
-  const shinobiTex = shinobiAnims ? shinobiAnims.Idle[0] : Texture.EMPTY;
+  const playerTex = playerAnims ? playerAnims.Idle[0] : Texture.EMPTY;
+  const opponentTex = opponentAnims ? opponentAnims.Idle[0] : Texture.EMPTY;
 
   return (
     <pixiContainer ref={containerRef}>
@@ -426,7 +426,7 @@ export function Scene() {
             height={layout.ring.outerRadius * 2}
           />
 
-          {/* Hit-zone blocks between the two rings — redrawn each tick */}
+          {/* Hit-zone blocks between the two rings â€” redrawn each tick */}
           <pixiGraphics
             ref={blocksGfxRef}
             draw={() => {
@@ -434,7 +434,7 @@ export function Scene() {
             }}
           />
 
-          {/* Hit glow layer — redrawn each tick */}
+          {/* Hit glow layer â€” redrawn each tick */}
           <pixiGraphics
             ref={glowGfxRef}
             draw={() => {
@@ -442,7 +442,7 @@ export function Scene() {
             }}
           />
 
-          {/* Miss pulse layer (red hollow ring outlines) — redrawn each tick */}
+          {/* Miss pulse layer (red hollow ring outlines) â€” redrawn each tick */}
           <pixiGraphics
             ref={missPulseGfxRef}
             draw={() => {
@@ -450,7 +450,7 @@ export function Scene() {
             }}
           />
 
-          {/* Miss line layer (red radial line) — redrawn each tick */}
+          {/* Miss line layer (red radial line) â€” redrawn each tick */}
           <pixiGraphics
             ref={missLineGfxRef}
             draw={() => {
@@ -458,7 +458,7 @@ export function Scene() {
             }}
           />
 
-          {/* Warm red thin dial line — animated via useTick */}
+          {/* Warm red thin dial line â€” animated via useTick */}
           <pixiGraphics
             ref={dialRef}
             draw={() => {
@@ -530,21 +530,21 @@ export function Scene() {
       </pixiContainer>
 
       <pixiSprite
-        ref={samuraiRef}
-        texture={samuraiTex}
+        ref={playerRef}
+        texture={playerTex}
         x={layout.positions.charStartX}
         y={layout.positions.groundY}
         scale={layout.characters.charScale}
       />
       <pixiSprite
-        ref={shinobiRef}
-        texture={shinobiTex}
+        ref={opponentRef}
+        texture={opponentTex}
         x={layout.positions.charEndX}
         y={layout.positions.groundY}
         scale={layout.characters.charScale}
       />
 
-      {/* Countdown text — "3", "2", "1", "FIGHT!" during countdown phase */}
+      {/* Countdown text â€” "3", "2", "1", "FIGHT!" during countdown phase */}
       <pixiText
         ref={countdownTextRef}
         text="3"
@@ -568,7 +568,7 @@ export function Scene() {
         visible={false}
       />
 
-      {/* "You Win" text — fades in after opponent death */}
+      {/* "You Win" text â€” fades in after opponent death */}
       <pixiText
         ref={winTextRef}
         text="You Win"
