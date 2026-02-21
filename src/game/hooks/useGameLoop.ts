@@ -9,6 +9,7 @@ import {
   COUNTDOWN_STEP_MS,
   HIT_FREEZE_MS,
   HURT_PAUSE_MS,
+  LASER_ANIM_SPEED,
   RING_FADE_IN_DURATION,
   SHAKE_DURATION,
   SLOWMO_ANIM_SPEED,
@@ -31,7 +32,7 @@ export function useGameLoop({
   app,
   refs,
   bgTexture,
-  beamFrames,
+  laserFrames,
   playerAnims,
   opponentAnims,
   dialGame,
@@ -65,6 +66,9 @@ export function useGameLoop({
   const opponentElapsed = useRef(0);
   const phaseAnimDone = useRef(false);
 
+  // Whether the initial attack-intro animation has played (after which we loop last 2 frames)
+  const attackIntroPlayed = useRef(false);
+
   const shakeTimer = useRef(0);
   const isShaking = useRef(false);
 
@@ -73,9 +77,10 @@ export function useGameLoop({
 
   const clashSparkEmitted = useRef(false);
 
-  // Beam animation state
-  const beamFrame = useRef(0);
-  const beamElapsed = useRef(0);
+  // Laser animation state
+  const laserFrame = useRef(0);     // 0 = start frame, 1 = loop frame
+  const laserElapsed = useRef(0);
+  const laserStarted = useRef(false);
 
   // Track last consumed dial hit result to avoid re-processing
   const lastDialResult = useRef<boolean | null>(null);
@@ -276,24 +281,42 @@ export function useGameLoop({
     const dt = ticker.deltaTime / 60;
     const curPhase = phase.current;
 
-    // â”€â”€ Sprite animation stepping â”€â”€
+    // — Sprite animation stepping —
 
-    const playerAnim = playerAnims[getAnimName("player", curPhase)];
-    const opponentAnim = opponentAnims[getAnimName("opponent", curPhase)];
+    const playerAnimName = getAnimName("player", curPhase);
+    const opponentAnimName = getAnimName("opponent", curPhase);
+    const playerAnim = playerAnims[playerAnimName];
+    const opponentAnim = opponentAnims[opponentAnimName];
 
-    if (curPhase !== "player_win" && curPhase !== "player_lose") {
+    if (curPhase !== "player_win" && curPhase !== "player_lose" && curPhase !== "attack_intro") {
       playerElapsed.current += dt;
       if (playerElapsed.current >= ANIM_SPEED) {
         playerElapsed.current = 0;
-        playerFrame.current = (playerFrame.current + 1) % playerAnim.length;
-        player.current.texture = playerAnim[playerFrame.current];
+        if (attackIntroPlayed.current && playerAnimName === "Idle") {
+          // Loop last 2 frames of attack animation instead of Idle
+          const atkAnim = playerAnims["Flame_jet"];
+          const loopStart = atkAnim.length - 2;
+          playerFrame.current = playerFrame.current === loopStart ? loopStart + 1 : loopStart;
+          player.current.texture = atkAnim[playerFrame.current];
+        } else {
+          playerFrame.current = (playerFrame.current + 1) % playerAnim.length;
+          player.current.texture = playerAnim[playerFrame.current];
+        }
       }
 
       opponentElapsed.current += dt;
       if (opponentElapsed.current >= ANIM_SPEED) {
         opponentElapsed.current = 0;
-        opponentFrame.current = (opponentFrame.current + 1) % opponentAnim.length;
-        opponent.current.texture = opponentAnim[opponentFrame.current];
+        if (attackIntroPlayed.current && opponentAnimName === "Idle") {
+          // Loop last 2 frames of attack animation instead of Idle
+          const atkAnim = opponentAnims["Magic_arrow"];
+          const loopStart = atkAnim.length - 2;
+          opponentFrame.current = opponentFrame.current === loopStart ? loopStart + 1 : loopStart;
+          opponent.current.texture = atkAnim[opponentFrame.current];
+        } else {
+          opponentFrame.current = (opponentFrame.current + 1) % opponentAnim.length;
+          opponent.current.texture = opponentAnim[opponentFrame.current];
+        }
       }
     }
     switch (curPhase) {
@@ -323,7 +346,7 @@ export function useGameLoop({
           }, step * 3);
           setTimeout(() => {
             countdownText.current = null;
-            phase.current = "idle";
+            phase.current = "attack_intro";
             resetPhaseFrames();
             dialGame.start();
           }, step * 3 + COUNTDOWN_FIGHT_MS);
@@ -343,10 +366,47 @@ export function useGameLoop({
         break;
       }
 
+      case "attack_intro": {
+        // Play each character's attack animation once (no wrapping)
+        const pAtk = playerAnims["Flame_jet"];
+        const oAtk = opponentAnims["Magic_arrow"];
+
+        // Show current frame texture
+        player.current.texture = pAtk[playerFrame.current];
+        opponent.current.texture = oAtk[opponentFrame.current];
+
+        // Advance player
+        playerElapsed.current += dt;
+        if (playerElapsed.current >= ANIM_SPEED) {
+          playerElapsed.current = 0;
+          if (playerFrame.current < pAtk.length - 1) playerFrame.current++;
+        }
+
+        // Advance opponent
+        opponentElapsed.current += dt;
+        if (opponentElapsed.current >= ANIM_SPEED) {
+          opponentElapsed.current = 0;
+          if (opponentFrame.current < oAtk.length - 1) opponentFrame.current++;
+        }
+
+        // Transition to idle once both animations have completed
+        if (
+          playerFrame.current >= pAtk.length - 1 &&
+          opponentFrame.current >= oAtk.length - 1 &&
+          !phaseAnimDone.current
+        ) {
+          phaseAnimDone.current = true;
+          attackIntroPlayed.current = true;
+          phase.current = "idle";
+          resetPhaseFrames();
+        }
+        break;
+      }
+
       case "fight_text":
       case "idle": {
         // Auto-miss detection is handled by the regen path (CPU turn on block
-        // regeneration) which calls doResolveRound â€” that now triggers the
+        // regeneration) which calls doResolveRound — that now triggers the
         // correct attack/clash animation based on delta.
         break;
       }
@@ -489,6 +549,7 @@ export function useGameLoop({
           cpuHitColors.current = [];
           lastRegenCount.current = 0;
           cpuTurnTakenThisLap.current = false;
+          attackIntroPlayed.current = false;
           // Fully reset dial game state (blocks, speed, colors, katanas)
           dialGame.start();
           dialGame.stop();
@@ -544,6 +605,7 @@ export function useGameLoop({
             cpuHitColors.current = [];
             lastRegenCount.current = 0;
             cpuTurnTakenThisLap.current = false;
+            attackIntroPlayed.current = false;
             // Fully reset dial game state (blocks, speed, colors, katanas)
             dialGame.start();
             dialGame.stop();
@@ -592,8 +654,8 @@ export function useGameLoop({
       lastRegenCount.current = currentRegen;
       // Skip the very first gate â€” blocks are just being generated, the player
       // hasn't had a chance to act yet. Only resolve on subsequent gates.
-      if (!isFirstGate && !cpuTurnTakenThisLap.current) {
-        // Player missed or skipped â€” player hit = 0, CPU takes a turn
+      if (!isFirstGate && !cpuTurnTakenThisLap.current && phase.current !== "attack_intro") {
+        // Player missed or skipped — player hit = 0, CPU takes a turn
         const cpuHit = doCpuTurn();
         doResolveRound(0, cpuHit);
       }
@@ -611,54 +673,81 @@ export function useGameLoop({
     opponent.current.scale.x = -layout.characters.charScale;
     opponent.current.anchor.x = 1;
 
-    // ── Death beam ──
+    // ── Laser beam (visible only during attack-loop after intro) ──
 
-    if (refs.beam.current && beamFrames && beamFrames.length > 0) {
-      const isAttack = curPhase === "player_attack" || curPhase === "opponent_attack";
+    const laserSrc = refs.laserSource.current;
+    const laserMid = refs.laserMiddle.current;
+    const laserImp = refs.laserImpact.current;
 
-      if (isAttack) {
-        refs.beam.current.visible = true;
+    if (laserSrc && laserMid && laserImp && laserFrames) {
+      // Show laser only while looping the last 2 attack frames (after attack_intro)
+      const showLaser =
+        attackIntroPlayed.current &&
+        curPhase !== "intro" &&
+        curPhase !== "attack_intro" &&
+        curPhase !== "player_win" &&
+        curPhase !== "player_lose";
 
-        // Advance beam animation frame
-        beamElapsed.current += dt;
-        if (beamElapsed.current >= ANIM_SPEED) {
-          beamElapsed.current = 0;
-          beamFrame.current = (beamFrame.current + 1) % beamFrames.length;
+      if (showLaser) {
+        laserSrc.visible = true;
+        laserMid.visible = true;
+        laserImp.visible = true;
+
+        // Advance laser animation at 24 fps
+        laserElapsed.current += dt;
+        if (laserElapsed.current >= LASER_ANIM_SPEED) {
+          laserElapsed.current = 0;
+          if (!laserStarted.current) {
+            laserStarted.current = true;
+            laserFrame.current = 0; // start frame
+          } else {
+            // Toggle between start (0) and loop (1) frames
+            laserFrame.current = laserFrame.current === 0 ? 1 : 0;
+          }
         }
-        refs.beam.current.texture = beamFrames[beamFrame.current];
+
+        const fi = laserFrame.current;
+        laserSrc.texture = laserFrames.source[fi];
+        laserMid.texture = laserFrames.middle[fi];
+        laserImp.texture = laserFrames.impact[fi];
 
         const charSize = layout.characters.charSize;
-        const frameW = beamFrames[0].width;
-        const frameH = beamFrames[0].height;
-        // Position beam at character mid-body height
+        const frameW = laserFrames.source[0].width;  // 192
+        const frameH = laserFrames.source[0].height;  // 48
+        const beamHeight = charSize * 0.35;
+        const scaleY = beamHeight / frameH;
+        const sectionW = frameW * scaleY; // keep aspect ratio for source & impact
         const beamY = layout.positions.groundY + charSize * 0.45;
 
-        if (curPhase === "player_attack") {
-          const originX = playerX.current + charSize * 0.7;
-          const endX = opponentX.current + charSize * 0.4;
-          const span = endX - originX;
-          const scaleX = span / frameW;
-          const scaleY = (charSize * 0.6) / frameH;
-          refs.beam.current.x = originX;
-          refs.beam.current.y = beamY;
-          refs.beam.current.anchor.set(0, 0.5);
-          refs.beam.current.scale.set(scaleX, scaleY);
-        } else {
-          // opponent_attack — beam goes right to left
-          const originX = opponentX.current + charSize * 0.3;
-          const endX = playerX.current + charSize * 0.6;
-          const span = originX - endX;
-          const scaleX = span / frameW;
-          const scaleY = (charSize * 0.6) / frameH;
-          refs.beam.current.x = originX;
-          refs.beam.current.y = beamY;
-          refs.beam.current.anchor.set(0, 0.5);
-          refs.beam.current.scale.set(-scaleX, scaleY);
-        }
+        // Source: at player's tip
+        const originX = playerX.current + charSize * 0.7;
+        laserSrc.x = originX;
+        laserSrc.y = beamY;
+        laserSrc.anchor.set(0, 0.5);
+        laserSrc.scale.set(scaleY, scaleY);
+
+        // Impact: at opponent's body
+        const impactX = opponentX.current + charSize * 0.3;
+        laserImp.x = impactX;
+        laserImp.y = beamY;
+        laserImp.anchor.set(1, 0.5);
+        laserImp.scale.set(scaleY, scaleY);
+
+        // Middle: stretch to fill gap between source end and impact start
+        const midStartX = originX + sectionW;
+        const midEndX = impactX - sectionW;
+        const midSpan = midEndX - midStartX;
+        laserMid.x = midStartX;
+        laserMid.y = beamY;
+        laserMid.anchor.set(0, 0.5);
+        laserMid.scale.set(midSpan / frameW, scaleY);
       } else {
-        refs.beam.current.visible = false;
-        beamFrame.current = 0;
-        beamElapsed.current = 0;
+        laserSrc.visible = false;
+        laserMid.visible = false;
+        laserImp.visible = false;
+        laserFrame.current = 0;
+        laserElapsed.current = 0;
+        laserStarted.current = false;
       }
     }
 

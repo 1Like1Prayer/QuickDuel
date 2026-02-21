@@ -8,6 +8,7 @@ export const FRAME_SIZE = 128;
 
 // --- Animation ---
 export const ANIM_SPEED = 0.065;
+export const LASER_ANIM_SPEED = 1 / 24;   // 24 fps for laser beam frames
 
 // --- Screen Shake ---
 export const SHAKE_DURATION = 0.08;

@@ -4,8 +4,8 @@ import { FRAME_SIZE } from "../constants";
 
 /** Frame counts per character per animation. */
 export const ANIM_FRAMES: Record<string, Record<string, number>> = {
-  "Fire Wizard": { Flame_jet: 14, Hurt: 3, Idle: 7, Dead: 6, Run: 8, Walk: 6 },
-  "Wanderer Magician": { Magic_sphere: 16, Hurt: 4, Idle: 8, Dead: 4, Run: 8, Walk: 7 },
+  "Fire Wizard": { Flame_jet: 5, Hurt: 3, Idle: 7, Dead: 6, Run: 8, Walk: 6 },
+  "Wanderer Magician": { Magic_arrow: 6, Hurt: 4, Idle: 8, Dead: 4, Run: 8, Walk: 7 },
 };
 
 /** Slice a horizontal spritesheet into individual frame textures. */

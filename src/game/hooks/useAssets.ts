@@ -1,8 +1,8 @@
-import { Assets, Texture } from "pixi.js";
+import { Assets, Rectangle, Texture } from "pixi.js";
 import { useEffect, useState } from "react";
 
-import type { CharAnims } from "../types";
-import { ANIM_FRAMES, sliceFrames, sliceGridFrames } from "../utils/sprites";
+import type { CharAnims, LaserFrames } from "../types";
+import { ANIM_FRAMES, sliceFrames } from "../utils/sprites";
 
 /** Load and return the battleground background texture. */
 export function useBackgroundTexture() {
@@ -32,27 +32,36 @@ export function useBricksTexture() {
   return bricksTexture;
 }
 
-/** Beam spritesheet layout: 5 cols × 4 rows, 192×192 per frame, 20 frames. */
-const BEAM_FRAME_W = 192;
-const BEAM_FRAME_H = 192;
-const BEAM_COLS = 5;
-const BEAM_TOTAL_FRAMES = 20;
+/** Laser spritesheet: 192×288, 6 rows × 1 col, each frame 192×48.
+ *  Rows 0-1 = source, 2-3 = middle, 4-5 = impact.
+ *  Even rows = loop frame, odd rows = start frame. */
+const LASER_FRAME_W = 192;
+const LASER_FRAME_H = 48;
 
-/** Load and return the death beam animation frames. */
-export function useBeamFrames() {
-  const [beamFrames, setBeamFrames] = useState<Texture[] | null>(null);
+/** Load and return laser beam section frames. */
+export function useLaserFrames() {
+  const [laserFrames, setLaserFrames] = useState<LaserFrames | null>(null);
 
   useEffect(() => {
-    if (!beamFrames) {
-      Assets.load("/MGC_DeathBeam_Lv1.png").then((sheet: Texture) => {
-        setBeamFrames(
-          sliceGridFrames(sheet, BEAM_FRAME_W, BEAM_FRAME_H, BEAM_COLS, BEAM_TOTAL_FRAMES),
-        );
+    if (!laserFrames) {
+      Assets.load("/Laser_Beam_Spritesheet_BLUE.png").then((sheet: Texture) => {
+        const row = (r: number) =>
+          new Texture({
+            source: sheet.source,
+            frame: new Rectangle(
+              0, r * LASER_FRAME_H, LASER_FRAME_W, LASER_FRAME_H,
+            ),
+          });
+        setLaserFrames({
+          source: [row(1), row(0)],
+          middle: [row(3), row(2)],
+          impact: [row(5), row(4)],
+        });
       });
     }
-  }, [beamFrames]);
+  }, [laserFrames]);
 
-  return beamFrames;
+  return laserFrames;
 }
 
 

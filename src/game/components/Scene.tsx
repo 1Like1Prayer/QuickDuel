@@ -16,9 +16,9 @@ import {
 } from "../constants";
 import {
   useBackgroundTexture,
-  useBeamFrames,
   useBricksTexture,
   useCharacterAnims,
+  useLaserFrames,
 } from "../hooks/useAssets";
 import { useDialGame } from "../hooks/useDialGame";
 import { blockColor } from "../hooks/utils/useDialGame.utils";
@@ -36,7 +36,9 @@ export function Scene() {
   const bgRef = useRef<Sprite>(null);
   const playerRef = useRef<Sprite>(null);
   const opponentRef = useRef<Sprite>(null);
-  const beamRef = useRef<Sprite>(null);
+  const laserSourceRef = useRef<Sprite>(null);
+  const laserMiddleRef = useRef<Sprite>(null);
+  const laserImpactRef = useRef<Sprite>(null);
   const ringContainerRef = useRef<Container>(null);
   const katanaOuterRef = useRef<Container>(null);
   const cpuKatanaOuterRef = useRef<Container>(null);
@@ -82,8 +84,8 @@ export function Scene() {
 
   const { playerAnims, opponentAnims } = useCharacterAnims();
 
-  // Load beam animation frames
-  const beamFrames = useBeamFrames();
+  // Load laser animation frames
+  const laserFrames = useLaserFrames();
 
   // Load katana texture
   useEffect(() => {
@@ -107,13 +109,15 @@ export function Scene() {
       bg: bgRef,
       player: playerRef,
       opponent: opponentRef,
-      beam: beamRef,
+      laserSource: laserSourceRef,
+      laserMiddle: laserMiddleRef,
+      laserImpact: laserImpactRef,
       ringContainer: ringContainerRef,
       katanaContainer: katanaOuterRef,
       cpuKatanaContainer: cpuKatanaOuterRef,
     },
     bgTexture,
-    beamFrames,
+    laserFrames,
     playerAnims,
     opponentAnims,
     dialGame,
@@ -551,10 +555,22 @@ export function Scene() {
         scale={layout.characters.charScale}
       />
 
-      {/* Death beam — shown during attack phases */}
+      {/* Laser beam — 3-section: source, middle, impact */}
       <pixiSprite
-        ref={beamRef}
-        texture={beamFrames ? beamFrames[0] : Texture.EMPTY}
+        ref={laserSourceRef}
+        texture={laserFrames ? laserFrames.source[0] : Texture.EMPTY}
+        visible={false}
+        anchor={{ x: 0, y: 0.5 }}
+      />
+      <pixiSprite
+        ref={laserMiddleRef}
+        texture={laserFrames ? laserFrames.middle[0] : Texture.EMPTY}
+        visible={false}
+        anchor={{ x: 0, y: 0.5 }}
+      />
+      <pixiSprite
+        ref={laserImpactRef}
+        texture={laserFrames ? laserFrames.impact[0] : Texture.EMPTY}
         visible={false}
         anchor={{ x: 0, y: 0.5 }}
       />
