@@ -10,7 +10,7 @@ export function useBackgroundTexture() {
 
   useEffect(() => {
     if (bgTexture === Texture.EMPTY) {
-      Assets.load("/Battleground1/Bright/Battleground1.png").then(
+      Assets.load("/Battleground/Battleground.png").then(
         setBgTexture,
       );
     }
