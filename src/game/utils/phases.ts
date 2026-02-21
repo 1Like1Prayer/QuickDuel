@@ -14,20 +14,6 @@ export function getAnimName(
       return "Idle";
     case "attack_intro":
       return char === "player" ? "Flame_jet" : "Magic_arrow";
-    case "opponent_attack":
-      return char === "opponent" ? "Magic_arrow" : "Idle";
-    case "player_hurt":
-      return char === "player" ? "Hurt" : "Idle";
-    case "player_idle_wait":
-      return "Idle";
-    case "player_attack":
-      return char === "player" ? "Flame_jet" : "Idle";
-    case "opponent_hurt":
-      return char === "opponent" ? "Hurt" : "Idle";
-    case "opponent_idle_wait":
-      return "Idle";
-    case "clash":
-      return char === "player" ? "Flame_jet" : "Magic_arrow";
     case "player_win":
       return char === "opponent" ? "Dead" : "Idle";
     case "player_lose":

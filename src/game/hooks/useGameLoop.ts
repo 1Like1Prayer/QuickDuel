@@ -4,11 +4,8 @@ import { useEffect, useRef } from "react";
 
 import {
   ANIM_SPEED,
-  CLASH_PAUSE_MS,
   COUNTDOWN_FIGHT_MS,
   COUNTDOWN_STEP_MS,
-  HIT_FREEZE_MS,
-  HURT_PAUSE_MS,
   LASER_ANIM_SPEED,
   RING_FADE_IN_DURATION,
   SHAKE_DURATION,
@@ -77,8 +74,6 @@ export function useGameLoop({
   const bloodParticles = useRef<BloodParticle[]>([]);
   const sparkParticles = useRef<SparkParticle[]>([]);
 
-  const clashSparkEmitted = useRef(false);
-
   // Laser animation state
   const laserFrame = useRef(0);     // 0 = start frame, 1 = loop frame
   const laserElapsed = useRef(0);
@@ -91,9 +86,6 @@ export function useGameLoop({
 
   // Track last consumed dial hit result to avoid re-processing
   const lastDialResult = useRef<boolean | null>(null);
-
-  // Track pending phase-transition timeouts so we can cancel on rapid input
-  const pendingTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // CPU state â€” independent block count & katana streak
   const cpuState = useRef(createCpuState());
@@ -157,16 +149,31 @@ export function useGameLoop({
 
     // Choose animation based on delta
     if (delta > 0) {
-      phase.current = "player_attack";
-      resetPhaseFrames();
+      // Player hit — shake + blood on opponent, stay in idle
+      startShake();
+      spawnBlood(
+        bloodParticles.current,
+        opponentX.current + layout.characters.charSize * 0.4,
+        layout.positions.groundY + layout.characters.charSize * 0.4,
+        1,
+      );
     } else if (delta < 0) {
-      phase.current = "opponent_attack";
-      resetPhaseFrames();
+      // Opponent hit — shake + blood on player, stay in idle
+      startShake();
+      spawnBlood(
+        bloodParticles.current,
+        playerX.current + layout.characters.charSize * 0.4,
+        layout.positions.groundY + layout.characters.charSize * 0.4,
+        -1,
+      );
     } else {
-      // delta === 0: clash
-      phase.current = "clash";
-      resetPhaseFrames();
-      clashSparkEmitted.current = false;
+      // delta === 0: clash — shake + sparks
+      startShake();
+      const clashX =
+        (playerX.current + layout.characters.charSize + opponentX.current) / 2;
+      const clashY =
+        layout.positions.groundY + layout.characters.charSize * 0.35;
+      spawnSparks(sparkParticles.current, clashX, clashY);
     }
   };
 
@@ -202,12 +209,6 @@ export function useGameLoop({
   useEffect(() => {
     const combatPhases: Phase[] = [
       "idle",
-      "player_attack",
-      "opponent_hurt",
-      "opponent_attack",
-      "player_hurt",
-      "player_idle_wait",
-      "opponent_idle_wait",
     ];
 
     const handleInput = (e?: KeyboardEvent) => {
@@ -221,11 +222,7 @@ export function useGameLoop({
       const hit = dialGame.attempt();
       if (hit === null) return; // already attempted this lap â€” ignore
 
-      // Cancel every pending phase-transition timeout
-      for (const id of pendingTimeouts.current) clearTimeout(id);
-      pendingTimeouts.current = [];
-
-      // CPU also takes its turn â€” resolve round together (animation chosen by delta)
+      // CPU also takes its turn
       const cpuHit = doCpuTurn();
       const playerHit = hit ? dialGame.lastHitPoints.current : 0;
       doResolveRound(playerHit, cpuHit);
@@ -256,15 +253,6 @@ export function useGameLoop({
     isShaking.current = true;
   };
 
-  /** Schedule a timeout and track it so it can be cancelled on rapid input. */
-  const schedulePhase = (fn: () => void, ms: number) => {
-    const id = setTimeout(() => {
-      // Remove from tracking once it fires
-      pendingTimeouts.current = pendingTimeouts.current.filter((t) => t !== id);
-      fn();
-    }, ms);
-    pendingTimeouts.current.push(id);
-  };
 
   // â”€â”€ Main tick â”€â”€
 
@@ -413,131 +401,6 @@ export function useGameLoop({
 
       case "fight_text":
       case "idle": {
-        // Auto-miss detection is handled by the regen path (CPU turn on block
-        // regeneration) which calls doResolveRound — that now triggers the
-        // correct attack/clash animation based on delta.
-        break;
-      }
-
-      case "player_attack": {
-        if (
-          playerFrame.current === playerAnim.length - 1 &&
-          !phaseAnimDone.current
-        ) {
-          phaseAnimDone.current = true;
-          schedulePhase(() => {
-            phase.current = "opponent_hurt";
-            resetPhaseFrames();
-            startShake();
-            spawnBlood(
-              bloodParticles.current,
-              opponentX.current + layout.characters.charSize * 0.4,
-              layout.positions.groundY + layout.characters.charSize * 0.4,
-              1,
-            );
-          }, HIT_FREEZE_MS);
-        }
-        break;
-      }
-
-      case "opponent_attack": {
-        if (
-          opponentFrame.current === opponentAnim.length - 1 &&
-          !phaseAnimDone.current
-        ) {
-          phaseAnimDone.current = true;
-          schedulePhase(() => {
-            phase.current = "player_hurt";
-            resetPhaseFrames();
-            startShake();
-            spawnBlood(
-              bloodParticles.current,
-              playerX.current + layout.characters.charSize * 0.4,
-              layout.positions.groundY + layout.characters.charSize * 0.4,
-              -1,
-            );
-          }, HIT_FREEZE_MS);
-        }
-        break;
-      }
-
-      case "player_hurt": {
-        if (
-          playerFrame.current === playerAnim.length - 1 &&
-          !phaseAnimDone.current
-        ) {
-          phaseAnimDone.current = true;
-          schedulePhase(() => {
-            phase.current = "idle";
-            resetPhaseFrames();
-          }, HURT_PAUSE_MS);
-        }
-        break;
-      }
-
-      case "opponent_hurt": {
-        if (
-          opponentFrame.current === opponentAnim.length - 1 &&
-          !phaseAnimDone.current
-        ) {
-          phaseAnimDone.current = true;
-          schedulePhase(() => {
-            phase.current = "idle";
-            resetPhaseFrames();
-          }, HURT_PAUSE_MS);
-        }
-        break;
-      }
-
-      case "player_idle_wait": {
-        if (!phaseAnimDone.current) {
-          phaseAnimDone.current = true;
-          phase.current = "idle";
-          resetPhaseFrames();
-        }
-        break;
-      }
-
-      case "opponent_idle_wait": {
-        if (!phaseAnimDone.current) {
-          phaseAnimDone.current = true;
-          phase.current = "idle";
-          resetPhaseFrames();
-        }
-        break;
-      }
-
-      case "clash": {
-        if (phaseAnimDone.current) break;
-
-        const playerImpact = Math.floor(playerAnim.length * 0.6);
-        const opponentImpact = Math.floor(opponentAnim.length * 0.6);
-        const atImpact =
-          playerFrame.current >= playerImpact ||
-          opponentFrame.current >= opponentImpact;
-
-        if (atImpact && !clashSparkEmitted.current) {
-          clashSparkEmitted.current = true;
-          startShake();
-          const clashX =
-            (playerX.current + layout.characters.charSize + opponentX.current) /
-            2;
-          const clashY =
-            layout.positions.groundY + layout.characters.charSize * 0.35;
-          spawnSparks(sparkParticles.current, clashX, clashY);
-        }
-
-        // Play once â€” when the animation finishes, return to idle after a short pause
-        if (
-          playerFrame.current === playerAnim.length - 1 ||
-          opponentFrame.current === opponentAnim.length - 1
-        ) {
-          phaseAnimDone.current = true;
-          schedulePhase(() => {
-            phase.current = "idle";
-            resetPhaseFrames();
-          }, CLASH_PAUSE_MS);
-        }
         break;
       }
 
@@ -550,8 +413,6 @@ export function useGameLoop({
           ringAlpha.current = 0;
           bloodParticles.current = [];
           sparkParticles.current = [];
-          for (const id of pendingTimeouts.current) clearTimeout(id);
-          pendingTimeouts.current = [];
           lastDialResult.current = null;
           cpuState.current = createCpuState();
           cpuHitColors.current = [];
@@ -606,8 +467,6 @@ export function useGameLoop({
             ringAlpha.current = 0;
                     bloodParticles.current = [];
             sparkParticles.current = [];
-            for (const id of pendingTimeouts.current) clearTimeout(id);
-            pendingTimeouts.current = [];
             lastDialResult.current = null;
             cpuState.current = createCpuState();
             cpuHitColors.current = [];

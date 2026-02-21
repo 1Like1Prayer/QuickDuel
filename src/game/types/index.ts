@@ -6,13 +6,6 @@ export type Phase =
   | "attack_intro"
   | "idle"
   | "fight_text"
-  | "opponent_attack"
-  | "player_hurt"
-  | "player_idle_wait"
-  | "player_attack"
-  | "opponent_hurt"
-  | "opponent_idle_wait"
-  | "clash"
   | "player_win"
   | "player_lose";
 

@@ -13,11 +13,6 @@ export const LASER_ANIM_SPEED = 1 / 24;   // 24 fps for laser beam frames
 // --- Screen Shake ---
 export const SHAKE_DURATION = 0.08;
 
-// --- Hit / Knockback (timing only) ---
-export const HIT_FREEZE_MS = 20;
-export const RECOVER_IDLE_MS = 100;
-export const HURT_PAUSE_MS = 80;
-
 // --- "FIGHT!" text display ---
 export const FIGHT_TEXT_DURATION_MS = 1200;
 
@@ -43,4 +38,3 @@ export const SPARK_PARTICLE_SPEED = 600;
 export const SPARK_PARTICLE_GRAVITY = 400;
 export const SPARK_PARTICLE_LIFETIME = 0.3;
 export const SPARK_PARTICLE_SIZE = 6;
-export const CLASH_PAUSE_MS = 400;
