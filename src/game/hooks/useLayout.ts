@@ -55,8 +55,8 @@ export function useLayout(screenWidth: number, screenHeight: number): Layout {
         meetX: screenWidth / 2,
         // On smaller screens push the circle lower (towards the middle)
         meetY: screenHeight * (unit < 500 ? 0.42 : 0.35),
-        charStartX: 0 - charSize / 3,
-        charEndX: screenWidth - charSize / 1.5,
+        charStartX: 0 ,
+        charEndX: screenWidth - charSize ,
       },
       movement: {
         runSpeed: unit * 0.5,

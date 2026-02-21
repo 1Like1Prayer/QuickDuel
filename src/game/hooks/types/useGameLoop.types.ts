@@ -11,7 +11,7 @@ export interface SceneRefs {
   player: React.RefObject<Sprite | null>;
   opponent: React.RefObject<Sprite | null>;
   laserSource: React.RefObject<Sprite | null>;
-  laserMiddle: React.RefObject<Sprite | null>;
+  laserMiddle: React.RefObject<Container | null>;
   laserImpact: React.RefObject<Sprite | null>;
   ringContainer: React.RefObject<Container | null>;
   katanaContainer: React.RefObject<Container | null>;

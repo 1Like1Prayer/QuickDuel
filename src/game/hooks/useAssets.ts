@@ -45,7 +45,7 @@ export function useLaserFrames() {
 
   useEffect(() => {
     if (!laserFrames) {
-      Assets.load("/Laser_Beam_Spritesheet_BLUE.png").then((sheet: Texture) => {
+      Assets.load("/Laser_Beam_Spritesheet_RED.png").then((sheet: Texture) => {
         const rowFrames = (r: number): Texture[] => {
           const frames: Texture[] = [];
           for (let c = 0; c < LASER_COLS; c++) {

@@ -37,7 +37,7 @@ export function Scene() {
   const playerRef = useRef<Sprite>(null);
   const opponentRef = useRef<Sprite>(null);
   const laserSourceRef = useRef<Sprite>(null);
-  const laserMiddleRef = useRef<Sprite>(null);
+  const laserMiddleRef = useRef<Container>(null);
   const laserImpactRef = useRef<Sprite>(null);
   const ringContainerRef = useRef<Container>(null);
   const katanaOuterRef = useRef<Container>(null);
@@ -555,19 +555,14 @@ export function Scene() {
         scale={layout.characters.charScale}
       />
 
-      {/* Laser beam — 3-section: source, middle, impact */}
+      {/* Laser beam — 3-section: source, tiled middle, impact */}
       <pixiSprite
         ref={laserSourceRef}
         texture={laserFrames ? laserFrames.sourceStart[0] : Texture.EMPTY}
         visible={false}
         anchor={{ x: 0, y: 0.5 }}
       />
-      <pixiSprite
-        ref={laserMiddleRef}
-        texture={laserFrames ? laserFrames.middleStart[0] : Texture.EMPTY}
-        visible={false}
-        anchor={{ x: 0, y: 0.5 }}
-      />
+      <pixiContainer ref={laserMiddleRef} visible={false} />
       <pixiSprite
         ref={laserImpactRef}
         texture={laserFrames ? laserFrames.impactStart[0] : Texture.EMPTY}

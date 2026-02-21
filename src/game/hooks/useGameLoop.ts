@@ -1,5 +1,5 @@
 ﻿import { useTick } from "@pixi/react";
-import { Graphics, Texture } from "pixi.js";
+import { Graphics, Sprite, Texture } from "pixi.js";
 import { useEffect, useRef } from "react";
 
 import {
@@ -40,6 +40,7 @@ export function useGameLoop({
 }: GameLoopParams) {
   const bloodGfx = useRef<Graphics | null>(null);
   const sparkGfx = useRef<Graphics | null>(null);
+  const laserDebugGfx = useRef<Graphics | null>(null);
 
   // Win/Lose text state (read by Scene for rendering)
   const showWinText = useRef(false);
@@ -171,16 +172,21 @@ export function useGameLoop({
 
     const bGfx = new Graphics();
     const sGfx = new Graphics();
+    const lDbg = new Graphics();
     bloodGfx.current = bGfx;
     sparkGfx.current = sGfx;
+    laserDebugGfx.current = lDbg;
     container.addChild(bGfx);
     container.addChild(sGfx);
+    container.addChild(lDbg);
 
     return () => {
       container.removeChild(bGfx);
       container.removeChild(sGfx);
+      container.removeChild(lDbg);
       bGfx.destroy();
       sGfx.destroy();
+      lDbg.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -289,31 +295,27 @@ export function useGameLoop({
     const opponentAnim = opponentAnims[opponentAnimName];
 
     if (curPhase !== "player_win" && curPhase !== "player_lose" && curPhase !== "attack_intro") {
-      playerElapsed.current += dt;
-      if (playerElapsed.current >= ANIM_SPEED) {
-        playerElapsed.current = 0;
-        if (attackIntroPlayed.current && playerAnimName === "Idle") {
-          // Loop last 2 frames of attack animation instead of Idle
-          const atkAnim = playerAnims["Flame_jet"];
-          const loopStart = atkAnim.length - 2;
-          playerFrame.current = playerFrame.current === loopStart ? loopStart + 1 : loopStart;
-          player.current.texture = atkAnim[playerFrame.current];
-        } else {
+      if (attackIntroPlayed.current && playerAnimName === "Idle") {
+        // Hold last frame of attack animation instead of Idle
+        const atkAnim = playerAnims["Flame_jet"];
+        player.current.texture = atkAnim[atkAnim.length - 1];
+      } else {
+        playerElapsed.current += dt;
+        if (playerElapsed.current >= ANIM_SPEED) {
+          playerElapsed.current = 0;
           playerFrame.current = (playerFrame.current + 1) % playerAnim.length;
           player.current.texture = playerAnim[playerFrame.current];
         }
       }
 
-      opponentElapsed.current += dt;
-      if (opponentElapsed.current >= ANIM_SPEED) {
-        opponentElapsed.current = 0;
-        if (attackIntroPlayed.current && opponentAnimName === "Idle") {
-          // Loop last 2 frames of attack animation instead of Idle
-          const atkAnim = opponentAnims["Magic_arrow"];
-          const loopStart = atkAnim.length - 2;
-          opponentFrame.current = opponentFrame.current === loopStart ? loopStart + 1 : loopStart;
-          opponent.current.texture = atkAnim[opponentFrame.current];
-        } else {
+      if (attackIntroPlayed.current && opponentAnimName === "Idle") {
+        // Hold last frame of attack animation instead of Idle
+        const atkAnim = opponentAnims["Magic_arrow"];
+        opponent.current.texture = atkAnim[atkAnim.length - 1];
+      } else {
+        opponentElapsed.current += dt;
+        if (opponentElapsed.current >= ANIM_SPEED) {
+          opponentElapsed.current = 0;
           opponentFrame.current = (opponentFrame.current + 1) % opponentAnim.length;
           opponent.current.texture = opponentAnim[opponentFrame.current];
         }
@@ -698,49 +700,102 @@ export function useGameLoop({
         if (laserElapsed.current >= LASER_ANIM_SPEED) {
           laserElapsed.current = 0;
           if (!laserStarted.current) {
-            laserStarted.current = true;
-            laserFrame.current = 0; // start frame
+            // Playing start frames (0-3), then switch to loop
+            laserFrame.current++;
+            if (laserFrame.current >= 4) {
+              laserStarted.current = true;
+              laserFrame.current = 0; // begin loop frames
+            }
           } else {
-            // Toggle between start (0) and loop (1) frames
-            laserFrame.current = laserFrame.current === 0 ? 1 : 0;
+            // Cycle through loop frames (0-3)
+            laserFrame.current = (laserFrame.current + 1) % 4;
           }
         }
 
         const fi = laserFrame.current;
-        laserSrc.texture = laserFrames.source[fi];
-        laserMid.texture = laserFrames.middle[fi];
-        laserImp.texture = laserFrames.impact[fi];
+        const midTex = !laserStarted.current
+          ? laserFrames.middleStart[fi]
+          : laserFrames.middleLoop[fi];
+
+        if (!laserStarted.current) {
+          laserSrc.texture = laserFrames.sourceStart[fi];
+          laserImp.texture = laserFrames.impactStart[fi];
+        } else {
+          laserSrc.texture = laserFrames.sourceLoop[fi];
+          laserImp.texture = laserFrames.impactLoop[fi];
+        }
 
         const charSize = layout.characters.charSize;
-        const frameW = laserFrames.source[0].width;  // 192
-        const frameH = laserFrames.source[0].height;  // 48
-        const beamHeight = charSize * 0.35;
+        const frameW = laserFrames.sourceStart[0].width;  // 48
+        const frameH = laserFrames.sourceStart[0].height;  // 48
+        const beamHeight = charSize * 0.75;
         const scaleY = beamHeight / frameH;
-        const sectionW = frameW * scaleY; // keep aspect ratio for source & impact
-        const beamY = layout.positions.groundY + charSize * 0.45;
+        const scaledW = frameW * scaleY;
+        const beamY = layout.positions.groundY + charSize * 0.66;
 
-        // Source: at player's tip
-        const originX = playerX.current + charSize * 0.7;
+        // Source: at the fire mage's hands
+        const originX = playerX.current + charSize * 0.258;
         laserSrc.x = originX;
         laserSrc.y = beamY;
         laserSrc.anchor.set(0, 0.5);
         laserSrc.scale.set(scaleY, scaleY);
 
-        // Impact: at opponent's body
-        const impactX = opponentX.current + charSize * 0.3;
+        // Impact: a bit past the middle of the screen
+        const impactX = layout.positions.meetX + charSize * 0.3;
         laserImp.x = impactX;
         laserImp.y = beamY;
         laserImp.anchor.set(1, 0.5);
         laserImp.scale.set(scaleY, scaleY);
 
-        // Middle: stretch to fill gap between source end and impact start
-        const midStartX = originX + sectionW;
-        const midEndX = impactX - sectionW;
+        // Tiled middle: start overlapping the source section
+        const midStartX = originX + scaledW * 0.30;
+        const midEndX = impactX - scaledW;
         const midSpan = midEndX - midStartX;
-        laserMid.x = midStartX;
-        laserMid.y = beamY;
-        laserMid.anchor.set(0, 0.5);
-        laserMid.scale.set(midSpan / frameW, scaleY);
+        const tileStep = scaledW * 0.3; // overlap each tile by 30%
+        const tileCount = Math.max(1, Math.ceil(midSpan / tileStep));
+
+        // Add/remove sprites to match tile count
+        while (laserMid.children.length < tileCount) {
+          const s = new Sprite();
+          s.anchor.set(0, 0.5);
+          laserMid.addChild(s);
+        }
+        while (laserMid.children.length > tileCount) {
+          const removed = laserMid.removeChildAt(laserMid.children.length - 1);
+          removed.destroy();
+        }
+
+        // Position and texture each tile
+        for (let i = 0; i < tileCount; i++) {
+          const tile = laserMid.children[i] as Sprite;
+          tile.texture = midTex;
+          tile.x = midStartX + i * tileStep;
+          tile.y = beamY;
+          tile.scale.set(scaleY, scaleY);
+        }
+
+        // Ensure source and impact render on top of middle tiles
+        laserMid.zIndex = 0;
+        laserSrc.zIndex = 1;
+        laserImp.zIndex = 1;
+
+        // DEBUG: Draw borders around each laser section
+        const dbg = laserDebugGfx.current;
+        if (dbg) {
+          dbg.clear();
+          const halfH = beamHeight / 2;
+          // Source section border (green)
+          dbg.rect(originX, beamY - halfH, scaledW, beamHeight);
+          dbg.stroke({ color: 0x00ff00, width: 2, alpha: 1 });
+          // Each middle tile border (red)
+          for (let i = 0; i < tileCount; i++) {
+            dbg.rect(midStartX + i * tileStep, beamY - halfH, scaledW, beamHeight);
+            dbg.stroke({ color: 0xff0000, width: 2, alpha: 1 });
+          }
+          // Impact section border (blue)
+          dbg.rect(impactX - scaledW, beamY - halfH, scaledW, beamHeight);
+          dbg.stroke({ color: 0x0000ff, width: 2, alpha: 1 });
+        }
       } else {
         laserSrc.visible = false;
         laserMid.visible = false;
@@ -748,6 +803,7 @@ export function useGameLoop({
         laserFrame.current = 0;
         laserElapsed.current = 0;
         laserStarted.current = false;
+        if (laserDebugGfx.current) laserDebugGfx.current.clear();
       }
     }
 
