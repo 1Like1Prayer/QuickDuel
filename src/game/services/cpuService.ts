@@ -1,10 +1,10 @@
 import { BLOCK_COLORS, BLOCK_POINTS, INITIAL_BLOCK_COUNT, MAX_BLOCK_COUNT, MAX_KATANA_COUNT, MIN_BLOCK_COUNT } from "../constants";
 import type { Difficulty } from "../../state/types";
 
-const YELLOW = BLOCK_COLORS[0];
-const RED    = BLOCK_COLORS[1];
-const PURPLE = BLOCK_COLORS[2];
-const WHITE  = BLOCK_COLORS[3];
+const BASE      = BLOCK_COLORS[0];
+const MID       = BLOCK_COLORS[1];
+const SHADOW    = BLOCK_COLORS[2];
+const HIGHLIGHT = BLOCK_COLORS[3];
 
 interface CpuRollEntry {
   chance: number;
@@ -14,22 +14,22 @@ interface CpuRollEntry {
 
 const CPU_TABLES: Record<Difficulty, Record<number, CpuRollEntry>> = {
   beginner: {
-    4: { chance: 0.70, hitColor: YELLOW, missColor: null },
-    3: { chance: 0.60, hitColor: RED,    missColor: null },
-    2: { chance: 0.50, hitColor: PURPLE, missColor: null },
-    1: { chance: 0.40, hitColor: WHITE,  missColor: null },
+    4: { chance: 0.70, hitColor: BASE,      missColor: null },
+    3: { chance: 0.60, hitColor: MID,       missColor: null },
+    2: { chance: 0.50, hitColor: SHADOW,    missColor: null },
+    1: { chance: 0.40, hitColor: HIGHLIGHT, missColor: null },
   },
   intermediate: {
-    4: { chance: 0.80, hitColor: RED,    missColor: null },
-    3: { chance: 0.70, hitColor: PURPLE, missColor: null },
-    2: { chance: 0.60, hitColor: PURPLE, missColor: null },
-    1: { chance: 0.50, hitColor: WHITE,  missColor: null },
+    4: { chance: 0.80, hitColor: MID,       missColor: null },
+    3: { chance: 0.70, hitColor: SHADOW,    missColor: null },
+    2: { chance: 0.60, hitColor: SHADOW,    missColor: null },
+    1: { chance: 0.50, hitColor: HIGHLIGHT, missColor: null },
   },
   advanced: {
-    4: { chance: 0.80, hitColor: PURPLE, missColor: WHITE },
-    3: { chance: 0.70, hitColor: PURPLE, missColor: WHITE },
-    2: { chance: 0.60, hitColor: PURPLE, missColor: WHITE },
-    1: { chance: 0.60, hitColor: WHITE,  missColor: null },
+    4: { chance: 0.80, hitColor: SHADOW,    missColor: HIGHLIGHT },
+    3: { chance: 0.70, hitColor: SHADOW,    missColor: HIGHLIGHT },
+    2: { chance: 0.60, hitColor: SHADOW,    missColor: HIGHLIGHT },
+    1: { chance: 0.60, hitColor: HIGHLIGHT, missColor: null },
   },
 };
 

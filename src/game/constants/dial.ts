@@ -41,20 +41,20 @@ export const MISS_PULSE_COLOR = 0xff2222; // red
 export const MISS_PULSE_MAX_ALPHA = 0.8;
 export const MISS_LINE_WIDTH_FACTOR = 0.06; // relative to outerRadius
 
-// --- Block colors (ordered: yellow → red → purple → white) ---
+// --- Block colors (ordered: green → yellow → orange → red) ---
 export const BLOCK_COLORS = [
-  0xffdd00, // yellow
-  0xff2222, // red
-  0x9933ff, // purple
-  0xffffff, // white
+  0x44ff44, // vivid green
+  0xffee00, // bright yellow
+  0xff8800, // hot orange
+  0xff1111, // intense red
 ];
 
 // --- Points awarded per block color ---
 export const BLOCK_POINTS: Record<number, number> = {
-  0xffdd00: 1, // yellow
-  0xff2222: 2, // red
-  0x9933ff: 3, // purple
-  0xffffff: 4, // white
+  0x44ff44: 1, // vivid green
+  0xffee00: 2, // bright yellow
+  0xff8800: 3, // hot orange
+  0xff1111: 4, // intense red
 };
 
 /** Points threshold — game ends when a player exceeds this. */
