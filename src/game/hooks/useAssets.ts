@@ -2,7 +2,7 @@ import { Assets, Texture } from "pixi.js";
 import { useEffect, useState } from "react";
 
 import type { CharAnims } from "../types";
-import { ANIM_FRAMES, sliceFrames } from "../utils/sprites";
+import { ANIM_FRAMES, sliceFrames, sliceGridFrames } from "../utils/sprites";
 
 /** Load and return the battleground background texture. */
 export function useBackgroundTexture() {
@@ -32,6 +32,29 @@ export function useBricksTexture() {
   return bricksTexture;
 }
 
+/** Beam spritesheet layout: 5 cols × 4 rows, 192×192 per frame, 20 frames. */
+const BEAM_FRAME_W = 192;
+const BEAM_FRAME_H = 192;
+const BEAM_COLS = 5;
+const BEAM_TOTAL_FRAMES = 20;
+
+/** Load and return the death beam animation frames. */
+export function useBeamFrames() {
+  const [beamFrames, setBeamFrames] = useState<Texture[] | null>(null);
+
+  useEffect(() => {
+    if (!beamFrames) {
+      Assets.load("/MGC_DeathBeam_Lv1.png").then((sheet: Texture) => {
+        setBeamFrames(
+          sliceGridFrames(sheet, BEAM_FRAME_W, BEAM_FRAME_H, BEAM_COLS, BEAM_TOTAL_FRAMES),
+        );
+      });
+    }
+  }, [beamFrames]);
+
+  return beamFrames;
+}
+
 
 
 /** Load and return both character animation sets. */
@@ -49,7 +72,7 @@ export function useCharacterAnims() {
       return anims;
     };
 
-    Promise.all([loadAnims("Samurai"), loadAnims("Shinobi")]).then(
+    Promise.all([loadAnims("Fire Wizard"), loadAnims("Wanderer Magician")]).then(
       ([player, opponent]) => {
         setPlayerAnims(player);
         setOpponentAnims(opponent);

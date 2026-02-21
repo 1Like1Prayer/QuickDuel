@@ -2,17 +2,14 @@ import type { Texture } from "pixi.js";
 
 export type Phase =
   | "intro"
-  | "run"
   | "countdown"
   | "idle"
   | "fight_text"
   | "opponent_attack"
   | "player_hurt"
-  | "player_recover"
   | "player_idle_wait"
   | "player_attack"
   | "opponent_hurt"
-  | "opponent_recover"
   | "opponent_idle_wait"
   | "clash"
   | "player_win"

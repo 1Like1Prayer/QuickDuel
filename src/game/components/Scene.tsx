@@ -16,6 +16,7 @@ import {
 } from "../constants";
 import {
   useBackgroundTexture,
+  useBeamFrames,
   useBricksTexture,
   useCharacterAnims,
 } from "../hooks/useAssets";
@@ -35,6 +36,7 @@ export function Scene() {
   const bgRef = useRef<Sprite>(null);
   const playerRef = useRef<Sprite>(null);
   const opponentRef = useRef<Sprite>(null);
+  const beamRef = useRef<Sprite>(null);
   const ringContainerRef = useRef<Container>(null);
   const katanaOuterRef = useRef<Container>(null);
   const cpuKatanaOuterRef = useRef<Container>(null);
@@ -80,6 +82,9 @@ export function Scene() {
 
   const { playerAnims, opponentAnims } = useCharacterAnims();
 
+  // Load beam animation frames
+  const beamFrames = useBeamFrames();
+
   // Load katana texture
   useEffect(() => {
     Assets.load("/katana.png").then(setKatanaTexture);
@@ -102,11 +107,13 @@ export function Scene() {
       bg: bgRef,
       player: playerRef,
       opponent: opponentRef,
+      beam: beamRef,
       ringContainer: ringContainerRef,
       katanaContainer: katanaOuterRef,
       cpuKatanaContainer: cpuKatanaOuterRef,
     },
     bgTexture,
+    beamFrames,
     playerAnims,
     opponentAnims,
     dialGame,
@@ -542,6 +549,14 @@ export function Scene() {
         x={layout.positions.charEndX}
         y={layout.positions.groundY}
         scale={layout.characters.charScale}
+      />
+
+      {/* Death beam — shown during attack phases */}
+      <pixiSprite
+        ref={beamRef}
+        texture={beamFrames ? beamFrames[0] : Texture.EMPTY}
+        visible={false}
+        anchor={{ x: 0, y: 0.5 }}
       />
 
       {/* Countdown text â€” "3", "2", "1", "FIGHT!" during countdown phase */}

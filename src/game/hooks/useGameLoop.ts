@@ -1,4 +1,4 @@
-import { useTick } from "@pixi/react";
+﻿import { useTick } from "@pixi/react";
 import { Graphics, Texture } from "pixi.js";
 import { useEffect, useRef } from "react";
 
@@ -31,6 +31,7 @@ export function useGameLoop({
   app,
   refs,
   bgTexture,
+  beamFrames,
   playerAnims,
   opponentAnims,
   dialGame,
@@ -50,11 +51,13 @@ export function useGameLoop({
 
   // Phase state machine
   const phase = useRef<Phase>("intro");
-  const playerX = useRef(layout.positions.charStartX);
-  const opponentX = useRef(layout.positions.charEndX);
 
-  const playerFightX = useRef(0);
-  const opponentFightX = useRef(0);
+  // Place characters at the screen edges
+  const playerFightX = layout.positions.charStartX;
+  const opponentFightX = layout.positions.charEndX;
+
+  const playerX = useRef(playerFightX);
+  const opponentX = useRef(opponentFightX);
 
   const playerFrame = useRef(0);
   const opponentFrame = useRef(0);
@@ -65,13 +68,14 @@ export function useGameLoop({
   const shakeTimer = useRef(0);
   const isShaking = useRef(false);
 
-  const playerKnockback = useRef(0);
-  const opponentKnockback = useRef(0);
-
   const bloodParticles = useRef<BloodParticle[]>([]);
   const sparkParticles = useRef<SparkParticle[]>([]);
 
   const clashSparkEmitted = useRef(false);
+
+  // Beam animation state
+  const beamFrame = useRef(0);
+  const beamElapsed = useRef(0);
 
   // Track last consumed dial hit result to avoid re-processing
   const lastDialResult = useRef<boolean | null>(null);
@@ -114,7 +118,6 @@ export function useGameLoop({
         if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
         if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
         startShake();
-        opponentKnockback.current = layout.movement.knockbackDistance;
         spawnBlood(
           bloodParticles.current,
           opponentX.current + layout.characters.charSize * 0.4,
@@ -130,7 +133,6 @@ export function useGameLoop({
         if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
         if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
         startShake();
-        playerKnockback.current = layout.movement.knockbackDistance;
         spawnBlood(
           bloodParticles.current,
           playerX.current + layout.characters.charSize * 0.4,
@@ -185,10 +187,8 @@ export function useGameLoop({
       "idle",
       "player_attack",
       "opponent_hurt",
-      "opponent_recover",
       "opponent_attack",
       "player_hurt",
-      "player_recover",
       "player_idle_wait",
       "opponent_idle_wait",
     ];
@@ -197,7 +197,7 @@ export function useGameLoop({
       if (e && e.key !== " ") return;
       if (e) e.preventDefault();
 
-      // Allow input during any combat phase (not run / fight_text / clash)
+      // Allow input during any combat phase (not fight_text / clash)
       if (!combatPhases.includes(phase.current)) return;
       if (!dialGame.active.current) return;
 
@@ -207,12 +207,6 @@ export function useGameLoop({
       // Cancel every pending phase-transition timeout
       for (const id of pendingTimeouts.current) clearTimeout(id);
       pendingTimeouts.current = [];
-
-      // Snap characters back to fight positions & clear residual knockback
-      playerX.current = playerFightX.current;
-      opponentX.current = opponentFightX.current;
-      playerKnockback.current = 0;
-      opponentKnockback.current = 0;
 
       // CPU also takes its turn â€” resolve round together (animation chosen by delta)
       const cpuHit = doCpuTurn();
@@ -302,52 +296,11 @@ export function useGameLoop({
         opponent.current.texture = opponentAnim[opponentFrame.current];
       }
     }
-
-    // â”€â”€ Knockback â”€â”€
-
-    if (playerKnockback.current > 0) {
-      const kb = Math.min(
-        playerKnockback.current,
-        layout.movement.knockbackSpeed * dt,
-      );
-      playerX.current -= kb;
-      playerKnockback.current -= kb;
-    }
-    if (opponentKnockback.current > 0) {
-      const kb = Math.min(
-        opponentKnockback.current,
-        layout.movement.knockbackSpeed * dt,
-      );
-      opponentX.current += kb;
-      opponentKnockback.current -= kb;
-    }
-
-    // â”€â”€ Phase state machine â”€â”€
-
-    const meetDist = layout.characters.charSize + layout.movement.meetGap;
-
     switch (curPhase) {
       case "intro": {
-        // Characters visible and idle at screen edges; waiting for store phase change
+        // Characters visible and idle; waiting for store phase change
         if (useGameStore.getState().phase === "playing") {
-          phase.current = "run";
-          resetPhaseFrames();
-        }
-        break;
-      }
-
-      case "run": {
-        playerX.current += layout.movement.runSpeed * dt;
-        opponentX.current -= layout.movement.runSpeed * dt;
-        if (opponentX.current - playerX.current <= meetDist) {
-          const cx = (playerX.current + opponentX.current) / 2;
-          playerX.current =
-            cx - layout.characters.charSize / 2 - layout.movement.meetGap / 2;
-          opponentX.current =
-            cx + layout.characters.charSize / 2 + layout.movement.meetGap / 2;
-          playerFightX.current = playerX.current;
-          opponentFightX.current = opponentX.current;
-          // Make ring & katana containers visible but fully transparent â€” they will fade in
+          // Make ring & katana containers visible but fully transparent
           if (refs.ringContainer.current) {
             refs.ringContainer.current.visible = true;
             refs.ringContainer.current.alpha = 0;
@@ -359,7 +312,6 @@ export function useGameLoop({
             refs.cpuKatanaContainer.current.visible = true;
           }
           ringAlpha.current = 0;
-          // Start countdown sequence: 3 â†’ 2 â†’ 1 â†’ FIGHT!
           phase.current = "countdown";
           countdownText.current = "3";
           resetPhaseFrames();
@@ -378,6 +330,7 @@ export function useGameLoop({
         }
         break;
       }
+
 
       case "countdown": {
         // Fade in ring/dial during countdown
@@ -408,7 +361,6 @@ export function useGameLoop({
             phase.current = "opponent_hurt";
             resetPhaseFrames();
             startShake();
-            opponentKnockback.current = layout.movement.knockbackDistance;
             spawnBlood(
               bloodParticles.current,
               opponentX.current + layout.characters.charSize * 0.4,
@@ -430,7 +382,6 @@ export function useGameLoop({
             phase.current = "player_hurt";
             resetPhaseFrames();
             startShake();
-            playerKnockback.current = layout.movement.knockbackDistance;
             spawnBlood(
               bloodParticles.current,
               playerX.current + layout.characters.charSize * 0.4,
@@ -449,25 +400,9 @@ export function useGameLoop({
         ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
-            phase.current = "player_recover";
-            resetPhaseFrames();
-          }, HURT_PAUSE_MS);
-        }
-        break;
-      }
-
-      case "player_recover": {
-        if (playerX.current < playerFightX.current) {
-          playerX.current += layout.movement.recoverSpeed * dt;
-          if (playerX.current >= playerFightX.current) {
-            playerX.current = playerFightX.current;
-            // Return to idle â€” dial resumes
             phase.current = "idle";
             resetPhaseFrames();
-          }
-        } else {
-          phase.current = "idle";
-          resetPhaseFrames();
+          }, HURT_PAUSE_MS);
         }
         break;
       }
@@ -479,25 +414,9 @@ export function useGameLoop({
         ) {
           phaseAnimDone.current = true;
           schedulePhase(() => {
-            phase.current = "opponent_recover";
-            resetPhaseFrames();
-          }, HURT_PAUSE_MS);
-        }
-        break;
-      }
-
-      case "opponent_recover": {
-        if (opponentX.current > opponentFightX.current) {
-          opponentX.current -= layout.movement.recoverSpeed * dt;
-          if (opponentX.current <= opponentFightX.current) {
-            opponentX.current = opponentFightX.current;
-            // Return to idle â€” dial resumes
             phase.current = "idle";
             resetPhaseFrames();
-          }
-        } else {
-          phase.current = "idle";
-          resetPhaseFrames();
+          }, HURT_PAUSE_MS);
         }
         break;
       }
@@ -523,11 +442,11 @@ export function useGameLoop({
       case "clash": {
         if (phaseAnimDone.current) break;
 
-        const samImpact = Math.floor(playerAnim.length * 0.6);
-        const shinImpact = Math.floor(opponentAnim.length * 0.6);
+        const playerImpact = Math.floor(playerAnim.length * 0.6);
+        const opponentImpact = Math.floor(opponentAnim.length * 0.6);
         const atImpact =
-          playerFrame.current >= samImpact ||
-          opponentFrame.current >= shinImpact;
+          playerFrame.current >= playerImpact ||
+          opponentFrame.current >= opponentImpact;
 
         if (atImpact && !clashSparkEmitted.current) {
           clashSparkEmitted.current = true;
@@ -561,10 +480,6 @@ export function useGameLoop({
           winTextAlpha.current = 0;
           countdownText.current = null;
           ringAlpha.current = 0;
-          playerX.current = layout.positions.charStartX;
-          opponentX.current = layout.positions.charEndX;
-          playerKnockback.current = 0;
-          opponentKnockback.current = 0;
           bloodParticles.current = [];
           sparkParticles.current = [];
           for (const id of pendingTimeouts.current) clearTimeout(id);
@@ -586,7 +501,7 @@ export function useGameLoop({
           if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
 
           if (storePhase === "playing") {
-            phase.current = "run";
+            phase.current = "intro";
             resetPhaseFrames();
           } else {
             phase.current = "intro";
@@ -620,11 +535,7 @@ export function useGameLoop({
             winTextAlpha.current = 0;
             countdownText.current = null;
             ringAlpha.current = 0;
-            playerX.current = layout.positions.charStartX;
-            opponentX.current = layout.positions.charEndX;
-            playerKnockback.current = 0;
-            opponentKnockback.current = 0;
-            bloodParticles.current = [];
+                    bloodParticles.current = [];
             sparkParticles.current = [];
             for (const id of pendingTimeouts.current) clearTimeout(id);
             pendingTimeouts.current = [];
@@ -645,7 +556,7 @@ export function useGameLoop({
             if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
   
             if (storePhase === "playing") {
-              phase.current = "run";
+              phase.current = "intro";
               resetPhaseFrames();
             } else {
               phase.current = "intro";
@@ -689,7 +600,7 @@ export function useGameLoop({
       cpuTurnTakenThisLap.current = false;
     }
 
-    // â”€â”€ Apply positions & orientation â”€â”€
+    // ── Apply positions & orientation ──
 
     player.current.x = playerX.current;
     opponent.current.x = opponentX.current;
@@ -699,6 +610,57 @@ export function useGameLoop({
 
     opponent.current.scale.x = -layout.characters.charScale;
     opponent.current.anchor.x = 1;
+
+    // ── Death beam ──
+
+    if (refs.beam.current && beamFrames && beamFrames.length > 0) {
+      const isAttack = curPhase === "player_attack" || curPhase === "opponent_attack";
+
+      if (isAttack) {
+        refs.beam.current.visible = true;
+
+        // Advance beam animation frame
+        beamElapsed.current += dt;
+        if (beamElapsed.current >= ANIM_SPEED) {
+          beamElapsed.current = 0;
+          beamFrame.current = (beamFrame.current + 1) % beamFrames.length;
+        }
+        refs.beam.current.texture = beamFrames[beamFrame.current];
+
+        const charSize = layout.characters.charSize;
+        const frameW = beamFrames[0].width;
+        const frameH = beamFrames[0].height;
+        // Position beam at character mid-body height
+        const beamY = layout.positions.groundY + charSize * 0.45;
+
+        if (curPhase === "player_attack") {
+          const originX = playerX.current + charSize * 0.7;
+          const endX = opponentX.current + charSize * 0.4;
+          const span = endX - originX;
+          const scaleX = span / frameW;
+          const scaleY = (charSize * 0.6) / frameH;
+          refs.beam.current.x = originX;
+          refs.beam.current.y = beamY;
+          refs.beam.current.anchor.set(0, 0.5);
+          refs.beam.current.scale.set(scaleX, scaleY);
+        } else {
+          // opponent_attack — beam goes right to left
+          const originX = opponentX.current + charSize * 0.3;
+          const endX = playerX.current + charSize * 0.6;
+          const span = originX - endX;
+          const scaleX = span / frameW;
+          const scaleY = (charSize * 0.6) / frameH;
+          refs.beam.current.x = originX;
+          refs.beam.current.y = beamY;
+          refs.beam.current.anchor.set(0, 0.5);
+          refs.beam.current.scale.set(-scaleX, scaleY);
+        }
+      } else {
+        refs.beam.current.visible = false;
+        beamFrame.current = 0;
+        beamElapsed.current = 0;
+      }
+    }
 
     // â”€â”€ Screen shake â”€â”€
 
