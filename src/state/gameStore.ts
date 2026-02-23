@@ -5,8 +5,9 @@ import type { Difficulty, GamePhase } from "./types";
 export interface GameState {
   phase: GamePhase;
   difficulty: Difficulty;
-  playerPoints: number;
-  opponentPoints: number;
+  /** Single score: positive = player ahead, negative = opponent ahead.
+   *  Range: -WIN_POINTS to +WIN_POINTS (default ±10). */
+  score: number;
 }
 
 export interface GameActions {
@@ -20,8 +21,7 @@ export interface GameActions {
 const INITIAL_STATE: GameState = {
   phase: "intro",
   difficulty: "beginner",
-  playerPoints: 0,
-  opponentPoints: 0,
+  score: 0,
 };
 
 export const useGameStore = create<GameState & GameActions>()((set) => ({
@@ -32,20 +32,18 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
   resolveRound: (playerHit: number, cpuHit: number) =>
     set((s) => {
       const delta = playerHit - cpuHit;
-      // Positive delta → player gains; negative delta → opponent gains
-      const nextPlayer = delta > 0 ? s.playerPoints + delta : s.playerPoints;
-      const nextOpponent = delta < 0 ? s.opponentPoints + Math.abs(delta) : s.opponentPoints;
-      const ended = nextPlayer >= WIN_POINTS || nextOpponent >= WIN_POINTS;
+      // Clamp score to [-WIN_POINTS, WIN_POINTS]
+      const nextScore = Math.max(-WIN_POINTS, Math.min(WIN_POINTS, s.score + delta));
+      const ended = nextScore >= WIN_POINTS || nextScore <= -WIN_POINTS;
       return {
-        playerPoints: nextPlayer,
-        opponentPoints: nextOpponent,
+        score: nextScore,
         ...(ended ? { phase: "ended" as const } : {}),
       };
     }),
 
   endGame: () => set({ phase: "ended" }),
 
-  playAgain: () => set((s) => ({ phase: "playing", playerPoints: 0, opponentPoints: 0, difficulty: s.difficulty })),
+  playAgain: () => set((s) => ({ phase: "playing", score: 0, difficulty: s.difficulty })),
 
   reset: () => set(INITIAL_STATE),
 }));

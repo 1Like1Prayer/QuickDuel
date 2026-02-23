@@ -42,11 +42,6 @@ export interface LayoutMovement {
   shakeIntensity: number;
 }
 
-export interface LayoutKatana {
-  katanaSize: number;
-  katanaSpacing: number;
-}
-
 export interface LayoutParticles {
   bloodParticleSize: number;
   bloodParticleSpeed: number;
@@ -68,7 +63,6 @@ export interface Layout {
   characters: LayoutCharacters;
   positions: LayoutPositions;
   movement: LayoutMovement;
-  katana: LayoutKatana;
   particles: LayoutParticles;
   fightText: LayoutFightText;
 }

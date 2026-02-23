@@ -1,4 +1,4 @@
-import { BLOCK_COLORS, BLOCK_POINTS, INITIAL_BLOCK_COUNT, MAX_BLOCK_COUNT, MAX_KATANA_COUNT, MIN_BLOCK_COUNT } from "../constants";
+import { BLOCK_COLORS, BLOCK_POINTS, INITIAL_BLOCK_COUNT, MAX_BLOCK_COUNT, MIN_BLOCK_COUNT } from "../constants";
 import type { Difficulty } from "../../state/types";
 
 const BASE      = BLOCK_COLORS[0];
@@ -41,13 +41,11 @@ export interface CpuTurnResult {
 
 export interface CpuState {
   blockCount: number;
-  hitColors: number[];
 }
 
 export function createCpuState(): CpuState {
   return {
     blockCount: INITIAL_BLOCK_COUNT,
-    hitColors: [],
   };
 }
 
@@ -78,15 +76,10 @@ export function cpuTakeTurn(state: CpuState, difficulty: Difficulty): { result: 
     ? Math.max(MIN_BLOCK_COUNT, state.blockCount - 1)
     : Math.min(MAX_BLOCK_COUNT, state.blockCount + 1);
 
-  const nextHitColors = result.hit && result.color !== null
-    ? [...state.hitColors.slice(-(MAX_KATANA_COUNT - 1)), result.color]
-    : state.hitColors;
-
   return {
     result,
     next: {
       blockCount: nextBlockCount,
-      hitColors: nextHitColors,
     },
   };
 }

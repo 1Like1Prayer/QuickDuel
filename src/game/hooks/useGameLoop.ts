@@ -87,9 +87,8 @@ export function useGameLoop({
   // Track last consumed dial hit result to avoid re-processing
   const lastDialResult = useRef<boolean | null>(null);
 
-  // CPU state â€” independent block count & katana streak
+  // CPU state
   const cpuState = useRef(createCpuState());
-  const cpuHitColors = useRef<number[]>([]);
   const lastRegenCount = useRef(0);
   const cpuTurnTakenThisLap = useRef(false);
 
@@ -100,7 +99,6 @@ export function useGameLoop({
     const difficulty = useGameStore.getState().difficulty;
     const { result, next } = cpuTakeTurn(cpuState.current, difficulty);
     cpuState.current = next;
-    cpuHitColors.current = next.hitColors;
     return result.hit ? result.points : 0;
   };
 
@@ -112,15 +110,12 @@ export function useGameLoop({
     // Check if round resolution triggered game-over
     const storePhase = useGameStore.getState().phase;
     if (storePhase === "ended" && phase.current !== "player_lose" && phase.current !== "player_win") {
-      const playerWon = useGameStore.getState().playerPoints > useGameStore.getState().opponentPoints;
+      const playerWon = useGameStore.getState().score > 0;
       if (playerWon) {
         winnerText.current = "You Win";
         phase.current = "player_win";
         resetPhaseFrames();
         dialGame.stop();
-        if (refs.ringContainer.current) refs.ringContainer.current.visible = false;
-        if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
-        if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
         startShake();
         spawnBlood(
           bloodParticles.current,
@@ -133,9 +128,6 @@ export function useGameLoop({
         phase.current = "player_lose";
         resetPhaseFrames();
         dialGame.stop();
-        if (refs.ringContainer.current) refs.ringContainer.current.visible = false;
-        if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
-        if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
         startShake();
         spawnBlood(
           bloodParticles.current,
@@ -319,16 +311,10 @@ export function useGameLoop({
       case "intro": {
         // Characters visible and idle; waiting for store phase change
         if (useGameStore.getState().phase === "playing") {
-          // Make ring & katana containers visible but fully transparent
+          // Make ring container visible but fully transparent
           if (refs.ringContainer.current) {
             refs.ringContainer.current.visible = true;
             refs.ringContainer.current.alpha = 0;
-          }
-          if (refs.katanaContainer.current) {
-            refs.katanaContainer.current.visible = true;
-          }
-          if (refs.cpuKatanaContainer.current) {
-            refs.cpuKatanaContainer.current.visible = true;
           }
           ringAlpha.current = 0;
           phase.current = "countdown";
@@ -415,20 +401,17 @@ export function useGameLoop({
           sparkParticles.current = [];
           lastDialResult.current = null;
           cpuState.current = createCpuState();
-          cpuHitColors.current = [];
           lastRegenCount.current = 0;
           cpuTurnTakenThisLap.current = false;
           attackIntroPlayed.current = false;
-          // Fully reset dial game state (blocks, speed, colors, katanas)
+          // Fully reset dial game state
           dialGame.start();
           dialGame.stop();
-          // Hide ring & katana containers on full reset
+          // Hide ring container on full reset
           if (refs.ringContainer.current) {
             refs.ringContainer.current.visible = false;
             refs.ringContainer.current.alpha = 0;
           }
-          if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
-          if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
 
           if (storePhase === "playing") {
             phase.current = "intro";
@@ -438,6 +421,15 @@ export function useGameLoop({
             resetPhaseFrames();
           }
           break;
+        }
+
+        // Fade out ring during win phase
+        if (ringAlpha.current > 0) {
+          ringAlpha.current = Math.max(0, ringAlpha.current - dt / RING_FADE_IN_DURATION);
+          if (refs.ringContainer.current) {
+            refs.ringContainer.current.alpha = ringAlpha.current;
+            if (ringAlpha.current <= 0) refs.ringContainer.current.visible = false;
+          }
         }
 
         opponentElapsed.current += dt;
@@ -469,20 +461,17 @@ export function useGameLoop({
             sparkParticles.current = [];
             lastDialResult.current = null;
             cpuState.current = createCpuState();
-            cpuHitColors.current = [];
             lastRegenCount.current = 0;
             cpuTurnTakenThisLap.current = false;
             attackIntroPlayed.current = false;
-            // Fully reset dial game state (blocks, speed, colors, katanas)
+            // Fully reset dial game state
             dialGame.start();
             dialGame.stop();
-            // Hide ring & katana containers on full reset
+            // Hide ring container on full reset
             if (refs.ringContainer.current) {
               refs.ringContainer.current.visible = false;
               refs.ringContainer.current.alpha = 0;
             }
-            if (refs.katanaContainer.current) refs.katanaContainer.current.visible = false;
-            if (refs.cpuKatanaContainer.current) refs.cpuKatanaContainer.current.visible = false;
   
             if (storePhase === "playing") {
               phase.current = "intro";
@@ -494,6 +483,15 @@ export function useGameLoop({
             break;
           }
   
+          // Fade out ring during lose phase
+          if (ringAlpha.current > 0) {
+            ringAlpha.current = Math.max(0, ringAlpha.current - dt / RING_FADE_IN_DURATION);
+            if (refs.ringContainer.current) {
+              refs.ringContainer.current.alpha = ringAlpha.current;
+              if (ringAlpha.current <= 0) refs.ringContainer.current.visible = false;
+            }
+          }
+
           // Slow-motion player death animation
           playerElapsed.current += dt;
           if (playerElapsed.current >= SLOWMO_ANIM_SPEED) {
@@ -818,5 +816,5 @@ export function useGameLoop({
     }
   });
 
-  return { showWinText, winTextAlpha, winnerText, countdownText, ringAlpha, cpuHitColors };
+  return { showWinText, winTextAlpha, winnerText, countdownText, ringAlpha };
 }

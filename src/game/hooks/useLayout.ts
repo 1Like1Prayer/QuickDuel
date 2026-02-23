@@ -23,9 +23,6 @@ export function useLayout(screenWidth: number, screenHeight: number): Layout {
 
     const groundY = screenHeight - charSize - screenHeight * 0.03;
 
-    // Katana icons — bigger & wider for vivid colour display
-    const katanaSize = Math.max(unit * 0.09, 64);
-
     return {
       base: {
         unit,
@@ -65,10 +62,6 @@ export function useLayout(screenWidth: number, screenHeight: number): Layout {
         knockbackDistance: unit * 0.04,
         knockbackSpeed: unit * 0.8,
         shakeIntensity: unit * 0.007,
-      },
-      katana: {
-        katanaSize,
-        katanaSpacing: katanaSize * 0.08,
       },
       particles: {
         bloodParticleSize: Math.max(3, unit * 0.008),

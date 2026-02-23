@@ -7,7 +7,6 @@ import {
   INITIAL_BLOCK_COUNT,
   INITIAL_SPEED,
   MAX_BLOCK_COUNT,
-  MAX_KATANA_COUNT,
   MAX_SPEED_BONUS,
   MIN_BLOCK_COUNT,
   MIN_SPEED_BONUS,
@@ -49,9 +48,6 @@ export function useDialGame({
   // Points scored by the player on the latest hit (0 if miss), consumed by game loop
   const lastHitPoints = useRef(0);
 
-  // Rolling hit streak colours
-  const hitColors = useRef<number[]>([]);
-
   // Index-based color stack — consistent across regenerations
   const colorStack = useRef<number[]>(buildColorStack(INITIAL_BLOCK_COUNT));
 
@@ -86,7 +82,6 @@ export function useDialGame({
     hitBlockAngles.current = null;
     missPulseTimer.current = 0;
     missAngle.current = null;
-    hitColors.current = [];
     colorStack.current = buildColorStack(INITIAL_BLOCK_COUNT);
     attemptedThisLap.current = false;
     pendingColorTrim.current = false;
@@ -128,10 +123,6 @@ export function useDialGame({
       const points = BLOCK_POINTS[color] ?? 1;
       lastHitPoints.current = points;
 
-      hitColors.current = [
-        ...hitColors.current.slice(-(MAX_KATANA_COUNT - 1)),
-        color,
-      ];
       // Defer color removal until blocks regenerate (only if count actually decreased)
       if (blockCount.current < prevCount) {
         pendingColorTrim.current = true;
@@ -239,7 +230,6 @@ export function useDialGame({
     hitBlockAngles,
     missPulseTimer,
     missAngle,
-    hitColors,
     lastHitPoints,
     colorStack,
     regenCount,

@@ -1,6 +1,6 @@
-import { useApplication, useTick } from "@pixi/react";
-import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
-import { useEffect, useRef, useState } from "react";
+﻿import { useApplication, useTick } from "@pixi/react";
+import { Container, Graphics, Sprite, Text, Texture } from "pixi.js";
+import { useEffect, useRef } from "react";
 
 import {
   BLOCK_ALPHA,
@@ -13,7 +13,10 @@ import {
   MISS_PULSE_COLOR,
   MISS_PULSE_DURATION,
   MISS_PULSE_MAX_ALPHA,
+  RING_FADE_IN_DURATION,
+  WIN_POINTS,
 } from "../constants";
+import { useGameStore } from "../../state";
 import {
   useBackgroundTexture,
   useBricksTexture,
@@ -44,8 +47,12 @@ export function Scene() {
   const blueLaserMiddleRef = useRef<Container>(null);
   const blueLaserImpactRef = useRef<Sprite>(null);
   const ringContainerRef = useRef<Container>(null);
-  const katanaOuterRef = useRef<Container>(null);
-  const cpuKatanaOuterRef = useRef<Container>(null);
+
+  // Score bar ref
+  const scoreBarGfxRef = useRef<Graphics>(null);
+  const scoreBarMidRef = useRef<number | null>(null);
+  const scoreBarAlphaRef = useRef(0);
+  const scoreBarWasPlaying = useRef(false);
 
   // Bricks ring refs (outer ring)
   const outerRingSpriteRef = useRef<Sprite>(null);
@@ -68,19 +75,7 @@ export function Scene() {
   // Miss line layer (red radial line from inner to outer ring)
   const missLineGfxRef = useRef<Graphics>(null);
 
-  // Katana background
-  const katanaBgRef = useRef<Graphics>(null);
 
-  // Katana streak (player)
-  const [katanaTexture, setKatanaTexture] = useState(Texture.EMPTY);
-  const katanaContainerRef = useRef<Container>(null);
-  const katanaSpritesRef = useRef<Sprite[]>([]);
-  const prevKatanaCount = useRef(0);
-
-  // Katana streak (CPU)
-  const cpuKatanaContainerRef = useRef<Container>(null);
-  const cpuKatanaSpritesRef = useRef<Sprite[]>([]);
-  const cpuKatanaBgRef = useRef<Graphics>(null);
 
   // Load assets
   const bgTexture = useBackgroundTexture();
@@ -92,11 +87,6 @@ export function Scene() {
   const laserFrames = useLaserFrames();
   const blueLaserFrames = useBlueLaserFrames();
 
-  // Load katana texture
-  useEffect(() => {
-    Assets.load("/katana.png").then(setKatanaTexture);
-  }, []);
-
   // Dial game logic
   const dialGame = useDialGame({ baseSpeed: DIAL_BASE_SPEED });
 
@@ -107,7 +97,7 @@ export function Scene() {
   const countdownTextRef = useRef<Text>(null);
 
   // Run game loop
-  const { showWinText, winTextAlpha, winnerText, countdownText, cpuHitColors } = useGameLoop({
+  const { showWinText, winTextAlpha, winnerText, countdownText } = useGameLoop({
     app,
     refs: {
       container: containerRef,
@@ -121,8 +111,6 @@ export function Scene() {
       blueLaserMiddle: blueLaserMiddleRef,
       blueLaserImpact: blueLaserImpactRef,
       ringContainer: ringContainerRef,
-      katanaContainer: katanaOuterRef,
-      cpuKatanaContainer: cpuKatanaOuterRef,
     },
     bgTexture,
     laserFrames,
@@ -315,102 +303,67 @@ export function Scene() {
       }
     }
 
-    // â”€â”€ CPU Katana hit streak (above the circle) â”€â”€
-    const cpuKatanaContainer = cpuKatanaContainerRef.current;
-    if (cpuKatanaContainer && katanaTexture !== Texture.EMPTY) {
-      const colors = cpuHitColors.current;
-      const count = colors.length;
 
-      while (cpuKatanaSpritesRef.current.length < count) {
-        const s = new Sprite(katanaTexture);
-        s.width = layout.katana.katanaSize;
-        s.height = layout.katana.katanaSize;
-        s.anchor.set(0.5);
-        cpuKatanaContainer.addChild(s);
-        cpuKatanaSpritesRef.current.push(s);
-      }
-      while (cpuKatanaSpritesRef.current.length > count) {
-        const removed = cpuKatanaSpritesRef.current.shift()!;
-        cpuKatanaContainer.removeChild(removed);
-        removed.destroy();
-      }
+    // -- Score bar (above the ring) --
+    const scoreBarGfx = scoreBarGfxRef.current;
+    if (scoreBarGfx) {
+      scoreBarGfx.clear();
+      const gamePhase = useGameStore.getState().phase;
 
-      const totalWidth =
-        count * layout.katana.katanaSize +
-        Math.max(0, count - 1) * layout.katana.katanaSpacing;
-      const startX = -totalWidth / 2 + layout.katana.katanaSize / 2;
-
-      for (let i = 0; i < count; i++) {
-        const s = cpuKatanaSpritesRef.current[i];
-        s.width = layout.katana.katanaSize;
-        s.height = layout.katana.katanaSize;
-        s.x = startX + i * (layout.katana.katanaSize + layout.katana.katanaSpacing);
-        s.y = 0;
-        s.tint = colors[i];
-      }
-
-      const cpuKatanaBg = cpuKatanaBgRef.current;
-      if (cpuKatanaBg) {
-        cpuKatanaBg.clear();
-        if (count > 0) {
-          const pad = layout.katana.katanaSize * 0.22;
-          const bgW = totalWidth + pad * 2;
-          const bgH = layout.katana.katanaSize + pad * 2;
-          cpuKatanaBg.roundRect(-bgW / 2, -bgH / 2, bgW, bgH, bgH / 2);
-          cpuKatanaBg.fill({ color: 0x000000, alpha: 0.45 });
+      // Show bar during gameplay and fade out when ended
+      if (gamePhase === "playing" || (gamePhase === "ended" && scoreBarAlphaRef.current > 0)) {
+        // Fade in when transitioning to playing
+        if (gamePhase === "playing" && !scoreBarWasPlaying.current) {
+          scoreBarWasPlaying.current = true;
+          scoreBarAlphaRef.current = 0;
         }
-      }
-    }
-
-    // â”€â”€ Player Katana hit streak (below the circle) â”€â”€
-    const katanaContainer = katanaContainerRef.current;
-    if (katanaContainer && katanaTexture !== Texture.EMPTY) {
-      const colors = dialGame.hitColors.current;
-      const count = colors.length;
-
-      // Add / remove sprites to match count
-      while (katanaSpritesRef.current.length < count) {
-        const s = new Sprite(katanaTexture);
-        s.width = layout.katana.katanaSize;
-        s.height = layout.katana.katanaSize;
-        s.anchor.set(0.5);
-        katanaContainer.addChild(s);
-        katanaSpritesRef.current.push(s);
-      }
-      while (katanaSpritesRef.current.length > count) {
-        const removed = katanaSpritesRef.current.shift()!;
-        katanaContainer.removeChild(removed);
-        removed.destroy();
-      }
-
-      // Position & tint
-      const totalWidth =
-        count * layout.katana.katanaSize +
-        Math.max(0, count - 1) * layout.katana.katanaSpacing;
-      const startX = -totalWidth / 2 + layout.katana.katanaSize / 2;
-
-      for (let i = 0; i < count; i++) {
-        const s = katanaSpritesRef.current[i];
-        s.width = layout.katana.katanaSize;
-        s.height = layout.katana.katanaSize;
-        s.x = startX + i * (layout.katana.katanaSize + layout.katana.katanaSpacing);
-        s.y = 0;
-        s.tint = colors[i];
-      }
-
-      prevKatanaCount.current = count;
-
-      // Draw katana background pill
-      const katanaBg = katanaBgRef.current;
-      if (katanaBg) {
-        katanaBg.clear();
-        if (count > 0) {
-          const pad = layout.katana.katanaSize * 0.22;
-          const bgW = totalWidth + pad * 2;
-          const bgH = layout.katana.katanaSize + pad * 2;
-          katanaBg.roundRect(-bgW / 2, -bgH / 2, bgW, bgH, bgH / 2);
-          katanaBg.fill({ color: 0x000000, alpha: 0.45 });
+        if (gamePhase === "playing" && scoreBarAlphaRef.current < 1) {
+          scoreBarAlphaRef.current = Math.min(1, scoreBarAlphaRef.current + dt / RING_FADE_IN_DURATION);
         }
+        // Fade out when ended
+        if (gamePhase === "ended") {
+          scoreBarAlphaRef.current = Math.max(0, scoreBarAlphaRef.current - dt / RING_FADE_IN_DURATION);
+        }
+        scoreBarGfx.alpha = scoreBarAlphaRef.current;
+
+        const score = useGameStore.getState().score;
+        // Wider bar on bigger screens: scale with screen width, clamped
+        const baseBarW = layout.ring.outerRadius * 2;
+        const widthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
+        const barWidth = baseBarW * widthMult;
+        const barHeight = Math.max(10, layout.ring.outerRadius * 0.14);
+        const halfW = barWidth / 2;
+
+        // Score shifts the midpoint: 0 = center, +WIN_POINTS = full red, -WIN_POINTS = full blue
+        const pct = Math.min(1, Math.max(-1, score / WIN_POINTS));
+        // midpoint ranges from 0 (full blue) to barWidth (full red)
+        const targetMid = halfW + halfW * pct;
+
+        // Smooth lerp toward target midpoint
+        if (scoreBarMidRef.current === null) {
+          scoreBarMidRef.current = targetMid;
+        } else {
+          const lerpSpeed = 0.08;
+          scoreBarMidRef.current += (targetMid - scoreBarMidRef.current) * lerpSpeed;
+        }
+        const mid = scoreBarMidRef.current;
+
+        // Red half: left edge to midpoint
+        if (mid > 0) {
+          scoreBarGfx.rect(-halfW, -barHeight / 2, mid, barHeight);
+          scoreBarGfx.fill({ color: 0xff3333, alpha: 0.9 });
+        }
+        // Blue half: midpoint to right edge
+        if (mid < barWidth) {
+          const blueW = barWidth - mid;
+          scoreBarGfx.rect(-halfW + mid, -barHeight / 2, blueW, barHeight);
+          scoreBarGfx.fill({ color: 0x3388ff, alpha: 0.9 });
+        }
+      } else {
+        // Reset state when fully faded or in intro
+        scoreBarMidRef.current = null;
+        scoreBarWasPlaying.current = false;
+        scoreBarGfx.alpha = 0;
       }
     }
   });
@@ -508,46 +461,19 @@ export function Scene() {
         </pixiContainer>
       )}
 
-      {/* CPU Katana hit streak above the ring */}
-      <pixiContainer
-        ref={cpuKatanaOuterRef}
+      {/* Score bar above the ring */}
+      <pixiGraphics
+        ref={scoreBarGfxRef}
         x={layout.positions.meetX}
         y={
           layout.positions.meetY -
           layout.ring.outerRadius -
-          layout.katana.katanaSize * 0.4 -
-          layout.katana.katanaSize / 2
+          layout.ring.outerRadius * 0.35
         }
-        visible={false}
-      >
-        <pixiGraphics
-          ref={cpuKatanaBgRef}
-          draw={() => {
-            /* redrawn each tick */
-          }}
-        />
-        <pixiContainer ref={cpuKatanaContainerRef} />
-      </pixiContainer>
-
-      {/* Player Katana hit streak below the ring */}
-      <pixiContainer
-        ref={katanaOuterRef}
-        x={layout.positions.meetX}
-        y={
-          layout.positions.meetY +
-          layout.ring.outerRadius +
-          layout.katana.katanaSize * 0.4 +
-          layout.katana.katanaSize / 2
-        }
-      >
-        <pixiGraphics
-          ref={katanaBgRef}
-          draw={() => {
-            /* redrawn each tick */
-          }}
-        />
-        <pixiContainer ref={katanaContainerRef} />
-      </pixiContainer>
+        draw={() => {
+          /* redrawn each tick */
+        }}
+      />
 
       <pixiSprite
         ref={playerRef}

@@ -18,7 +18,6 @@ export interface UseDialGameReturn {
   lastHit: React.RefObject<boolean | null>;
   active: React.RefObject<boolean>;
   hitGlowTimer: React.RefObject<number>;
-  hitColors: React.RefObject<number[]>;
   lastHitPoints: React.RefObject<number>;
   colorStack: React.RefObject<number[]>;
   hitBlockAngles: React.RefObject<{ startAngle: number; endAngle: number } | null>;

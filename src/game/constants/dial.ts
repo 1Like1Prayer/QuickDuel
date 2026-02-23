@@ -59,6 +59,3 @@ export const BLOCK_POINTS: Record<number, number> = {
 
 /** Points threshold — game ends when a player exceeds this. */
 export const WIN_POINTS = 10;
-
-// --- Katana hit streak ---
-export const MAX_KATANA_COUNT = 5;
