@@ -18,7 +18,7 @@ export function useLayout(screenWidth: number, screenHeight: number): Layout {
     const gapInner = innerRingOuter;
 
     // Characters — bigger sprites, higher floor on phones
-    const charScale = Math.max(unit / 300, 0.65);
+    const charScale = Math.max(unit / 300, 1.65);
     const charSize = FRAME_SIZE * charScale;
 
     const groundY = screenHeight - charSize - screenHeight * 0.03;
@@ -52,11 +52,11 @@ export function useLayout(screenWidth: number, screenHeight: number): Layout {
       },
       positions: {
         groundY,
-        meetX: screenWidth / 2,
+        meetX: screenWidth / 2.0,
         // On smaller screens push the circle lower (towards the middle)
         meetY: screenHeight * (unit < 500 ? 0.42 : 0.35),
-        charStartX: 0 ,
-        charEndX: screenWidth - charSize ,
+        charStartX: unit < 500 ? -charSize * 0.15 : 0,
+        charEndX: unit < 500 ? screenWidth - charSize * 0.75 : screenWidth - charSize,
       },
       movement: {
         runSpeed: unit * 0.5,

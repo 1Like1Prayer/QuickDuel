@@ -605,8 +605,9 @@ export function useGameLoop({
         laserSrc.anchor.set(0, 0.5);
         laserSrc.scale.set(scaleY, scaleY);
 
-        // Impact: a bit past the middle of the screen
-        const impactX = layout.positions.meetX + charSize * 0.3;
+        // Impact: a bit past the middle of the screen (shifted left on phones)
+        const smallScreen = layout.base.unit < 500;
+        const impactX = layout.positions.meetX + charSize * (smallScreen ? 0.2 : 0.3);
         laserImp.x = impactX;
         laserImp.y = beamY;
         laserImp.anchor.set(1, 0.5);
@@ -733,8 +734,9 @@ export function useGameLoop({
         blueSrc.anchor.set(0, 0.5);
         blueSrc.scale.set(-scaleY, scaleY); // flip horizontally
 
-        // Impact: a little before the middle of the screen (going left)
-        const blueImpactX = layout.positions.meetX - charSize * 0.2;
+        // Impact: a little before the middle of the screen (going left, shifted left on phones)
+        const blueSmallScreen = layout.base.unit < 500;
+        const blueImpactX = layout.positions.meetX - charSize * (blueSmallScreen ? 0.30 : 0.2);
         blueImp.x = blueImpactX;
         blueImp.y = beamY;
         blueImp.anchor.set(1, 0.5);
