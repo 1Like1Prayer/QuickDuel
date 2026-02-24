@@ -17,11 +17,11 @@
   - `useLaserBeam` should accept config objects so both red and blue beams use the same code
   - Unify phase reset logic between player_win / player_lose
 
-- [ ] **Blood splatter util — keep code, remove from game loop**
-  - `src/game/utils/particles.ts` keeps `spawnBlood` / `updateBloodParticles` for future reference
-  - Remove blood particle spawning, rendering, and imports from `useGameLoop`
-  - Keep `BloodParticle` type in `src/game/types/index.ts`
-  - Keep blood particle constants in `src/game/constants/game.ts`
+- [x] **Blood splatter removed**
+  - Removed `spawnBlood` / `updateBloodParticles` from `particles.ts`
+  - Removed blood particle spawning, rendering, and imports from `useGameLoop`
+  - Renamed `BloodParticle` → `Particle` in `src/game/types/index.ts`
+  - Removed blood particle constants from `src/game/constants/game.ts`
 
 ---
 

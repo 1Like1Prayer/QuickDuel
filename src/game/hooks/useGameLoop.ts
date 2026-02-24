@@ -14,13 +14,11 @@ import {
   WIN_TEXT_FADE_DURATION,
 } from "../constants";
 import { useGameStore } from "../../state";
-import type { BloodParticle, Phase } from "../types";
+import type { Phase } from "../types";
 import type { SparkParticle, ExplosionParticle } from "../utils/particles";
 import {
-  spawnBlood,
   spawnExplosion,
   spawnSparks,
-  updateBloodParticles,
   updateExplosionParticles,
   updateSparkParticles,
 } from "../utils/particles";
@@ -39,7 +37,6 @@ export function useGameLoop({
   dialGame,
   layout,
 }: GameLoopParams) {
-  const bloodGfx = useRef<Graphics | null>(null);
   const sparkGfx = useRef<Graphics | null>(null);
   const explosionGfx = useRef<Graphics | null>(null);
   const laserDebugGfx = useRef<Graphics | null>(null);
@@ -76,7 +73,6 @@ export function useGameLoop({
   const shakeTimer = useRef(0);
   const isShaking = useRef(false);
 
-  const bloodParticles = useRef<BloodParticle[]>([]);
   const sparkParticles = useRef<SparkParticle[]>([]);
   const explosionParticles = useRef<ExplosionParticle[]>([]);
 
@@ -129,12 +125,6 @@ export function useGameLoop({
           opponentX.current + layout.characters.charSize * 0.5,
           layout.positions.groundY + layout.characters.charSize * 0.4,
         );
-        spawnBlood(
-          bloodParticles.current,
-          opponentX.current + layout.characters.charSize * 0.4,
-          layout.positions.groundY + layout.characters.charSize * 0.4,
-          1,
-        );
       } else {
         winnerText.current = "You Lose";
         phase.current = "player_lose";
@@ -147,35 +137,17 @@ export function useGameLoop({
           playerX.current + layout.characters.charSize * 0.5,
           layout.positions.groundY + layout.characters.charSize * 0.4,
         );
-        spawnBlood(
-          bloodParticles.current,
-          playerX.current + layout.characters.charSize * 0.4,
-          layout.positions.groundY + layout.characters.charSize * 0.4,
-          -1,
-        );
       }
       return;
     }
 
     // Choose animation based on delta
     if (delta > 0) {
-      // Player hit — shake + blood on opponent, stay in idle
+      // Player hit — shake on opponent, stay in idle
       startShake();
-      spawnBlood(
-        bloodParticles.current,
-        opponentX.current + layout.characters.charSize * 0.4,
-        layout.positions.groundY + layout.characters.charSize * 0.4,
-        1,
-      );
     } else if (delta < 0) {
-      // Opponent hit — shake + blood on player, stay in idle
+      // Opponent hit — shake on player, stay in idle
       startShake();
-      spawnBlood(
-        bloodParticles.current,
-        playerX.current + layout.characters.charSize * 0.4,
-        layout.positions.groundY + layout.characters.charSize * 0.4,
-        -1,
-      );
     } else {
       // delta === 0: clash — shake + sparks at laser impact point
       startShake();
@@ -192,25 +164,20 @@ export function useGameLoop({
     const container = refs.container.current;
     if (!container) return;
 
-    const bGfx = new Graphics();
     const sGfx = new Graphics();
     const eGfx = new Graphics();
     const lDbg = new Graphics();
-    bloodGfx.current = bGfx;
     sparkGfx.current = sGfx;
     explosionGfx.current = eGfx;
     laserDebugGfx.current = lDbg;
-    container.addChild(bGfx);
     container.addChild(sGfx);
     container.addChild(eGfx);
     container.addChild(lDbg);
 
     return () => {
-      container.removeChild(bGfx);
       container.removeChild(sGfx);
       container.removeChild(eGfx);
       container.removeChild(lDbg);
-      bGfx.destroy();
       sGfx.destroy();
       eGfx.destroy();
       lDbg.destroy();
@@ -419,7 +386,6 @@ export function useGameLoop({
           winTextAlpha.current = 0;
           countdownText.current = null;
           ringAlpha.current = 0;
-          bloodParticles.current = [];
           sparkParticles.current = [];
           lastDialResult.current = null;
           cpuState.current = createCpuState();
@@ -480,7 +446,6 @@ export function useGameLoop({
             winTextAlpha.current = 0;
             countdownText.current = null;
             ringAlpha.current = 0;
-                    bloodParticles.current = [];
             sparkParticles.current = [];
             lastDialResult.current = null;
             cpuState.current = createCpuState();
@@ -866,16 +831,6 @@ export function useGameLoop({
       }
     }
 
-    // â”€â”€ Blood particles â”€â”€
-
-    const bGfx = bloodGfx.current;
-    if (bGfx) {
-      bloodParticles.current = updateBloodParticles(
-        bGfx,
-        bloodParticles.current,
-        dt,
-      );
-    }
 
     // ── Spark particles ──
 

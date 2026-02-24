@@ -1,11 +1,6 @@
 import type { Graphics } from "pixi.js";
 
 import {
-  BLOOD_PARTICLE_COUNT,
-  BLOOD_PARTICLE_SPEED,
-  BLOOD_PARTICLE_GRAVITY,
-  BLOOD_PARTICLE_LIFETIME,
-  BLOOD_PARTICLE_SIZE,
   SPARK_PARTICLE_COUNT,
   SPARK_PARTICLE_SPEED,
   SPARK_PARTICLE_GRAVITY,
@@ -17,57 +12,9 @@ import {
   EXPLOSION_PARTICLE_LIFETIME,
   EXPLOSION_PARTICLE_SIZE,
 } from "../constants";
-import type { BloodParticle } from "../types";
+import type { Particle } from "../types";
 
-// Reuse BloodParticle shape for sparks (same physics, different color)
-export type SparkParticle = BloodParticle;
-
-// ──────────────────────────────────────────────
-//  Blood particles
-// ──────────────────────────────────────────────
-
-/** Emit blood particles at (x, y). `directionSign` controls spray direction. */
-export function spawnBlood(
-  particles: BloodParticle[],
-  x: number,
-  y: number,
-  directionSign: number,
-): void {
-  for (let i = 0; i < BLOOD_PARTICLE_COUNT; i++) {
-    const angle = (Math.random() - 0.3) * Math.PI;
-    const speed = BLOOD_PARTICLE_SPEED * (0.5 + Math.random() * 0.5);
-    particles.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed * directionSign,
-      vy: -Math.abs(Math.sin(angle)) * speed * (0.5 + Math.random()),
-      life: BLOOD_PARTICLE_LIFETIME * (0.5 + Math.random() * 0.5),
-      size: BLOOD_PARTICLE_SIZE * (0.5 + Math.random()),
-    });
-  }
-}
-
-/** Advance & draw blood particles. Returns the surviving particles. */
-export function updateBloodParticles(
-  gfx: Graphics,
-  particles: BloodParticle[],
-  dt: number,
-): BloodParticle[] {
-  gfx.clear();
-  const remaining: BloodParticle[] = [];
-  for (const p of particles) {
-    p.life -= dt;
-    if (p.life <= 0) continue;
-    p.vy += BLOOD_PARTICLE_GRAVITY * dt;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    const alpha = Math.max(0, p.life / BLOOD_PARTICLE_LIFETIME);
-    gfx.circle(p.x, p.y, p.size);
-    gfx.fill({ color: 0xcc0000, alpha });
-    remaining.push(p);
-  }
-  return remaining;
-}
+export type SparkParticle = Particle;
 
 // ──────────────────────────────────────────────
 //  Spark particles (clash effect)
@@ -120,7 +67,7 @@ export function updateSparkParticles(
 //  Explosion particles (win/lose effect)
 // ──────────────────────────────────────────────
 
-export type ExplosionParticle = BloodParticle;
+export type ExplosionParticle = Particle;
 
 const EXPLOSION_COLORS = [0xff4500, 0xff6600, 0xffaa00, 0xffdd00, 0xff2200, 0xffffff];
 

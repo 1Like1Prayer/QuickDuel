@@ -25,13 +25,6 @@ export const RING_FADE_IN_DURATION = 1.8;   // seconds for circle/dial fade-in
 export const SLOWMO_ANIM_SPEED = 0.3;
 export const WIN_TEXT_FADE_DURATION = 1.5;
 
-// --- Blood Particles ---
-export const BLOOD_PARTICLE_COUNT = 24;
-export const BLOOD_PARTICLE_SPEED = 500;
-export const BLOOD_PARTICLE_GRAVITY = 700;
-export const BLOOD_PARTICLE_LIFETIME = 0.8;
-export const BLOOD_PARTICLE_SIZE = 6;
-
 // --- Spark Particles (clash) ---
 export const SPARK_PARTICLE_COUNT = 55;
 export const SPARK_PARTICLE_SPEED = 1400;

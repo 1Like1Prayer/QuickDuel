@@ -9,7 +9,7 @@ export type Phase =
   | "player_win"
   | "player_lose";
 
-export interface BloodParticle {
+export interface Particle {
   x: number;
   y: number;
   vx: number;
