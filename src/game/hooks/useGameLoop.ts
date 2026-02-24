@@ -39,7 +39,6 @@ export function useGameLoop({
 }: GameLoopParams) {
   const sparkGfx = useRef<Graphics | null>(null);
   const explosionGfx = useRef<Graphics | null>(null);
-  const laserDebugGfx = useRef<Graphics | null>(null);
 
   // Win/Lose text state (read by Scene for rendering)
   const showWinText = useRef(false);
@@ -76,6 +75,74 @@ export function useGameLoop({
   const sparkParticles = useRef<SparkParticle[]>([]);
   const explosionParticles = useRef<ExplosionParticle[]>([]);
 
+  // Laser hold SFX
+  const fireHoldSfx = useRef<HTMLAudioElement | null>(null);
+  if (!fireHoldSfx.current) {
+    const sfx = new Audio("/SFX/EM_FIRE_HOLD_4s.ogg");
+    sfx.loop = true;
+    sfx.volume = 0.8;
+    fireHoldSfx.current = sfx;
+  }
+  const lightHoldSfx = useRef<HTMLAudioElement | null>(null);
+  if (!lightHoldSfx.current) {
+    const sfx = new Audio("/SFX/EM_LIGHT_HOLD_5s.ogg");
+    sfx.loop = true;
+    sfx.volume = 0.8;
+    lightHoldSfx.current = sfx;
+  }
+  const laserCastSfx = useRef<HTMLAudioElement | null>(null);
+  if (!laserCastSfx.current) {
+    const sfx = new Audio("/SFX/EM_LIGHT_CAST_02_S.ogg");
+    sfx.loop = false;
+    sfx.volume = 0.8;
+    laserCastSfx.current = sfx;
+  }
+  const fireCastSfx = useRef<HTMLAudioElement | null>(null);
+  if (!fireCastSfx.current) {
+    const sfx = new Audio("/SFX/EM_FIRE_CAST_02.ogg");
+    sfx.loop = false;
+    sfx.volume = 0.8;
+    fireCastSfx.current = sfx;
+  }
+  const laserSfxPlaying = useRef(false);
+
+  // Impact SFX
+  const fireImpactSfx = useRef<HTMLAudioElement | null>(null);
+  if (!fireImpactSfx.current) {
+    const sfx = new Audio("/SFX/EM_FIRE_IMPACT_01.ogg");
+    sfx.loop = false;
+    sfx.volume = 1.0;
+    fireImpactSfx.current = sfx;
+  }
+  const lightImpactSfx = useRef<HTMLAudioElement | null>(null);
+  if (!lightImpactSfx.current) {
+    const sfx = new Audio("/SFX/EM_LIGHT_IMPACT_01.ogg");
+    sfx.loop = false;
+    sfx.volume = 1.0;
+    lightImpactSfx.current = sfx;
+  }
+  const fireLaunchSfx = useRef<HTMLAudioElement | null>(null);
+  if (!fireLaunchSfx.current) {
+    const sfx = new Audio("/SFX/EM_FIRE_LAUNCH_01.ogg");
+    sfx.loop = false;
+    sfx.volume = 1.0;
+    fireLaunchSfx.current = sfx;
+  }
+  const lightLaunchSfx = useRef<HTMLAudioElement | null>(null);
+  if (!lightLaunchSfx.current) {
+    const sfx = new Audio("/SFX/EM_LIGHT_LAUNCH_01.ogg");
+    sfx.loop = false;
+    sfx.volume = 1.0;
+    lightLaunchSfx.current = sfx;
+  }
+  const clashSfx = useRef<HTMLAudioElement | null>(null);
+  if (!clashSfx.current) {
+    const sfx = new Audio("/SFX/dragon-studio-epic-spell-impact-478364.mp3");
+    sfx.loop = false;
+    sfx.volume = 1.0;
+    clashSfx.current = sfx;
+  }
+
   // Laser animation state
   const laserFrame = useRef(0);     // 0 = start frame, 1 = loop frame
   const laserElapsed = useRef(0);
@@ -109,6 +176,15 @@ export function useGameLoop({
     const delta = playerHit - cpuHit;
     useGameStore.getState().resolveRound(playerHit, cpuHit);
 
+    // Play impact SFX based on who got hit
+    if (delta > 0 && fireImpactSfx.current) {
+      fireImpactSfx.current.currentTime = 0;
+      fireImpactSfx.current.play().catch(() => {});
+    } else if (delta < 0 && lightImpactSfx.current) {
+      lightImpactSfx.current.currentTime = 0;
+      lightImpactSfx.current.play().catch(() => {});
+    }
+
     // Check if round resolution triggered game-over
     const storePhase = useGameStore.getState().phase;
     if (storePhase === "ended" && phase.current !== "player_lose" && phase.current !== "player_win") {
@@ -125,6 +201,11 @@ export function useGameLoop({
           opponentX.current + layout.characters.charSize * 0.5,
           layout.positions.groundY + layout.characters.charSize * 0.4,
         );
+        // Play fire launch SFX on player win
+        if (fireLaunchSfx.current) {
+          fireLaunchSfx.current.currentTime = 0;
+          fireLaunchSfx.current.play().catch(() => {});
+        }
       } else {
         winnerText.current = "You Lose";
         phase.current = "player_lose";
@@ -137,6 +218,11 @@ export function useGameLoop({
           playerX.current + layout.characters.charSize * 0.5,
           layout.positions.groundY + layout.characters.charSize * 0.4,
         );
+        // Play light launch SFX on player lose
+        if (lightLaunchSfx.current) {
+          lightLaunchSfx.current.currentTime = 0;
+          lightLaunchSfx.current.play().catch(() => {});
+        }
       }
       return;
     }
@@ -155,6 +241,10 @@ export function useGameLoop({
       const clashY =
         layout.positions.groundY + layout.characters.charSize * 0.66;
       spawnSparks(sparkParticles.current, clashX, clashY);
+      if (clashSfx.current) {
+        clashSfx.current.currentTime = 0;
+        clashSfx.current.play().catch(() => {});
+      }
     }
   };
 
@@ -166,21 +256,16 @@ export function useGameLoop({
 
     const sGfx = new Graphics();
     const eGfx = new Graphics();
-    const lDbg = new Graphics();
     sparkGfx.current = sGfx;
     explosionGfx.current = eGfx;
-    laserDebugGfx.current = lDbg;
     container.addChild(sGfx);
     container.addChild(eGfx);
-    container.addChild(lDbg);
 
     return () => {
       container.removeChild(sGfx);
       container.removeChild(eGfx);
-      container.removeChild(lDbg);
       sGfx.destroy();
       eGfx.destroy();
-      lDbg.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -547,6 +632,28 @@ export function useGameLoop({
         laserMid.visible = true;
         laserImp.visible = true;
 
+        // Start laser SFX when lasers first appear
+        if (!laserSfxPlaying.current) {
+          if (fireHoldSfx.current) {
+            fireHoldSfx.current.currentTime = 0;
+            fireHoldSfx.current.play().catch(() => {});
+          }
+          if (lightHoldSfx.current) {
+            lightHoldSfx.current.currentTime = 0;
+            lightHoldSfx.current.play().catch(() => {});
+          }
+          // Play spell cast sounds (one-shot)
+          if (laserCastSfx.current) {
+            laserCastSfx.current.currentTime = 0;
+            laserCastSfx.current.play().catch(() => {});
+          }
+          if (fireCastSfx.current) {
+            fireCastSfx.current.currentTime = 0;
+            fireCastSfx.current.play().catch(() => {});
+          }
+          laserSfxPlaying.current = true;
+        }
+
         // Advance laser animation at 24 fps
         laserElapsed.current += dt;
         if (laserElapsed.current >= LASER_ANIM_SPEED) {
@@ -655,28 +762,6 @@ export function useGameLoop({
         laserMid.zIndex = 0;
         laserSrc.zIndex = 1;
         laserImp.zIndex = 1;
-
-        // DEBUG: Draw borders around each laser section
-        const dbg = laserDebugGfx.current;
-        if (dbg) {
-          dbg.clear();
-          const halfH = beamHeight / 2;
-          // Source section border (green)
-          dbg.rect(originX, beamY - halfH, scaledW, beamHeight);
-          dbg.stroke({ color: 0x00ff00, width: 2, alpha: 1 });
-          // Each middle tile border (red) — only when mid is visible
-          if (midSpan > 0) {
-            const dbgTileStep = scaledW * 0.3;
-            const dbgTileCount = Math.max(1, Math.ceil(midSpan / dbgTileStep));
-            for (let i = 0; i < dbgTileCount; i++) {
-              dbg.rect(midStartX + i * dbgTileStep, beamY - halfH, scaledW, beamHeight);
-              dbg.stroke({ color: 0xff0000, width: 2, alpha: 1 });
-            }
-          }
-          // Impact section border (blue)
-          dbg.rect(impactX - scaledW, beamY - halfH, scaledW, beamHeight);
-          dbg.stroke({ color: 0x0000ff, width: 2, alpha: 1 });
-        }
       } else {
         laserSrc.visible = false;
         laserMid.visible = false;
@@ -685,7 +770,13 @@ export function useGameLoop({
         laserElapsed.current = 0;
         laserStarted.current = false;
         laserImpactLerpX.current = null;
-        if (laserDebugGfx.current) laserDebugGfx.current.clear();
+
+        // Stop laser SFX when lasers hide
+        if (laserSfxPlaying.current) {
+          if (fireHoldSfx.current) fireHoldSfx.current.pause();
+          if (lightHoldSfx.current) lightHoldSfx.current.pause();
+          laserSfxPlaying.current = false;
+        }
       }
     }
     // â"€â"€ Blue laser (opponent â†' left) â"€â"€

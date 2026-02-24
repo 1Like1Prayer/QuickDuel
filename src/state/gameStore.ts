@@ -2,6 +2,18 @@ import { create } from "zustand";
 import { WIN_POINTS } from "../game/constants";
 import type { Difficulty, GamePhase } from "./types";
 
+// ── Background music (singleton) ──
+const bgm = new Audio("/SFX/BGM11 Storm the enemy's land.Mastering.mp3");
+bgm.loop = true;
+bgm.volume = 0.3;
+
+// Retry autoplay every 500ms until the browser allows it
+const tryPlay = () => {
+  bgm.play().then(() => clearInterval(bgmRetry)).catch(() => {});
+};
+const bgmRetry = setInterval(tryPlay, 500);
+tryPlay();
+
 export interface GameState {
   phase: GamePhase;
   difficulty: Difficulty;

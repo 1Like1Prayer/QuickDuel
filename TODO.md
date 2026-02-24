@@ -27,13 +27,13 @@
 
 ## Gameplay
 
-- [ ] **Scoring: +7 / −7 differential system**
+- [x] **Scoring: +7 / −7 differential system**
   - Single `score` field (range −7 … +7, starts at 0)
   - Each round: `score += playerHit − cpuHit`, clamped to [−7, +7]
   - `score >= +7` → player wins · `score <= −7` → player loses
   - Replace old `playerPoints` / `opponentPoints`
 
-- [ ] **Laser beams move with score**
+- [x] **Laser beams move with score**
   - Clash point shifts from the center based on `score / MAX_SCORE`
   - Positive score → player's beam pushes toward the opponent
   - Negative score → opponent's beam pushes toward the player
