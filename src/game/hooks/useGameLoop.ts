@@ -847,7 +847,7 @@ export function useGameLoop({
         const blueBaseBarW = layout.ring.outerRadius * 2;
         const blueWidthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
         const blueHalfBarW = (blueBaseBarW * blueWidthMult) / 2;
-        const blueBaseImpactX = layout.positions.meetX - charSize * (blueSmallScreen ? 0.30 : 0.2);
+        const blueBaseImpactX = layout.positions.meetX - charSize * (blueSmallScreen ? 0.31 : 0.21);
         const blueTargetImpactX = blueBaseImpactX + blueHalfBarW * blueScorePct * 1.5;
 
         // Use same lerped offset for blue
