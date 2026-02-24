@@ -27,6 +27,8 @@ export interface GameState {
   sfxEnabled: boolean;
   /** Whether all sound is muted (master mute). */
   muted: boolean;
+  /** Whether the tutorial has been seen (never resets). */
+  tutorialSeen: boolean;
 }
 
 export interface GameActions {
@@ -38,6 +40,7 @@ export interface GameActions {
   setBgmVolume: (vol: number) => void;
   setSfxEnabled: (enabled: boolean) => void;
   toggleMute: () => void;
+  markTutorialSeen: () => void;
 }
 
 const INITIAL_STATE: GameState = {
@@ -47,6 +50,7 @@ const INITIAL_STATE: GameState = {
   bgmVolume: 1,
   sfxEnabled: true,
   muted: false,
+  tutorialSeen: false,
 };
 
 export const useGameStore = create<GameState & GameActions>()((set) => ({
@@ -70,7 +74,7 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
 
   playAgain: () => set((s) => ({ phase: "playing", score: 0, difficulty: s.difficulty })),
 
-  reset: () => set((s) => ({ ...INITIAL_STATE, bgmVolume: s.bgmVolume, sfxEnabled: s.sfxEnabled, muted: s.muted })),
+  reset: () => set((s) => ({ ...INITIAL_STATE, bgmVolume: s.bgmVolume, sfxEnabled: s.sfxEnabled, muted: s.muted, tutorialSeen: s.tutorialSeen })),
 
   setBgmVolume: (vol: number) => {
     const clamped = Math.max(0, Math.min(1, vol));
@@ -89,4 +93,6 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
       bgm.volume = next ? 0 : s.bgmVolume * BGM_MAX_VOLUME;
       return { muted: next };
     }),
+
+  markTutorialSeen: () => set({ tutorialSeen: true }),
 }));
