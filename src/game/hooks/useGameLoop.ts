@@ -520,6 +520,17 @@ export function useGameLoop({
           }
         }
 
+        // Animate winner (player) back to idle
+        {
+          const idleAnim = playerAnims["Idle"];
+          playerElapsed.current += dt;
+          if (playerElapsed.current >= ANIM_SPEED) {
+            playerElapsed.current = 0;
+            playerFrame.current = (playerFrame.current + 1) % idleAnim.length;
+            player.current.texture = idleAnim[playerFrame.current];
+          }
+        }
+
         if (showWinText.current && winTextAlpha.current < 1) {
           winTextAlpha.current = Math.min(1, winTextAlpha.current + dt / WIN_TEXT_FADE_DURATION);
         }
@@ -578,6 +589,17 @@ export function useGameLoop({
             } else if (!phaseAnimDone.current) {
               phaseAnimDone.current = true;
               showWinText.current = true;
+            }
+          }
+
+          // Animate winner (opponent) back to idle
+          {
+            const idleAnim = opponentAnims["Idle"];
+            opponentElapsed.current += dt;
+            if (opponentElapsed.current >= ANIM_SPEED) {
+              opponentElapsed.current = 0;
+              opponentFrame.current = (opponentFrame.current + 1) % idleAnim.length;
+              opponent.current.texture = idleAnim[opponentFrame.current];
             }
           }
   
