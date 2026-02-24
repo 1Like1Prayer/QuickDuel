@@ -56,20 +56,7 @@ export function useLayout(screenWidth: number, screenHeight: number): Layout {
         charEndX: unit < 500 ? screenWidth - charSize * 0.75 : screenWidth - charSize,
       },
       movement: {
-        runSpeed: unit * 0.5,
-        recoverSpeed: unit * 0.6,
-        meetGap: -charSize * 0.45,
-        knockbackDistance: unit * 0.04,
-        knockbackSpeed: unit * 0.8,
         shakeIntensity: unit * 0.007,
-      },
-      particles: {
-        bloodParticleSize: Math.max(3, unit * 0.008),
-        bloodParticleSpeed: unit * 0.7,
-        bloodParticleGravity: unit * 1.0,
-        sparkParticleSize: Math.max(3, unit * 0.008),
-        sparkParticleSpeed: unit * 0.85,
-        sparkParticleGravity: unit * 0.55,
       },
       fightText: {
         fightFontSize: unit * 0.1,

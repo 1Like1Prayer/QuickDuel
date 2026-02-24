@@ -34,21 +34,7 @@ export interface LayoutPositions {
 }
 
 export interface LayoutMovement {
-  runSpeed: number;
-  recoverSpeed: number;
-  meetGap: number;
-  knockbackDistance: number;
-  knockbackSpeed: number;
   shakeIntensity: number;
-}
-
-export interface LayoutParticles {
-  bloodParticleSize: number;
-  bloodParticleSpeed: number;
-  bloodParticleGravity: number;
-  sparkParticleSize: number;
-  sparkParticleSpeed: number;
-  sparkParticleGravity: number;
 }
 
 export interface LayoutFightText {
@@ -63,6 +49,5 @@ export interface Layout {
   characters: LayoutCharacters;
   positions: LayoutPositions;
   movement: LayoutMovement;
-  particles: LayoutParticles;
   fightText: LayoutFightText;
 }

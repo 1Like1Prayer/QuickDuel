@@ -706,7 +706,8 @@ export function useGameLoop({
         const widthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
         const halfBarW = (baseBarW * widthMult) / 2;
         const baseImpactX = layout.positions.meetX + charSize * (smallScreen ? 0.2 : 0.3);
-        const targetImpactX = baseImpactX + halfBarW * scorePct * 1.5;
+        const travelMult = smallScreen ? 0.8 : 1.5;
+        const targetImpactX = baseImpactX + halfBarW * scorePct * travelMult;
 
         // Smooth lerp toward target
         if (laserImpactLerpX.current === null) {
@@ -715,6 +716,7 @@ export function useGameLoop({
           laserImpactLerpX.current += (targetImpactX - laserImpactLerpX.current) * 0.06;
         }
         const impactX = laserImpactLerpX.current;
+
         laserImp.x = impactX;
         laserImp.y = beamY;
         laserImp.anchor.set(1, 0.5);
@@ -839,7 +841,7 @@ export function useGameLoop({
         blueSrc.x = blueOriginX;
         blueSrc.y = beamY;
         blueSrc.anchor.set(0, 0.5);
-        blueSrc.scale.set(-scaleY, scaleY); // flip horizontally
+        blueSrc.scale.set(-scaleY, scaleY);
 
         // Impact: shifts proportionally to score bar (uses same lerped X)
         const blueSmallScreen = layout.base.unit < 500;
@@ -848,15 +850,17 @@ export function useGameLoop({
         const blueWidthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
         const blueHalfBarW = (blueBaseBarW * blueWidthMult) / 2;
         const blueBaseImpactX = layout.positions.meetX - charSize * (blueSmallScreen ? 0.31 : 0.21);
-        const blueTargetImpactX = blueBaseImpactX + blueHalfBarW * blueScorePct * 1.5;
+        const blueTravelMult = blueSmallScreen ? 0.8 : 1.5;
+        const blueTargetImpactX = blueBaseImpactX + blueHalfBarW * blueScorePct * blueTravelMult;
 
         // Use same lerped offset for blue
         const blueLerpedShift = (laserImpactLerpX.current ?? blueTargetImpactX) - (layout.positions.meetX + charSize * (blueSmallScreen ? 0.2 : 0.3));
         const blueImpactX = blueBaseImpactX + blueLerpedShift;
+
         blueImp.x = blueImpactX;
         blueImp.y = beamY;
         blueImp.anchor.set(1, 0.5);
-        blueImp.scale.set(-scaleY, scaleY); // flip horizontally
+        blueImp.scale.set(-scaleY, scaleY);
 
         // Tiled middle: fill gap going right-to-left (mirrored)
         const blueMidStartX = blueOriginX - scaledW * 0.30;
