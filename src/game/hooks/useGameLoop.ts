@@ -177,10 +177,12 @@ export function useGameLoop({
     useGameStore.getState().resolveRound(playerHit, cpuHit);
 
     // Play impact SFX based on who got hit
-    if (delta > 0 && fireImpactSfx.current) {
+    const { sfxEnabled: sfxOn, muted } = useGameStore.getState();
+    const canSfx = sfxOn && !muted;
+    if (canSfx && delta > 0 && fireImpactSfx.current) {
       fireImpactSfx.current.currentTime = 0;
       fireImpactSfx.current.play().catch(() => {});
-    } else if (delta < 0 && lightImpactSfx.current) {
+    } else if (canSfx && delta < 0 && lightImpactSfx.current) {
       lightImpactSfx.current.currentTime = 0;
       lightImpactSfx.current.play().catch(() => {});
     }
@@ -202,7 +204,7 @@ export function useGameLoop({
           layout.positions.groundY + layout.characters.charSize * 0.4,
         );
         // Play fire launch SFX on player win
-        if (fireLaunchSfx.current) {
+        if (canSfx && fireLaunchSfx.current) {
           fireLaunchSfx.current.currentTime = 0;
           fireLaunchSfx.current.play().catch(() => {});
         }
@@ -219,7 +221,7 @@ export function useGameLoop({
           layout.positions.groundY + layout.characters.charSize * 0.4,
         );
         // Play light launch SFX on player lose
-        if (lightLaunchSfx.current) {
+        if (canSfx && lightLaunchSfx.current) {
           lightLaunchSfx.current.currentTime = 0;
           lightLaunchSfx.current.play().catch(() => {});
         }
@@ -243,7 +245,7 @@ export function useGameLoop({
       spawnSparks(sparkParticles.current, clashX, clashY);
       if (clashSfx.current) {
         clashSfx.current.currentTime = 0;
-        clashSfx.current.play().catch(() => {});
+        if (canSfx) clashSfx.current.play().catch(() => {});
       }
     }
   };
@@ -634,24 +636,39 @@ export function useGameLoop({
 
         // Start laser SFX when lasers first appear
         if (!laserSfxPlaying.current) {
-          if (fireHoldSfx.current) {
+          const { sfxEnabled: sfxEn, muted: isMuted } = useGameStore.getState();
+          const canPlay = sfxEn && !isMuted;
+          if (canPlay && fireHoldSfx.current) {
             fireHoldSfx.current.currentTime = 0;
             fireHoldSfx.current.play().catch(() => {});
           }
-          if (lightHoldSfx.current) {
+          if (canPlay && lightHoldSfx.current) {
             lightHoldSfx.current.currentTime = 0;
             lightHoldSfx.current.play().catch(() => {});
           }
           // Play spell cast sounds (one-shot)
-          if (laserCastSfx.current) {
+          if (canPlay && laserCastSfx.current) {
             laserCastSfx.current.currentTime = 0;
             laserCastSfx.current.play().catch(() => {});
           }
-          if (fireCastSfx.current) {
+          if (canPlay && fireCastSfx.current) {
             fireCastSfx.current.currentTime = 0;
             fireCastSfx.current.play().catch(() => {});
           }
           laserSfxPlaying.current = true;
+        }
+
+        // Pause/resume looping hold SFX when mute changes mid-game
+        if (laserSfxPlaying.current) {
+          const { sfxEnabled: sfxEn, muted: isMuted } = useGameStore.getState();
+          const shouldPlay = sfxEn && !isMuted;
+          if (!shouldPlay) {
+            if (fireHoldSfx.current && !fireHoldSfx.current.paused) fireHoldSfx.current.pause();
+            if (lightHoldSfx.current && !lightHoldSfx.current.paused) lightHoldSfx.current.pause();
+          } else {
+            if (fireHoldSfx.current && fireHoldSfx.current.paused) fireHoldSfx.current.play().catch(() => {});
+            if (lightHoldSfx.current && lightHoldSfx.current.paused) lightHoldSfx.current.play().catch(() => {});
+          }
         }
 
         // Advance laser animation at 24 fps

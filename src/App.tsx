@@ -12,6 +12,8 @@ const appContainer = document.getElementById("app")!;
 
 export default function App() {
   const phase = useGameStore((s) => s.phase);
+  const muted = useGameStore((s) => s.muted);
+  const toggleMute = useGameStore((s) => s.toggleMute);
 
   return (
     <>
@@ -20,6 +22,16 @@ export default function App() {
       </Application>
       {phase === "intro" && <IntroScreen />}
       {phase === "ended" && <EndScreen />}
+      <button
+        className="mute-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleMute();
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <img src={muted ? "/mute.png" : "/sound.png"} alt={muted ? "Unmute" : "Mute"} />
+      </button>
     </>
   );
 }
