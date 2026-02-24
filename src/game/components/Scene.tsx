@@ -520,7 +520,7 @@ export function Scene() {
         anchor={{ x: 0, y: 0.5 }}
       />
 
-      {/* Countdown text â€” "3", "2", "1", "FIGHT!" during countdown phase */}
+      {/* Countdown*/}
       <pixiText
         ref={countdownTextRef}
         text="3"
@@ -544,7 +544,7 @@ export function Scene() {
         visible={false}
       />
 
-      {/* "You Win" text â€” fades in after opponent death */}
+      {/* "You Win" text fades in after opponent death */}
       <pixiText
         ref={winTextRef}
         text="You Win"

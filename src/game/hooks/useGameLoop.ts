@@ -10,15 +10,18 @@ import {
   RING_FADE_IN_DURATION,
   SHAKE_DURATION,
   SLOWMO_ANIM_SPEED,
+  WIN_POINTS,
   WIN_TEXT_FADE_DURATION,
 } from "../constants";
 import { useGameStore } from "../../state";
 import type { BloodParticle, Phase } from "../types";
-import type { SparkParticle } from "../utils/particles";
+import type { SparkParticle, ExplosionParticle } from "../utils/particles";
 import {
   spawnBlood,
+  spawnExplosion,
   spawnSparks,
   updateBloodParticles,
+  updateExplosionParticles,
   updateSparkParticles,
 } from "../utils/particles";
 import { getAnimName } from "../utils/phases";
@@ -38,6 +41,7 @@ export function useGameLoop({
 }: GameLoopParams) {
   const bloodGfx = useRef<Graphics | null>(null);
   const sparkGfx = useRef<Graphics | null>(null);
+  const explosionGfx = useRef<Graphics | null>(null);
   const laserDebugGfx = useRef<Graphics | null>(null);
 
   // Win/Lose text state (read by Scene for rendering)
@@ -48,6 +52,7 @@ export function useGameLoop({
   // Countdown state (read by Scene for rendering)
   const countdownText = useRef<string | null>(null);  // "3", "2", "1", "FIGHT!" or null
   const ringAlpha = useRef(0);                        // fade-in alpha for the ring container
+  const laserImpactLerpX = useRef<number | null>(null); // lerped laser clash X position
 
   // Phase state machine
   const phase = useRef<Phase>("intro");
@@ -73,6 +78,7 @@ export function useGameLoop({
 
   const bloodParticles = useRef<BloodParticle[]>([]);
   const sparkParticles = useRef<SparkParticle[]>([]);
+  const explosionParticles = useRef<ExplosionParticle[]>([]);
 
   // Laser animation state
   const laserFrame = useRef(0);     // 0 = start frame, 1 = loop frame
@@ -117,6 +123,12 @@ export function useGameLoop({
         resetPhaseFrames();
         dialGame.stop();
         startShake();
+        // Spawn explosion particles on the opponent
+        spawnExplosion(
+          explosionParticles.current,
+          opponentX.current + layout.characters.charSize * 0.5,
+          layout.positions.groundY + layout.characters.charSize * 0.4,
+        );
         spawnBlood(
           bloodParticles.current,
           opponentX.current + layout.characters.charSize * 0.4,
@@ -129,6 +141,12 @@ export function useGameLoop({
         resetPhaseFrames();
         dialGame.stop();
         startShake();
+        // Spawn explosion particles on the player
+        spawnExplosion(
+          explosionParticles.current,
+          playerX.current + layout.characters.charSize * 0.5,
+          layout.positions.groundY + layout.characters.charSize * 0.4,
+        );
         spawnBlood(
           bloodParticles.current,
           playerX.current + layout.characters.charSize * 0.4,
@@ -159,12 +177,11 @@ export function useGameLoop({
         -1,
       );
     } else {
-      // delta === 0: clash — shake + sparks
+      // delta === 0: clash — shake + sparks at laser impact point
       startShake();
-      const clashX =
-        (playerX.current + layout.characters.charSize + opponentX.current) / 2;
+      const clashX = (laserImpactLerpX.current ?? layout.positions.meetX) - layout.characters.charSize * 0.3;
       const clashY =
-        layout.positions.groundY + layout.characters.charSize * 0.35;
+        layout.positions.groundY + layout.characters.charSize * 0.66;
       spawnSparks(sparkParticles.current, clashX, clashY);
     }
   };
@@ -177,20 +194,25 @@ export function useGameLoop({
 
     const bGfx = new Graphics();
     const sGfx = new Graphics();
+    const eGfx = new Graphics();
     const lDbg = new Graphics();
     bloodGfx.current = bGfx;
     sparkGfx.current = sGfx;
+    explosionGfx.current = eGfx;
     laserDebugGfx.current = lDbg;
     container.addChild(bGfx);
     container.addChild(sGfx);
+    container.addChild(eGfx);
     container.addChild(lDbg);
 
     return () => {
       container.removeChild(bGfx);
       container.removeChild(sGfx);
+      container.removeChild(eGfx);
       container.removeChild(lDbg);
       bGfx.destroy();
       sGfx.destroy();
+      eGfx.destroy();
       lDbg.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -404,6 +426,7 @@ export function useGameLoop({
           lastRegenCount.current = 0;
           cpuTurnTakenThisLap.current = false;
           attackIntroPlayed.current = false;
+          explosionParticles.current = [];
           // Fully reset dial game state
           dialGame.start();
           dialGame.stop();
@@ -464,6 +487,7 @@ export function useGameLoop({
             lastRegenCount.current = 0;
             cpuTurnTakenThisLap.current = false;
             attackIntroPlayed.current = false;
+            explosionParticles.current = [];
             // Fully reset dial game state
             dialGame.start();
             dialGame.stop();
@@ -603,9 +627,22 @@ export function useGameLoop({
         laserSrc.anchor.set(0, 0.5);
         laserSrc.scale.set(scaleY, scaleY);
 
-        // Impact: a bit past the middle of the screen (shifted left on phones)
+        // Impact: shifts proportionally to score bar (smoothly lerped)
         const smallScreen = layout.base.unit < 500;
-        const impactX = layout.positions.meetX + charSize * (smallScreen ? 0.2 : 0.3);
+        const scorePct = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
+        const baseBarW = layout.ring.outerRadius * 2;
+        const widthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
+        const halfBarW = (baseBarW * widthMult) / 2;
+        const baseImpactX = layout.positions.meetX + charSize * (smallScreen ? 0.2 : 0.3);
+        const targetImpactX = baseImpactX + halfBarW * scorePct * 1.5;
+
+        // Smooth lerp toward target
+        if (laserImpactLerpX.current === null) {
+          laserImpactLerpX.current = targetImpactX;
+        } else {
+          laserImpactLerpX.current += (targetImpactX - laserImpactLerpX.current) * 0.06;
+        }
+        const impactX = laserImpactLerpX.current;
         laserImp.x = impactX;
         laserImp.y = beamY;
         laserImp.anchor.set(1, 0.5);
@@ -615,8 +652,18 @@ export function useGameLoop({
         const midStartX = originX + scaledW * 0.30;
         const midEndX = impactX - scaledW;
         const midSpan = midEndX - midStartX;
-        const tileStep = scaledW * 0.3; // overlap each tile by 30%
-        const tileCount = Math.max(1, Math.ceil(midSpan / tileStep));
+
+        if (midSpan <= 0) {
+          // No room for middle tiles — hide mid, show only source + impact
+          laserMid.visible = false;
+          while (laserMid.children.length > 0) {
+            const removed = laserMid.removeChildAt(laserMid.children.length - 1);
+            removed.destroy();
+          }
+        } else {
+          laserMid.visible = true;
+          const tileStep = scaledW * 0.3; // overlap each tile by 30%
+          const tileCount = Math.max(1, Math.ceil(midSpan / tileStep));
 
         // Add/remove sprites to match tile count
         while (laserMid.children.length < tileCount) {
@@ -639,6 +686,7 @@ export function useGameLoop({
         }
 
         // Ensure source and impact render on top of middle tiles
+        }
         laserMid.zIndex = 0;
         laserSrc.zIndex = 1;
         laserImp.zIndex = 1;
@@ -651,10 +699,14 @@ export function useGameLoop({
           // Source section border (green)
           dbg.rect(originX, beamY - halfH, scaledW, beamHeight);
           dbg.stroke({ color: 0x00ff00, width: 2, alpha: 1 });
-          // Each middle tile border (red)
-          for (let i = 0; i < tileCount; i++) {
-            dbg.rect(midStartX + i * tileStep, beamY - halfH, scaledW, beamHeight);
-            dbg.stroke({ color: 0xff0000, width: 2, alpha: 1 });
+          // Each middle tile border (red) — only when mid is visible
+          if (midSpan > 0) {
+            const dbgTileStep = scaledW * 0.3;
+            const dbgTileCount = Math.max(1, Math.ceil(midSpan / dbgTileStep));
+            for (let i = 0; i < dbgTileCount; i++) {
+              dbg.rect(midStartX + i * dbgTileStep, beamY - halfH, scaledW, beamHeight);
+              dbg.stroke({ color: 0xff0000, width: 2, alpha: 1 });
+            }
           }
           // Impact section border (blue)
           dbg.rect(impactX - scaledW, beamY - halfH, scaledW, beamHeight);
@@ -667,6 +719,7 @@ export function useGameLoop({
         laserFrame.current = 0;
         laserElapsed.current = 0;
         laserStarted.current = false;
+        laserImpactLerpX.current = null;
         if (laserDebugGfx.current) laserDebugGfx.current.clear();
       }
     }
@@ -732,9 +785,18 @@ export function useGameLoop({
         blueSrc.anchor.set(0, 0.5);
         blueSrc.scale.set(-scaleY, scaleY); // flip horizontally
 
-        // Impact: a little before the middle of the screen (going left, shifted left on phones)
+        // Impact: shifts proportionally to score bar (uses same lerped X)
         const blueSmallScreen = layout.base.unit < 500;
-        const blueImpactX = layout.positions.meetX - charSize * (blueSmallScreen ? 0.30 : 0.2);
+        const blueScorePct = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
+        const blueBaseBarW = layout.ring.outerRadius * 2;
+        const blueWidthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
+        const blueHalfBarW = (blueBaseBarW * blueWidthMult) / 2;
+        const blueBaseImpactX = layout.positions.meetX - charSize * (blueSmallScreen ? 0.30 : 0.2);
+        const blueTargetImpactX = blueBaseImpactX + blueHalfBarW * blueScorePct * 1.5;
+
+        // Use same lerped offset for blue
+        const blueLerpedShift = (laserImpactLerpX.current ?? blueTargetImpactX) - (layout.positions.meetX + charSize * (blueSmallScreen ? 0.2 : 0.3));
+        const blueImpactX = blueBaseImpactX + blueLerpedShift;
         blueImp.x = blueImpactX;
         blueImp.y = beamY;
         blueImp.anchor.set(1, 0.5);
@@ -744,8 +806,18 @@ export function useGameLoop({
         const blueMidStartX = blueOriginX - scaledW * 0.30;
         const blueMidEndX = blueImpactX + scaledW;
         const blueMidSpan = blueMidStartX - blueMidEndX;
-        const blueTileStep = scaledW * 0.3;
-        const blueTileCount = Math.max(1, Math.ceil(blueMidSpan / blueTileStep));
+
+        if (blueMidSpan <= 0) {
+          // No room for middle tiles — hide mid, show only source + impact
+          blueMid.visible = false;
+          while (blueMid.children.length > 0) {
+            const removed = blueMid.removeChildAt(blueMid.children.length - 1);
+            removed.destroy();
+          }
+        } else {
+          blueMid.visible = true;
+          const blueTileStep = scaledW * 0.3;
+          const blueTileCount = Math.max(1, Math.ceil(blueMidSpan / blueTileStep));
 
         while (blueMid.children.length < blueTileCount) {
           const s = new Sprite();
@@ -765,6 +837,7 @@ export function useGameLoop({
           tile.scale.set(-scaleY, scaleY); // flip horizontally
         }
 
+        }
         blueMid.zIndex = 0;
         blueSrc.zIndex = 1;
         blueImp.zIndex = 1;
@@ -804,13 +877,24 @@ export function useGameLoop({
       );
     }
 
-    // â”€â”€ Spark particles â”€â”€
+    // ── Spark particles ──
 
     const sGfx = sparkGfx.current;
     if (sGfx) {
       sparkParticles.current = updateSparkParticles(
         sGfx,
         sparkParticles.current,
+        dt,
+      );
+    }
+
+    // ── Explosion particles ──
+
+    const eGfx = explosionGfx.current;
+    if (eGfx) {
+      explosionParticles.current = updateExplosionParticles(
+        eGfx,
+        explosionParticles.current,
         dt,
       );
     }

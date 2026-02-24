@@ -6,6 +6,7 @@
   - Remove `laserDebugGfx` debug overlay references and drawing code
   - Remove unused `lastDialResult` ref
   - Remove unused `Sprite` import from pixi.js in game loop
+  - Remove unused knockback animations
 
 - [ ] **Export game-loop logic to hooks / util functions**
   - Extract laser beam animation to a `useLaserBeam` hook (generic for red & blue)
@@ -43,6 +44,7 @@
   - [ ] Skip-tutorial button
   - [ ] Tutorial button in main menu
   - [ ] "It's your first time" window on first visit (localStorage-backed state)
+
 
 ---
 

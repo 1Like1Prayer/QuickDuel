@@ -33,8 +33,15 @@ export const BLOOD_PARTICLE_LIFETIME = 0.8;
 export const BLOOD_PARTICLE_SIZE = 6;
 
 // --- Spark Particles (clash) ---
-export const SPARK_PARTICLE_COUNT = 18;
-export const SPARK_PARTICLE_SPEED = 600;
-export const SPARK_PARTICLE_GRAVITY = 400;
-export const SPARK_PARTICLE_LIFETIME = 0.3;
-export const SPARK_PARTICLE_SIZE = 6;
+export const SPARK_PARTICLE_COUNT = 55;
+export const SPARK_PARTICLE_SPEED = 1400;
+export const SPARK_PARTICLE_GRAVITY = 250;
+export const SPARK_PARTICLE_LIFETIME = 0.7;
+export const SPARK_PARTICLE_SIZE = 14;
+
+// --- Explosion Particles (win/lose) ---
+export const EXPLOSION_PARTICLE_COUNT = 140;
+export const EXPLOSION_PARTICLE_SPEED = 900;
+export const EXPLOSION_PARTICLE_GRAVITY = 180;
+export const EXPLOSION_PARTICLE_LIFETIME = 2.0;
+export const EXPLOSION_PARTICLE_SIZE = 18;
