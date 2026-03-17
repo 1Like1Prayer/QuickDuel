@@ -21,8 +21,6 @@ import {
   useBackgroundTexture,
   useBricksTexture,
   useCharacterAnims,
-  useBlueLaserFrames,
-  useLaserFrames,
 } from "../hooks/useAssets";
 import { useDialGame } from "../hooks/useDialGame";
 import { blockColor } from "../hooks/utils/useDialGame.utils";
@@ -40,12 +38,8 @@ export function Scene() {
   const bgRef = useRef<Sprite>(null);
   const playerRef = useRef<Sprite>(null);
   const opponentRef = useRef<Sprite>(null);
-  const laserSourceRef = useRef<Sprite>(null);
-  const laserMiddleRef = useRef<Container>(null);
-  const laserImpactRef = useRef<Sprite>(null);
-  const blueLaserSourceRef = useRef<Sprite>(null);
-  const blueLaserMiddleRef = useRef<Container>(null);
-  const blueLaserImpactRef = useRef<Sprite>(null);
+  const redBeamGfxRef = useRef<Graphics>(null);
+  const blueBeamGfxRef = useRef<Graphics>(null);
   const ringContainerRef = useRef<Container>(null);
 
   // Score bar ref
@@ -83,10 +77,6 @@ export function Scene() {
 
   const { playerAnims, opponentAnims } = useCharacterAnims();
 
-  // Load laser animation frames
-  const laserFrames = useLaserFrames();
-  const blueLaserFrames = useBlueLaserFrames();
-
   // Dial game logic
   const dialGame = useDialGame({ baseSpeed: DIAL_BASE_SPEED });
 
@@ -104,17 +94,11 @@ export function Scene() {
       bg: bgRef,
       player: playerRef,
       opponent: opponentRef,
-      laserSource: laserSourceRef,
-      laserMiddle: laserMiddleRef,
-      laserImpact: laserImpactRef,
-      blueLaserSource: blueLaserSourceRef,
-      blueLaserMiddle: blueLaserMiddleRef,
-      blueLaserImpact: blueLaserImpactRef,
+      redBeamGfx: redBeamGfxRef,
+      blueBeamGfx: blueBeamGfxRef,
       ringContainer: ringContainerRef,
     },
     bgTexture,
-    laserFrames,
-    blueLaserFrames,
     playerAnims,
     opponentAnims,
     dialGame,
@@ -490,34 +474,18 @@ export function Scene() {
         scale={layout.characters.charScale}
       />
 
-      {/* Laser beam — 3-section: source, tiled middle, impact */}
-      <pixiSprite
-        ref={laserSourceRef}
-        texture={laserFrames ? laserFrames.sourceStart[0] : Texture.EMPTY}
+      {/* Red beam — player (Fire Wizard) — procedural Graphics */}
+      <pixiGraphics
+        ref={redBeamGfxRef}
+        draw={() => { /* redrawn each tick */ }}
         visible={false}
-        anchor={{ x: 0, y: 0.5 }}
-      />
-      <pixiContainer ref={laserMiddleRef} visible={false} />
-      <pixiSprite
-        ref={laserImpactRef}
-        texture={laserFrames ? laserFrames.impactStart[0] : Texture.EMPTY}
-        visible={false}
-        anchor={{ x: 0, y: 0.5 }}
       />
 
-      {/* Blue laser beam — opponent (Wanderer Magician) */}
-      <pixiSprite
-        ref={blueLaserSourceRef}
-        texture={blueLaserFrames ? blueLaserFrames.sourceStart[0] : Texture.EMPTY}
+      {/* Blue beam — opponent (Wanderer Magician) — procedural Graphics */}
+      <pixiGraphics
+        ref={blueBeamGfxRef}
+        draw={() => { /* redrawn each tick */ }}
         visible={false}
-        anchor={{ x: 0, y: 0.5 }}
-      />
-      <pixiContainer ref={blueLaserMiddleRef} visible={false} />
-      <pixiSprite
-        ref={blueLaserImpactRef}
-        texture={blueLaserFrames ? blueLaserFrames.impactStart[0] : Texture.EMPTY}
-        visible={false}
-        anchor={{ x: 0, y: 0.5 }}
       />
 
       {/* Countdown*/}

@@ -19,12 +19,3 @@ export interface Particle {
 }
 
 export type CharAnims = Record<string, Texture[]>;
-
-export interface LaserFrames {
-  sourceStart: Texture[];
-  sourceLoop: Texture[];
-  middleStart: Texture[];
-  middleLoop: Texture[];
-  impactStart: Texture[];
-  impactLoop: Texture[];
-}

@@ -1,12 +1,11 @@
 ﻿import { useTick } from "@pixi/react";
-import { Graphics, Sprite, Texture } from "pixi.js";
+import { Graphics, Texture } from "pixi.js";
 import { useEffect, useRef } from "react";
 
 import {
   ANIM_SPEED,
   COUNTDOWN_FIGHT_MS,
   COUNTDOWN_STEP_MS,
-  LASER_ANIM_SPEED,
   RING_FADE_IN_DURATION,
   SHAKE_DURATION,
   SLOWMO_ANIM_SPEED,
@@ -25,13 +24,19 @@ import {
 import { getAnimName } from "../utils/phases";
 import { cpuTakeTurn, createCpuState } from "../services/cpuService";
 import type { GameLoopParams } from "./types/useGameLoop.types";
+import {
+  type BeamState,
+  createBeamState,
+  resetBeamState,
+  drawBeam,
+  RED_BEAM_CONFIG,
+  BLUE_BEAM_CONFIG,
+} from "../utils/beamRenderer";
 
 export function useGameLoop({
   app,
   refs,
   bgTexture,
-  laserFrames,
-  blueLaserFrames,
   playerAnims,
   opponentAnims,
   dialGame,
@@ -143,15 +148,9 @@ export function useGameLoop({
     clashSfx.current = sfx;
   }
 
-  // Laser animation state
-  const laserFrame = useRef(0);     // 0 = start frame, 1 = loop frame
-  const laserElapsed = useRef(0);
-  const laserStarted = useRef(false);
-
-  // Blue laser animation state (opponent)
-  const blueLaserFrame = useRef(0);
-  const blueLaserElapsed = useRef(0);
-  const blueLaserStarted = useRef(false);
+  // Beam animation states (procedural)
+  const redBeamState = useRef<BeamState>(createBeamState());
+  const blueBeamState = useRef<BeamState>(createBeamState());
 
   // Track last consumed dial hit result to avoid re-processing
   const lastDialResult = useRef<boolean | null>(null);
@@ -636,27 +635,24 @@ export function useGameLoop({
     opponent.current.scale.x = -layout.characters.charScale;
     opponent.current.anchor.x = 1;
 
-    // ── Laser beam (visible only during attack-loop after intro) ──
+    // ── Procedural beam rendering (visible only during attack-loop after intro) ──
 
-    const laserSrc = refs.laserSource.current;
-    const laserMid = refs.laserMiddle.current;
-    const laserImp = refs.laserImpact.current;
+    const redGfx = refs.redBeamGfx.current;
+    const blueGfx = refs.blueBeamGfx.current;
 
-    if (laserSrc && laserMid && laserImp && laserFrames) {
-      // Show laser only while looping the last 2 attack frames (after attack_intro)
-      const showLaser =
-        attackIntroPlayed.current &&
-        curPhase !== "intro" &&
-        curPhase !== "attack_intro" &&
-        curPhase !== "player_win" &&
-        curPhase !== "player_lose";
+    const showBeams =
+      attackIntroPlayed.current &&
+      curPhase !== "intro" &&
+      curPhase !== "attack_intro" &&
+      curPhase !== "player_win" &&
+      curPhase !== "player_lose";
 
-      if (showLaser) {
-        laserSrc.visible = true;
-        laserMid.visible = true;
-        laserImp.visible = true;
+    if (redGfx && blueGfx) {
+      if (showBeams) {
+        redGfx.visible = true;
+        blueGfx.visible = true;
 
-        // Start laser SFX when lasers first appear
+        // Start beam SFX when beams first appear
         if (!laserSfxPlaying.current) {
           const { sfxEnabled: sfxEn, muted: isMuted } = useGameStore.getState();
           const canPlay = sfxEn && !isMuted;
@@ -693,52 +689,18 @@ export function useGameLoop({
           }
         }
 
-        // Advance laser animation at 24 fps
-        laserElapsed.current += dt;
-        if (laserElapsed.current >= LASER_ANIM_SPEED) {
-          laserElapsed.current = 0;
-          if (!laserStarted.current) {
-            // Playing start frames (0-3), then switch to loop
-            laserFrame.current++;
-            if (laserFrame.current >= 4) {
-              laserStarted.current = true;
-              laserFrame.current = 0; // begin loop frames
-            }
-          } else {
-            // Cycle through loop frames (0-3)
-            laserFrame.current = (laserFrame.current + 1) % 4;
-          }
-        }
-
-        const fi = laserFrame.current;
-        const midTex = !laserStarted.current
-          ? laserFrames.middleStart[fi]
-          : laserFrames.middleLoop[fi];
-
-        if (!laserStarted.current) {
-          laserSrc.texture = laserFrames.sourceStart[fi];
-          laserImp.texture = laserFrames.impactStart[fi];
-        } else {
-          laserSrc.texture = laserFrames.sourceLoop[fi];
-          laserImp.texture = laserFrames.impactLoop[fi];
-        }
-
+        // ── Compute shared beam positions ──
         const charSize = layout.characters.charSize;
-        const frameW = laserFrames.sourceStart[0].width;  // 48
-        const frameH = laserFrames.sourceStart[0].height;  // 48
-        const beamHeight = charSize * 0.75;
-        const scaleY = beamHeight / frameH;
-        const scaledW = frameW * scaleY;
+        const beamHalfH = charSize * 0.07;
         const beamY = layout.positions.groundY + charSize * 0.66;
 
-        // Source: at the fire mage's hands
-        const originX = playerX.current + charSize * 0.15;
-        laserSrc.x = originX;
-        laserSrc.y = beamY;
-        laserSrc.anchor.set(0, 0.5);
-        laserSrc.scale.set(scaleY, scaleY);
+        // Red beam origin: at the edge of the fire mage (right side of sprite)
+        const redOriginX = playerX.current + charSize * 0.75;
 
-        // Impact: shifts proportionally to score bar (smoothly lerped)
+        // Blue beam origin: at the edge of the wanderer mage (left side of mirrored sprite)
+        const blueOriginX = opponentX.current + charSize * 0.25;
+
+        // Impact X: shifts proportionally to score bar (smoothly lerped)
         const smallScreen = layout.base.unit < 500;
         const scorePct = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
         const baseBarW = layout.ring.outerRadius * 2;
@@ -756,197 +718,51 @@ export function useGameLoop({
         }
         const impactX = laserImpactLerpX.current;
 
-        laserImp.x = impactX;
-        laserImp.y = beamY;
-        laserImp.anchor.set(1, 0.5);
-        laserImp.scale.set(scaleY, scaleY);
+        // Blue impact X (mirrored offset)
+        const blueBaseImpactX = layout.positions.meetX - charSize * (smallScreen ? 0.31 : 0.21);
+        const blueLerpedShift = impactX - baseImpactX;
+        const blueImpactX = blueBaseImpactX + blueLerpedShift;
 
-        // Tiled middle: start overlapping the source section
-        const midStartX = originX + scaledW * 0.30;
-        const midEndX = impactX - scaledW;
-        const midSpan = midEndX - midStartX;
+        // ── Draw red beam (player → right) ──
+        drawBeam(
+          redGfx,
+          redBeamState.current,
+          RED_BEAM_CONFIG,
+          redOriginX,
+          beamY,
+          impactX,
+          beamY,
+          beamHalfH,
+          dt,
+        );
 
-        if (midSpan <= 0) {
-          // No room for middle tiles — hide mid, show only source + impact
-          laserMid.visible = false;
-          while (laserMid.children.length > 0) {
-            const removed = laserMid.removeChildAt(laserMid.children.length - 1);
-            removed.destroy();
-          }
-        } else {
-          laserMid.visible = true;
-          const tileStep = scaledW * 0.3; // overlap each tile by 30%
-          const tileCount = Math.max(1, Math.ceil(midSpan / tileStep));
-
-        // Add/remove sprites to match tile count
-        while (laserMid.children.length < tileCount) {
-          const s = new Sprite();
-          s.anchor.set(0, 0.5);
-          laserMid.addChild(s);
-        }
-        while (laserMid.children.length > tileCount) {
-          const removed = laserMid.removeChildAt(laserMid.children.length - 1);
-          removed.destroy();
-        }
-
-        // Position and texture each tile
-        for (let i = 0; i < tileCount; i++) {
-          const tile = laserMid.children[i] as Sprite;
-          tile.texture = midTex;
-          tile.x = midStartX + i * tileStep;
-          tile.y = beamY;
-          tile.scale.set(scaleY, scaleY);
-        }
-
-        // Ensure source and impact render on top of middle tiles
-        }
-        laserMid.zIndex = 0;
-        laserSrc.zIndex = 1;
-        laserImp.zIndex = 1;
+        // ── Draw blue beam (opponent → left) ──
+        drawBeam(
+          blueGfx,
+          blueBeamState.current,
+          BLUE_BEAM_CONFIG,
+          blueOriginX,
+          beamY,
+          blueImpactX,
+          beamY,
+          beamHalfH,
+          dt,
+        );
       } else {
-        laserSrc.visible = false;
-        laserMid.visible = false;
-        laserImp.visible = false;
-        laserFrame.current = 0;
-        laserElapsed.current = 0;
-        laserStarted.current = false;
+        redGfx.visible = false;
+        blueGfx.visible = false;
+        redGfx.clear();
+        blueGfx.clear();
+        resetBeamState(redBeamState.current);
+        resetBeamState(blueBeamState.current);
         laserImpactLerpX.current = null;
 
-        // Stop laser SFX when lasers hide
+        // Stop beam SFX when beams hide
         if (laserSfxPlaying.current) {
           if (fireHoldSfx.current) fireHoldSfx.current.pause();
           if (lightHoldSfx.current) lightHoldSfx.current.pause();
           laserSfxPlaying.current = false;
         }
-      }
-    }
-    // â"€â"€ Blue laser (opponent â†' left) â"€â"€
-
-    const blueSrc = refs.blueLaserSource.current;
-    const blueMid = refs.blueLaserMiddle.current;
-    const blueImp = refs.blueLaserImpact.current;
-
-    if (blueSrc && blueMid && blueImp && blueLaserFrames) {
-      const showBlueLaser =
-        attackIntroPlayed.current &&
-        curPhase !== "intro" &&
-        curPhase !== "attack_intro" &&
-        curPhase !== "player_win" &&
-        curPhase !== "player_lose";
-
-      if (showBlueLaser) {
-        blueSrc.visible = true;
-        blueMid.visible = true;
-        blueImp.visible = true;
-
-        // Advance blue laser animation at 24 fps
-        blueLaserElapsed.current += dt;
-        if (blueLaserElapsed.current >= LASER_ANIM_SPEED) {
-          blueLaserElapsed.current = 0;
-          if (!blueLaserStarted.current) {
-            blueLaserFrame.current++;
-            if (blueLaserFrame.current >= 4) {
-              blueLaserStarted.current = true;
-              blueLaserFrame.current = 0;
-            }
-          } else {
-            blueLaserFrame.current = (blueLaserFrame.current + 1) % 4;
-          }
-        }
-
-        const bfi = blueLaserFrame.current;
-        const blueMidTex = !blueLaserStarted.current
-          ? blueLaserFrames.middleStart[bfi]
-          : blueLaserFrames.middleLoop[bfi];
-
-        if (!blueLaserStarted.current) {
-          blueSrc.texture = blueLaserFrames.sourceStart[bfi];
-          blueImp.texture = blueLaserFrames.impactStart[bfi];
-        } else {
-          blueSrc.texture = blueLaserFrames.sourceLoop[bfi];
-          blueImp.texture = blueLaserFrames.impactLoop[bfi];
-        }
-
-        const charSize = layout.characters.charSize;
-        const frameW = blueLaserFrames.sourceStart[0].width;
-        const frameH = blueLaserFrames.sourceStart[0].height;
-        const beamHeight = charSize * 0.75;
-        const scaleY = beamHeight / frameH;
-        const scaledW = frameW * scaleY;
-        const beamY = layout.positions.groundY + charSize * 0.66;
-
-        // Source: at the wanderer mage's hands (mirrored — facing left)
-        const blueOriginX = opponentX.current + charSize * 0.65;
-        blueSrc.x = blueOriginX;
-        blueSrc.y = beamY;
-        blueSrc.anchor.set(0, 0.5);
-        blueSrc.scale.set(-scaleY, scaleY);
-
-        // Impact: shifts proportionally to score bar (uses same lerped X)
-        const blueSmallScreen = layout.base.unit < 500;
-        const blueScorePct = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
-        const blueBaseBarW = layout.ring.outerRadius * 2;
-        const blueWidthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
-        const blueHalfBarW = (blueBaseBarW * blueWidthMult) / 2;
-        const blueBaseImpactX = layout.positions.meetX - charSize * (blueSmallScreen ? 0.31 : 0.21);
-        const blueTravelMult = blueSmallScreen ? 0.8 : 1.5;
-        const blueTargetImpactX = blueBaseImpactX + blueHalfBarW * blueScorePct * blueTravelMult;
-
-        // Use same lerped offset for blue
-        const blueLerpedShift = (laserImpactLerpX.current ?? blueTargetImpactX) - (layout.positions.meetX + charSize * (blueSmallScreen ? 0.2 : 0.3));
-        const blueImpactX = blueBaseImpactX + blueLerpedShift;
-
-        blueImp.x = blueImpactX;
-        blueImp.y = beamY;
-        blueImp.anchor.set(1, 0.5);
-        blueImp.scale.set(-scaleY, scaleY);
-
-        // Tiled middle: fill gap going right-to-left (mirrored)
-        const blueMidStartX = blueOriginX - scaledW * 0.30;
-        const blueMidEndX = blueImpactX + scaledW;
-        const blueMidSpan = blueMidStartX - blueMidEndX;
-
-        if (blueMidSpan <= 0) {
-          // No room for middle tiles — hide mid, show only source + impact
-          blueMid.visible = false;
-          while (blueMid.children.length > 0) {
-            const removed = blueMid.removeChildAt(blueMid.children.length - 1);
-            removed.destroy();
-          }
-        } else {
-          blueMid.visible = true;
-          const blueTileStep = scaledW * 0.3;
-          const blueTileCount = Math.max(1, Math.ceil(blueMidSpan / blueTileStep));
-
-        while (blueMid.children.length < blueTileCount) {
-          const s = new Sprite();
-          s.anchor.set(0, 0.5);
-          blueMid.addChild(s);
-        }
-        while (blueMid.children.length > blueTileCount) {
-          const removed = blueMid.removeChildAt(blueMid.children.length - 1);
-          removed.destroy();
-        }
-
-        for (let i = 0; i < blueTileCount; i++) {
-          const tile = blueMid.children[i] as Sprite;
-          tile.texture = blueMidTex;
-          tile.x = blueMidStartX - i * blueTileStep;
-          tile.y = beamY;
-          tile.scale.set(-scaleY, scaleY); // flip horizontally
-        }
-
-        }
-        blueMid.zIndex = 0;
-        blueSrc.zIndex = 1;
-        blueImp.zIndex = 1;
-      } else {
-        blueSrc.visible = false;
-        blueMid.visible = false;
-        blueImp.visible = false;
-        blueLaserFrame.current = 0;
-        blueLaserElapsed.current = 0;
-        blueLaserStarted.current = false;
       }
     }
     // â”€â”€ Screen shake â”€â”€
