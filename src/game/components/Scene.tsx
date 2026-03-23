@@ -526,7 +526,7 @@ export function Scene() {
         x={app.screen.width / 2}
         y={app.screen.height / 2 - layout.fightText.fightFontSize * 0.8}
         style={{
-          fontFamily: "Arial Black, Impact, sans-serif",
+          fontFamily: "ARCADECLASSIC, Arial Black, Impact, sans-serif",
           fontSize: layout.fightText.fightFontSize * 1.5,
           fontWeight: "bold" as const,
           fill: 0xffffff,
@@ -550,7 +550,7 @@ export function Scene() {
         x={app.screen.width / 2}
         y={app.screen.height * 0.22}
         style={{
-          fontFamily: "Arial Black, Impact, sans-serif",
+          fontFamily: "dpcomic, Arial Black, Impact, sans-serif",
           fontSize: layout.fightText.fightFontSize * 1.8,
           fontWeight: "bold" as const,
           fill: 0xffcc00,

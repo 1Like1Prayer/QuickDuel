@@ -15,7 +15,7 @@
   top: 22%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-family: "Arial Black", Impact, sans-serif;
+  font-family: "dpcomic", "Arial Black", Impact, sans-serif;
   font-size: clamp(2rem, 10vw, 7rem);
   font-weight: 900;
   text-transform: uppercase;
@@ -68,7 +68,7 @@
 }
 
 .intro-btn {
-  font-family: "Arial Black", Impact, sans-serif;
+  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
   font-size: clamp(1rem, 3vw, 1.5rem);
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -227,7 +227,7 @@
 }
 
 .settings-label {
-  font-family: "Arial Black", Impact, sans-serif;
+  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
   font-size: clamp(0.85rem, 2.5vw, 1.1rem);
   font-weight: 700;
   color: #ffcc00;
@@ -277,7 +277,7 @@
 }
 
 .settings-value {
-  font-family: "Arial Black", Impact, sans-serif;
+  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
   font-size: clamp(0.8rem, 2vw, 1rem);
   color: #ffffff;
   min-width: 3.5em;
@@ -285,7 +285,7 @@
 }
 
 .settings-toggle {
-  font-family: "Arial Black", Impact, sans-serif;
+  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
   font-size: clamp(0.9rem, 2.5vw, 1.1rem);
   font-weight: 700;
   padding: 0.5em 2em;
@@ -325,7 +325,7 @@
 
 /* ── Tutorial ── */
 .tutorial-prompt {
-  font-family: "Arial Black", Impact, sans-serif;
+  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
   font-size: clamp(1rem, 3vw, 1.4rem);
   font-weight: 700;
   color: #ffcc00;
