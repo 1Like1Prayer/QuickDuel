@@ -5,9 +5,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  /* Semi-transparent dark overlay so the game background is visible */
   background: rgba(0, 0, 0, 0.45);
-  pointer-events: auto;
 }
 
 .intro-title {
@@ -29,7 +27,6 @@
     0 6px 8px rgba(0, 0, 0, 0.7);
   margin: 0;
   user-select: none;
-  animation: title-pulse 2.5s ease-in-out infinite alternate;
 }
 
 .intro-content {
@@ -41,22 +38,6 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-}
-
-@keyframes title-pulse {
-  0% {
-    text-shadow:
-      0 0 12px rgba(255, 204, 0, 0.6),
-      0 4px 0 #b8860b,
-      0 6px 8px rgba(0, 0, 0, 0.7);
-  }
-  100% {
-    text-shadow:
-      0 0 24px rgba(255, 204, 0, 0.9),
-      0 4px 0 #b8860b,
-      0 6px 12px rgba(0, 0, 0, 0.8),
-      0 0 60px rgba(255, 140, 0, 0.3);
-  }
 }
 
 /* ── Buttons ── */
@@ -108,20 +89,14 @@
   background: linear-gradient(180deg, #333333 0%, #1a1a1a 100%);
   border-color: #555555;
   color: #888888;
-  box-shadow: none;
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.intro-btn-secondary:hover {
-  transform: none;
 }
 
 /* ── Difficulty buttons ── */
 .intro-btn-difficulty {
   width: 320px;
   min-width: 320px;
-  text-align: center;
   color: #ffffff;
   box-shadow:
     0 0 12px rgba(0, 0, 0, 0.3),
@@ -166,30 +141,9 @@
   box-shadow: 0 0 24px rgba(204, 34, 34, 0.6);
 }
 
-/* ── Settings button ── */
-.intro-btn-settings {
-  background: linear-gradient(180deg, #444444 0%, #222222 100%);
-  border-color: #666666;
-  color: #cccccc;
-  box-shadow:
-    0 0 12px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.intro-btn-settings:hover {
-  background: linear-gradient(180deg, #555555 0%, #333333 100%);
-  box-shadow: 0 0 20px rgba(100, 100, 100, 0.4);
-  transform: scale(1.04);
-  color: #ffffff;
-}
-
-.intro-btn-settings:active {
-  transform: scale(0.97);
-}
-
-/* ── Back button ── */
+/* ── Settings / Back buttons ── */
+.intro-btn-settings,
 .intro-btn-back {
-  margin-top: 1.5rem;
   background: linear-gradient(180deg, #444444 0%, #222222 100%);
   border-color: #666666;
   color: #cccccc;
@@ -198,6 +152,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+.intro-btn-settings:hover,
 .intro-btn-back:hover {
   background: linear-gradient(180deg, #555555 0%, #333333 100%);
   box-shadow: 0 0 20px rgba(100, 100, 100, 0.4);
@@ -205,8 +160,13 @@
   color: #ffffff;
 }
 
+.intro-btn-settings:active,
 .intro-btn-back:active {
   transform: scale(0.97);
+}
+
+.intro-btn-back {
+  margin-top: 1.5rem;
 }
 
 /* ── Settings panel ── */

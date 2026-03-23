@@ -10,19 +10,13 @@ export function EndScreen() {
       <div className="end-content">
         <button
           className="end-btn end-btn-play-again"
-          onClick={(e) => {
-            e.stopPropagation();
-            playAgain();
-          }}
+          onClick={() => playAgain()}
         >
           Play Again
         </button>
         <button
           className="end-btn end-btn-main-menu"
-          onClick={(e) => {
-            e.stopPropagation();
-            reset();
-          }}
+          onClick={() => reset()}
         >
           Main Menu
         </button>

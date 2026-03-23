@@ -24,10 +24,7 @@ export default function App() {
       {phase === "ended" && <EndScreen />}
       <button
         className="mute-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleMute();
-        }}
+        onClick={() => toggleMute()}
         onPointerDown={(e) => e.stopPropagation()}
       >
         <img src={muted ? "/mute.png" : "/sound.png"} alt={muted ? "Unmute" : "Mute"} />

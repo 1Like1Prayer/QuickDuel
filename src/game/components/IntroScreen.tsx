@@ -17,8 +17,7 @@ export function IntroScreen() {
   const [screen, setScreen] = useState<Screen>("main");
   const [pendingDifficulty, setPendingDifficulty] = useState<Difficulty>("beginner");
 
-  const handleDifficultyPick = (difficulty: Difficulty) => (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDifficultyPick = (difficulty: Difficulty) => () => {
     if (!tutorialSeen) {
       setPendingDifficulty(difficulty);
       setScreen("tutorial-ask");
@@ -36,10 +35,7 @@ export function IntroScreen() {
           <div className="intro-buttons">
             <button
               className="intro-btn intro-btn-primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                setScreen("difficulty");
-              }}
+              onClick={() => setScreen("difficulty")}
             >
               Play - Offline
             </button>
@@ -48,19 +44,13 @@ export function IntroScreen() {
             </button>
             <button
               className="intro-btn intro-btn-settings"
-              onClick={(e) => {
-                e.stopPropagation();
-                setScreen("settings");
-              }}
+              onClick={() => setScreen("settings")}
             >
               Settings
             </button>
             <button
               className="intro-btn intro-btn-settings"
-              onClick={(e) => {
-                e.stopPropagation();
-                setScreen("tutorial-show-menu");
-              }}
+              onClick={() => setScreen("tutorial-show-menu")}
             >
               Tutorial
             </button>
@@ -89,10 +79,7 @@ export function IntroScreen() {
             </button>
             <button
               className="intro-btn intro-btn-back"
-              onClick={(e) => {
-                e.stopPropagation();
-                setScreen("main");
-              }}
+              onClick={() => setScreen("main")}
             >
               Back
             </button>
@@ -120,10 +107,7 @@ export function IntroScreen() {
               <label className="settings-label">Sound Effects</label>
               <button
                 className={`settings-toggle ${sfxEnabled ? "settings-toggle-on" : "settings-toggle-off"}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSfxEnabled(!sfxEnabled);
-                }}
+                onClick={() => setSfxEnabled(!sfxEnabled)}
               >
                 {sfxEnabled ? "ON" : "OFF"}
               </button>
@@ -131,10 +115,7 @@ export function IntroScreen() {
 
             <button
               className="intro-btn intro-btn-back"
-              onClick={(e) => {
-                e.stopPropagation();
-                setScreen("main");
-              }}
+              onClick={() => setScreen("main")}
             >
               Back
             </button>
@@ -146,17 +127,13 @@ export function IntroScreen() {
             <p className="tutorial-prompt">Would you like to see the tutorial?</p>
             <button
               className="intro-btn intro-btn-primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                setScreen("tutorial-show");
-              }}
+              onClick={() => setScreen("tutorial-show")}
             >
               Show Tutorial
             </button>
             <button
               className="intro-btn intro-btn-settings"
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={() => {
                 markTutorialSeen();
                 startGame(pendingDifficulty);
               }}
@@ -175,8 +152,7 @@ export function IntroScreen() {
             />
             <button
               className="intro-btn intro-btn-primary tutorial-start-btn"
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={() => {
                 markTutorialSeen();
                 startGame(pendingDifficulty);
               }}
@@ -195,10 +171,7 @@ export function IntroScreen() {
             />
             <button
               className="intro-btn intro-btn-back"
-              onClick={(e) => {
-                e.stopPropagation();
-                setScreen("main");
-              }}
+              onClick={() => setScreen("main")}
             >
               Back
             </button>
