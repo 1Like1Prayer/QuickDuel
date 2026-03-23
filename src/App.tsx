@@ -2,8 +2,8 @@ import { Application, extend } from "@pixi/react";
 import { Container, Graphics, Sprite, Text } from "pixi.js";
 
 import { useGameStore } from "./state";
-import { EndScreen } from "./game/components/EndScreen";
-import { IntroScreen } from "./game/components/IntroScreen";
+import { EndScreen } from "./game/components/EndScreen/EndScreen";
+import { IntroScreen } from "./game/components/IntroScreen/IntroScreen";
 import { Scene } from "./game/components/Scene";
 
 extend({ Container, Graphics, Sprite, Text });

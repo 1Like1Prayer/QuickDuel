@@ -1,4 +1,4 @@
-import { useGameStore } from "../../state";
+import { useGameStore } from "../../../state";
 import "./EndScreen.css";
 
 export function EndScreen() {

@@ -1,0 +1,123 @@
+/* ── Shared IntroScreen layout ── */
+.intro-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.intro-title {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: "dpcomic", "Arial Black", Impact, sans-serif;
+  font-size: clamp(2rem, 10vw, 7rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  max-width: 95vw;
+  color: #ffcc00;
+  text-shadow:
+    0 0 12px rgba(255, 204, 0, 0.6),
+    0 4px 0 #b8860b,
+    0 6px 8px rgba(0, 0, 0, 0.7);
+  margin: 0;
+  user-select: none;
+}
+
+.intro-content {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ── Shared button base ── */
+.intro-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.intro-btn {
+  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.8em 2.5em;
+  border: 2px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 260px;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.intro-btn-primary {
+  background: linear-gradient(180deg, #cc3311 0%, #991100 100%);
+  border-color: #ff4422;
+  color: #ffffff;
+  box-shadow:
+    0 0 16px rgba(204, 51, 17, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.intro-btn-primary:hover {
+  background: linear-gradient(180deg, #dd4422 0%, #aa2200 100%);
+  box-shadow:
+    0 0 28px rgba(204, 51, 17, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: scale(1.04);
+}
+
+.intro-btn-primary:active {
+  transform: scale(0.97);
+  box-shadow: 0 0 8px rgba(204, 51, 17, 0.3);
+}
+
+.intro-btn-secondary {
+  background: linear-gradient(180deg, #333333 0%, #1a1a1a 100%);
+  border-color: #555555;
+  color: #888888;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ── Settings / Back buttons ── */
+.intro-btn-settings,
+.intro-btn-back {
+  background: linear-gradient(180deg, #444444 0%, #222222 100%);
+  border-color: #666666;
+  color: #cccccc;
+  box-shadow:
+    0 0 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.intro-btn-settings:hover,
+.intro-btn-back:hover {
+  background: linear-gradient(180deg, #555555 0%, #333333 100%);
+  box-shadow: 0 0 20px rgba(100, 100, 100, 0.4);
+  transform: scale(1.04);
+  color: #ffffff;
+}
+
+.intro-btn-settings:active,
+.intro-btn-back:active {
+  transform: scale(0.97);
+}
+
+.intro-btn-back {
+  margin-top: 1.5rem;
+}
