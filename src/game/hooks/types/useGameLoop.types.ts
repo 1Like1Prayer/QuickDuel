@@ -1,4 +1,3 @@
-import type { Application as PixiApp } from "pixi.js";
 import type { Container, Sprite, Texture } from "pixi.js";
 
 import type { CharAnims, LaserFrames } from "../../types";
@@ -20,7 +19,6 @@ export interface SceneRefs {
 }
 
 export interface GameLoopParams {
-  app: PixiApp;
   refs: SceneRefs;
   bgTexture: Texture;
   laserFrames: LaserFrames | null;

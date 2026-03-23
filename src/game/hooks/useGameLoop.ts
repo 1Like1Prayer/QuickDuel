@@ -27,7 +27,6 @@ import { cpuTakeTurn, createCpuState } from "../services/cpuService";
 import type { GameLoopParams } from "./types/useGameLoop.types";
 
 export function useGameLoop({
-  app,
   refs,
   bgTexture,
   laserFrames,
@@ -53,12 +52,9 @@ export function useGameLoop({
   // Phase state machine
   const phase = useRef<Phase>("intro");
 
-  // Place characters at the screen edges
-  const playerFightX = layout.positions.charStartX;
-  const opponentFightX = layout.positions.charEndX;
-
-  const playerX = useRef(playerFightX);
-  const opponentX = useRef(opponentFightX);
+  // Character X positions — updated each tick from layout
+  const playerX = useRef(layout.positions.charStartX);
+  const opponentX = useRef(layout.positions.charEndX);
 
   const playerFrame = useRef(0);
   const opponentFrame = useRef(0);
@@ -358,13 +354,12 @@ export function useGameLoop({
 
     // Scale background to cover the viewport
     if (bgTexture !== Texture.EMPTY) {
-      const s = Math.max(
-        app.screen.width / bgTexture.width,
-        app.screen.height / bgTexture.height,
-      );
+      const sw = layout.base.width;
+      const sh = layout.base.height;
+      const s = Math.max(sw / bgTexture.width, sh / bgTexture.height);
       bg.current.scale.set(s);
-      bg.current.x = (app.screen.width - bgTexture.width * s) / 2;
-      bg.current.y = (app.screen.height - bgTexture.height * s) / 2;
+      bg.current.x = (sw - bgTexture.width * s) / 2;
+      bg.current.y = (sh - bgTexture.height * s) / 2;
     }
 
     const dt = ticker.deltaTime / 60;
@@ -594,16 +589,28 @@ export function useGameLoop({
       cpuTurnTakenThisLap.current = false;
     }
 
-    // ── Apply positions & orientation ──
+    // ── Sync positions from layout (reactive to resize) ──
+
+    playerX.current = layout.positions.charStartX;
+    opponentX.current = layout.positions.charEndX;
 
     player.current.x = playerX.current;
-    opponent.current.x = opponentX.current;
-
+    player.current.y = layout.positions.groundY;
+    player.current.scale.set(layout.characters.charScale);
     player.current.scale.x = layout.characters.charScale;
     player.current.anchor.x = 0;
 
+    opponent.current.x = opponentX.current;
+    opponent.current.y = layout.positions.groundY;
+    opponent.current.scale.set(layout.characters.charScale);
     opponent.current.scale.x = -layout.characters.charScale;
     opponent.current.anchor.x = 1;
+
+    // Update ring container position
+    if (refs.ringContainer.current) {
+      refs.ringContainer.current.x = layout.positions.meetX;
+      refs.ringContainer.current.y = layout.positions.meetY;
+    }
 
     // ── Laser beam (visible only during attack-loop after intro) ──
 
