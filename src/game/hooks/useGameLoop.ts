@@ -153,13 +153,34 @@ export function useGameLoop({
   const blueLaserElapsed = useRef(0);
   const blueLaserStarted = useRef(false);
 
-  // Track last consumed dial hit result to avoid re-processing
-  const lastDialResult = useRef<boolean | null>(null);
-
   // CPU state
   const cpuState = useRef(createCpuState());
   const lastRegenCount = useRef(0);
   const cpuTurnTakenThisLap = useRef(false);
+
+  /** Reset all transient state when transitioning out of win/lose. */
+  const resetTransientState = () => {
+    showWinText.current = false;
+    winTextAlpha.current = 0;
+    countdownText.current = null;
+    ringAlpha.current = 0;
+    sparkParticles.current = [];
+    cpuState.current = createCpuState();
+    lastRegenCount.current = 0;
+    cpuTurnTakenThisLap.current = false;
+    attackIntroPlayed.current = false;
+    explosionParticles.current = [];
+    // Fully reset dial game state
+    dialGame.start();
+    dialGame.stop();
+    // Hide ring container on full reset
+    if (refs.ringContainer.current) {
+      refs.ringContainer.current.visible = false;
+      refs.ringContainer.current.alpha = 0;
+    }
+    phase.current = "intro";
+    resetPhaseFrames();
+  };
 
   /** Run the CPU's virtual turn and return the points scored (0 if miss). */
   const doCpuTurn = (): number => {
@@ -469,33 +490,7 @@ export function useGameLoop({
       case "player_win": {
         const storePhase = useGameStore.getState().phase;
         if (storePhase !== "ended") {
-          showWinText.current = false;
-          winTextAlpha.current = 0;
-          countdownText.current = null;
-          ringAlpha.current = 0;
-          sparkParticles.current = [];
-          lastDialResult.current = null;
-          cpuState.current = createCpuState();
-          lastRegenCount.current = 0;
-          cpuTurnTakenThisLap.current = false;
-          attackIntroPlayed.current = false;
-          explosionParticles.current = [];
-          // Fully reset dial game state
-          dialGame.start();
-          dialGame.stop();
-          // Hide ring container on full reset
-          if (refs.ringContainer.current) {
-            refs.ringContainer.current.visible = false;
-            refs.ringContainer.current.alpha = 0;
-          }
-
-          if (storePhase === "playing") {
-            phase.current = "intro";
-            resetPhaseFrames();
-          } else {
-            phase.current = "intro";
-            resetPhaseFrames();
-          }
+          resetTransientState();
           break;
         }
 
@@ -540,33 +535,7 @@ export function useGameLoop({
         case "player_lose": {
           const storePhase = useGameStore.getState().phase;
           if (storePhase !== "ended") {
-            showWinText.current = false;
-            winTextAlpha.current = 0;
-            countdownText.current = null;
-            ringAlpha.current = 0;
-            sparkParticles.current = [];
-            lastDialResult.current = null;
-            cpuState.current = createCpuState();
-            lastRegenCount.current = 0;
-            cpuTurnTakenThisLap.current = false;
-            attackIntroPlayed.current = false;
-            explosionParticles.current = [];
-            // Fully reset dial game state
-            dialGame.start();
-            dialGame.stop();
-            // Hide ring container on full reset
-            if (refs.ringContainer.current) {
-              refs.ringContainer.current.visible = false;
-              refs.ringContainer.current.alpha = 0;
-            }
-  
-            if (storePhase === "playing") {
-              phase.current = "intro";
-              resetPhaseFrames();
-            } else {
-              phase.current = "intro";
-              resetPhaseFrames();
-            }
+            resetTransientState();
             break;
           }
   
@@ -989,5 +958,5 @@ export function useGameLoop({
     }
   });
 
-  return { showWinText, winTextAlpha, winnerText, countdownText, ringAlpha };
+  return { showWinText, winTextAlpha, winnerText, countdownText };
 }

@@ -22,24 +22,3 @@ export function sliceFrames(sheet: Texture, count: number): Texture[] {
   return frames;
 }
 
-/** Slice a grid spritesheet (left→right, top→bottom) into frame textures. */
-export function sliceGridFrames(
-  sheet: Texture,
-  frameW: number,
-  frameH: number,
-  cols: number,
-  totalFrames: number,
-): Texture[] {
-  const frames: Texture[] = [];
-  for (let i = 0; i < totalFrames; i++) {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    frames.push(
-      new Texture({
-        source: sheet.source,
-        frame: new Rectangle(col * frameW, row * frameH, frameW, frameH),
-      }),
-    );
-  }
-  return frames;
-}

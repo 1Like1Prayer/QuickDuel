@@ -111,8 +111,6 @@ export function useBlueLaserFrames() {
   return laserFrames;
 }
 
-
-
 /** Load and return both character animation sets. */
 export function useCharacterAnims() {
   const [playerAnims, setPlayerAnims] = useState<CharAnims | null>(null);

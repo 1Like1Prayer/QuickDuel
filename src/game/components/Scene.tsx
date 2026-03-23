@@ -75,8 +75,6 @@ export function Scene() {
   // Miss line layer (red radial line from inner to outer ring)
   const missLineGfxRef = useRef<Graphics>(null);
 
-
-
   // Load assets
   const bgTexture = useBackgroundTexture();
   const bricksTexture = useBricksTexture();
