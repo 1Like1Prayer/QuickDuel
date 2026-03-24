@@ -14,6 +14,12 @@
   font-display: swap;
 }
 
+/* ── Reset & viewport ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -22,6 +28,10 @@ html, body {
   height: 100dvh;
   overflow: hidden;
   background-color: #000000;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #app {
@@ -30,26 +40,89 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+/* ── Shared keyframes ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
 /* ── Mute button ── */
 .mute-btn {
   position: fixed;
-  top: clamp(6px, 1.5vw, 16px);
-  right: clamp(6px, 1.5vw, 16px);
+  top: max(clamp(8px, 2vw, 16px), env(safe-area-inset-top));
+  right: max(clamp(8px, 2vw, 16px), env(safe-area-inset-right));
   z-index: 20;
-  width: clamp(28px, 5vw, 48px);
-  height: clamp(28px, 5vw, 48px);
-  padding: clamp(4px, 0.8vw, 8px);
-  border: none;
-  border-radius: 6px;
-  background: transparent;
+  width: clamp(36px, 6vw, 52px);
+  height: clamp(36px, 6vw, 52px);
+  padding: clamp(6px, 1vw, 10px);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   outline: none;
-  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s ease;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.mute-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.08);
+}
+
+.mute-btn:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .mute-btn img {
@@ -57,5 +130,18 @@ html, body {
   height: 100%;
   object-fit: contain;
   filter: brightness(0) invert(1);
-  opacity: 0.8;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.mute-btn:hover img {
+  opacity: 1;
+}
+
+.mute-btn.is-muted {
+  border-color: rgba(255, 68, 68, 0.4);
+}
+
+.mute-btn.is-muted img {
+  opacity: 0.5;
 }

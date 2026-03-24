@@ -27,6 +27,7 @@ export function Settings({
             max={100}
             value={Math.round(bgmVolume * 100)}
             onChange={(e) => onBgmVolumeChange(Number(e.target.value) / 100)}
+            aria-label="Music volume"
           />
           <span className="settings-value">{Math.round(bgmVolume * 100)}%</span>
         </div>
@@ -34,12 +35,18 @@ export function Settings({
 
       <div className="settings-row">
         <label className="settings-label">Sound Effects</label>
-        <button
-          className={`settings-toggle ${sfxEnabled ? "settings-toggle-on" : "settings-toggle-off"}`}
-          onClick={onSfxToggle}
-        >
-          {sfxEnabled ? "ON" : "OFF"}
-        </button>
+        <div className="settings-toggle-row">
+          <button
+            className={`settings-toggle-track ${sfxEnabled ? "settings-toggle-track-on" : "settings-toggle-track-off"}`}
+            onClick={onSfxToggle}
+            role="switch"
+            aria-checked={sfxEnabled}
+            aria-label="Toggle sound effects"
+          >
+            <span className="settings-toggle-thumb" />
+          </button>
+          <span className="settings-toggle-label">{sfxEnabled ? "ON" : "OFF"}</span>
+        </div>
       </div>
 
       <button

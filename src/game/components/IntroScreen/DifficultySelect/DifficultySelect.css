@@ -1,7 +1,5 @@
 /* ── Difficulty buttons ── */
 .intro-btn-difficulty {
-  width: 320px;
-  min-width: 320px;
   color: #ffffff;
   box-shadow:
     0 0 12px rgba(0, 0, 0, 0.3),
@@ -9,11 +7,12 @@
 }
 
 .intro-btn-difficulty:hover {
-  transform: scale(1.04);
+  transform: scale(1.03);
 }
 
 .intro-btn-difficulty:active {
   transform: scale(0.97);
+  transition-duration: 0.08s;
 }
 
 .intro-btn-beginner {

@@ -1,1 +1,21 @@
-/* MainMenu uses shared .intro-buttons and .intro-btn styles from parent */
+/* ── Main menu specific styles ── */
+
+/* "Coming soon" badge for disabled online button */
+.intro-btn-secondary {
+  position: relative;
+}
+
+.intro-btn-secondary .coming-soon-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-family: "ARCADECLASSIC", sans-serif;
+  font-size: 0.55em;
+  padding: 0.15em 0.5em;
+  background: rgba(255, 204, 0, 0.9);
+  color: #000;
+  border-radius: 4px;
+  transform: rotate(3deg);
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+}

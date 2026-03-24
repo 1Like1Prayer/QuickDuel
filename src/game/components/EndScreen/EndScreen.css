@@ -1,3 +1,4 @@
+/* ── End screen overlay ── */
 .end-screen {
   position: fixed;
   inset: 0;
@@ -12,76 +13,149 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(0.7rem, 2.5vw, 1rem);
   margin-top: 15vh;
-  animation: end-fade-in 0.8s ease-out both;
+  animation: end-fade-in 0.7s ease-out both;
   animation-delay: 1.8s;
   pointer-events: none;
+  width: 90%;
+  max-width: 400px;
 }
 
 @keyframes end-fade-in {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(24px) scale(0.95);
     pointer-events: none;
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     pointer-events: auto;
   }
 }
 
+/* ── End screen buttons ── */
 .end-btn {
+  position: relative;
+  overflow: hidden;
   font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
-  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-size: clamp(1rem, 3.5vw, 1.5rem);
   font-weight: 700;
   letter-spacing: 0.05em;
-  padding: 0.8em 2.5em;
+  padding: clamp(0.7em, 2vw, 0.9em) clamp(1.5em, 5vw, 2.5em);
   border: 2px solid;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 260px;
+  transition: all 0.2s ease, transform 0.15s ease;
+  width: 100%;
+  max-width: 320px;
+  min-height: 48px;
   text-transform: uppercase;
   user-select: none;
   color: #ffffff;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
 }
 
-.end-btn-play-again {
+/* Ripple effect */
+.end-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.end-btn:active::after {
+  animation: ripple 0.5s ease-out;
+}
+
+.end-btn:focus-visible {
+  outline: 2px solid #ffcc00;
+  outline-offset: 3px;
+}
+
+/* ── Play Again — Win variant (green, celebratory) ── */
+.end-btn-win {
   background: linear-gradient(180deg, #228833 0%, #115522 100%);
   border-color: #33aa44;
   box-shadow:
-    0 0 16px rgba(34, 136, 51, 0.4),
+    0 0 20px rgba(34, 136, 51, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: fadeInUp 0.5s ease-out 1.8s both;
 }
 
-.end-btn-play-again:hover {
+.end-btn-win:hover {
   background: linear-gradient(180deg, #33aa44 0%, #227733 100%);
-  box-shadow: 0 0 28px rgba(34, 136, 51, 0.7);
-  transform: scale(1.04);
+  box-shadow: 0 0 32px rgba(34, 136, 51, 0.7);
+  transform: scale(1.03);
 }
 
-.end-btn-play-again:active {
+.end-btn-win:active {
   transform: scale(0.97);
+  transition-duration: 0.08s;
 }
 
+/* ── Play Again — Lose variant (red, retry feel) ── */
+.end-btn-lose {
+  background: linear-gradient(180deg, #cc3311 0%, #881100 100%);
+  border-color: #ee4422;
+  box-shadow:
+    0 0 20px rgba(204, 51, 17, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: fadeInUp 0.5s ease-out 1.8s both;
+}
+
+.end-btn-lose:hover {
+  background: linear-gradient(180deg, #dd4422 0%, #992211 100%);
+  box-shadow: 0 0 32px rgba(204, 51, 17, 0.7);
+  transform: scale(1.03);
+}
+
+.end-btn-lose:active {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+/* ── Main Menu button ── */
 .end-btn-main-menu {
   background: linear-gradient(180deg, #333333 0%, #1a1a1a 100%);
-  border-color: #666666;
-  color: #cccccc;
+  border-color: #555555;
+  color: #bbbbbb;
   box-shadow:
     0 0 12px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: fadeInUp 0.5s ease-out 2s both;
 }
 
 .end-btn-main-menu:hover {
   background: linear-gradient(180deg, #444444 0%, #222222 100%);
   box-shadow: 0 0 20px rgba(100, 100, 100, 0.4);
-  transform: scale(1.04);
+  transform: scale(1.03);
   color: #ffffff;
 }
 
 .end-btn-main-menu:active {
   transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+/* ── Landscape mobile ── */
+@media (max-height: 440px) {
+  .end-content {
+    margin-top: 8vh;
+    gap: 0.5rem;
+  }
+  .end-btn {
+    padding: 0.5em 1.5em;
+    min-height: 40px;
+  }
 }

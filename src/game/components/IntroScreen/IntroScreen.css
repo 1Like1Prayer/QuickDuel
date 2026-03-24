@@ -6,16 +6,19 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: fadeIn 0.4s ease-out;
 }
 
 .intro-title {
   position: absolute;
-  top: 22%;
+  top: 18%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-family: "dpcomic", "Arial Black", Impact, sans-serif;
-  font-size: clamp(2rem, 10vw, 7rem);
+  font-size: clamp(2.2rem, 10vw, 7rem);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -23,22 +26,43 @@
   max-width: 95vw;
   color: #ffcc00;
   text-shadow:
-    0 0 12px rgba(255, 204, 0, 0.6),
+    0 0 20px rgba(255, 204, 0, 0.5),
+    0 0 40px rgba(255, 204, 0, 0.2),
     0 4px 0 #b8860b,
     0 6px 8px rgba(0, 0, 0, 0.7);
   margin: 0;
   user-select: none;
 }
 
+/* Subtle shimmer on title */
+.intro-title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .intro-content {
   position: absolute;
-  top: 55%;
+  top: 54%;
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  width: 90%;
+  max-width: 400px;
 }
 
 /* ── Shared button base ── */
@@ -46,22 +70,57 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(0.7rem, 2.5vw, 1.1rem);
+  width: 100%;
 }
 
 .intro-btn {
+  position: relative;
+  overflow: hidden;
   font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
-  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-size: clamp(1rem, 3.5vw, 1.5rem);
   font-weight: 700;
   letter-spacing: 0.05em;
-  padding: 0.8em 2.5em;
+  padding: clamp(0.7em, 2vw, 0.9em) clamp(1.5em, 5vw, 2.5em);
   border: 2px solid;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 260px;
+  transition: all 0.2s ease, transform 0.15s ease;
+  width: 100%;
+  max-width: 320px;
+  /* Min touch target: 48px (Google accessibility guidelines) */
+  min-height: 48px;
   text-transform: uppercase;
   user-select: none;
+  /* Remove default mobile button styles */
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+/* Ripple effect on tap */
+.intro-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.intro-btn:active::after {
+  animation: ripple 0.5s ease-out;
+}
+
+/* Focus-visible for keyboard nav */
+.intro-btn:focus-visible {
+  outline: 2px solid #ffcc00;
+  outline-offset: 3px;
 }
 
 .intro-btn-primary {
@@ -78,20 +137,25 @@
   box-shadow:
     0 0 28px rgba(204, 51, 17, 0.7),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transform: scale(1.04);
+  transform: scale(1.03);
 }
 
 .intro-btn-primary:active {
   transform: scale(0.97);
   box-shadow: 0 0 8px rgba(204, 51, 17, 0.3);
+  transition-duration: 0.08s;
 }
 
 .intro-btn-secondary {
   background: linear-gradient(180deg, #333333 0%, #1a1a1a 100%);
-  border-color: #555555;
-  color: #888888;
+  border-color: #444444;
+  color: #666666;
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.45;
+}
+
+.intro-btn-secondary::after {
+  display: none;
 }
 
 /* ── Settings / Back buttons ── */
@@ -109,15 +173,56 @@
 .intro-btn-back:hover {
   background: linear-gradient(180deg, #555555 0%, #333333 100%);
   box-shadow: 0 0 20px rgba(100, 100, 100, 0.4);
-  transform: scale(1.04);
+  transform: scale(1.03);
   color: #ffffff;
 }
 
 .intro-btn-settings:active,
 .intro-btn-back:active {
   transform: scale(0.97);
+  transition-duration: 0.08s;
 }
 
 .intro-btn-back {
-  margin-top: 1.5rem;
+  margin-top: clamp(0.8rem, 3vw, 1.5rem);
+  max-width: 200px;
+  font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+}
+
+/* ── Staggered button entry animations ── */
+.intro-buttons .intro-btn:nth-child(1) { animation: fadeInUp 0.35s ease-out 0.05s both; }
+.intro-buttons .intro-btn:nth-child(2) { animation: fadeInUp 0.35s ease-out 0.12s both; }
+.intro-buttons .intro-btn:nth-child(3) { animation: fadeInUp 0.35s ease-out 0.19s both; }
+.intro-buttons .intro-btn:nth-child(4) { animation: fadeInUp 0.35s ease-out 0.26s both; }
+.intro-buttons .intro-btn:nth-child(5) { animation: fadeInUp 0.35s ease-out 0.33s both; }
+
+/* ── Mobile-specific adjustments ── */
+@media (max-width: 480px) {
+  .intro-title {
+    top: 14%;
+  }
+  .intro-content {
+    top: 52%;
+  }
+}
+
+/* Landscape mobile */
+@media (max-height: 440px) {
+  .intro-title {
+    top: 8%;
+    font-size: clamp(1.4rem, 6vw, 3rem);
+  }
+  .intro-content {
+    top: 58%;
+  }
+  .intro-buttons {
+    gap: 0.5rem;
+  }
+  .intro-btn {
+    padding: 0.5em 1.5em;
+    min-height: 40px;
+  }
+  .intro-btn-back {
+    margin-top: 0.5rem;
+  }
 }
