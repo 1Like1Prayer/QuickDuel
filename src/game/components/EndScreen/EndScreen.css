@@ -35,58 +35,11 @@
   }
 }
 
-/* ── End screen buttons ── */
-.end-btn {
-  position: relative;
-  overflow: hidden;
-  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
-  font-size: clamp(1rem, 3.5vw, 1.5rem);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: clamp(0.7em, 2vw, 0.9em) clamp(1.5em, 5vw, 2.5em);
-  border: 2px solid;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease, transform 0.15s ease;
-  width: 100%;
-  max-width: 320px;
-  min-height: 48px;
-  text-transform: uppercase;
-  user-select: none;
-  color: #ffffff;
-  -webkit-appearance: none;
-  appearance: none;
-  outline: none;
-}
-
-/* Ripple effect */
-.end-btn::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%) scale(0);
-  pointer-events: none;
-  opacity: 0;
-}
-
-.end-btn:active::after {
-  animation: ripple 0.5s ease-out;
-}
-
-.end-btn:focus-visible {
-  outline: 2px solid #ffcc00;
-  outline-offset: 3px;
-}
-
-/* ── Play Again — Win variant (green, celebratory) ── */
+/* ── Play Again — Win variant (green) ── */
 .end-btn-win {
   background: linear-gradient(180deg, #228833 0%, #115522 100%);
   border-color: #33aa44;
+  color: #ffffff;
   box-shadow:
     0 0 20px rgba(34, 136, 51, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -104,10 +57,11 @@
   transition-duration: 0.08s;
 }
 
-/* ── Play Again — Lose variant (red, retry feel) ── */
+/* ── Play Again — Lose variant (red) ── */
 .end-btn-lose {
   background: linear-gradient(180deg, #cc3311 0%, #881100 100%);
   border-color: #ee4422;
+  color: #ffffff;
   box-shadow:
     0 0 20px rgba(204, 51, 17, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -153,9 +107,5 @@
   .end-content {
     margin-top: 8vh;
     gap: 0.5rem;
-  }
-  .end-btn {
-    padding: 0.5em 1.5em;
-    min-height: 40px;
   }
 }

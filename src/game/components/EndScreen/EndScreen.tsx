@@ -12,13 +12,13 @@ export function EndScreen() {
     <div className="end-screen" onPointerDown={(e) => e.stopPropagation()}>
       <div className="end-content">
         <button
-          className={`end-btn ${playerWon ? "end-btn-win" : "end-btn-lose"}`}
+          className={`intro-btn ${playerWon ? "end-btn-win" : "end-btn-lose"}`}
           onClick={() => playAgain()}
         >
           Play Again
         </button>
         <button
-          className="end-btn end-btn-main-menu"
+          className="intro-btn end-btn-main-menu"
           onClick={() => reset()}
         >
           Main Menu

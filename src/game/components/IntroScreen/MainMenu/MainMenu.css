@@ -1,10 +1,6 @@
 /* ── Main menu specific styles ── */
 
 /* "Coming soon" badge for disabled online button */
-.intro-btn-secondary {
-  position: relative;
-}
-
 .intro-btn-secondary .coming-soon-badge {
   position: absolute;
   top: -6px;

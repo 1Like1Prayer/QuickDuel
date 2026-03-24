@@ -35,8 +35,10 @@
   transition: border-color 0.3s ease;
 }
 
-.tutorial-image:hover {
-  border-color: rgba(255, 204, 0, 0.9);
+@media (hover: hover) {
+  .tutorial-image:hover {
+    border-color: rgba(255, 204, 0, 0.9);
+  }
 }
 
 .tutorial-start-btn {
