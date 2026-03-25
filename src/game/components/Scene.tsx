@@ -1,6 +1,7 @@
 ﻿import { useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { copies } from "../../copies";
 
 import {
   BLOCK_ALPHA,
@@ -531,7 +532,7 @@ export function Scene() {
       {/* Countdown*/}
       <pixiText
         ref={countdownTextRef}
-        text="3"
+        text={copies.game.countdown.three}
         anchor={0.5}
         x={screenSize.w / 2}
         y={screenSize.h / 2 - layout.fightText.fightFontSize * 0.8}
@@ -555,7 +556,7 @@ export function Scene() {
       {/* "You Win" text fades in after opponent death */}
       <pixiText
         ref={winTextRef}
-        text="You Win"
+        text={copies.game.result.youWin}
         anchor={0.5}
         x={screenSize.w / 2}
         y={screenSize.h * 0.22}

@@ -1,6 +1,7 @@
 ﻿import { useTick } from "@pixi/react";
 import { Graphics, Sprite, Texture } from "pixi.js";
 import { useEffect, useRef } from "react";
+import { copies } from "../../copies";
 
 import {
   ANIM_SPEED,
@@ -42,7 +43,7 @@ export function useGameLoop({
   // Win/Lose text state (read by Scene for rendering)
   const showWinText = useRef(false);
   const winTextAlpha = useRef(0);
-  const winnerText = useRef("You Win");
+  const winnerText = useRef(copies.game.result.youWin);
 
   // Countdown state (read by Scene for rendering)
   const countdownText = useRef<string | null>(null);  // "3", "2", "1", "FIGHT!" or null
@@ -209,7 +210,7 @@ export function useGameLoop({
     if (storePhase === "ended" && phase.current !== "player_lose" && phase.current !== "player_win") {
       const playerWon = useGameStore.getState().score > 0;
       if (playerWon) {
-        winnerText.current = "You Win";
+        winnerText.current = copies.game.result.youWin;
         phase.current = "player_win";
         resetPhaseFrames();
         dialGame.stop();
@@ -226,7 +227,7 @@ export function useGameLoop({
           fireLaunchSfx.current.play().catch(() => {});
         }
       } else {
-        winnerText.current = "You Lose";
+        winnerText.current = copies.game.result.youLose;
         phase.current = "player_lose";
         resetPhaseFrames();
         dialGame.stop();
@@ -410,13 +411,13 @@ export function useGameLoop({
           }
           ringAlpha.current = 0;
           phase.current = "countdown";
-          countdownText.current = "3";
+          countdownText.current = copies.game.countdown.three;
           resetPhaseFrames();
           const step = COUNTDOWN_STEP_MS;
-          setTimeout(() => { countdownText.current = "2"; }, step);
-          setTimeout(() => { countdownText.current = "1"; }, step * 2);
+          setTimeout(() => { countdownText.current = copies.game.countdown.two; }, step);
+          setTimeout(() => { countdownText.current = copies.game.countdown.one; }, step * 2);
           setTimeout(() => {
-            countdownText.current = "FIGHT!";
+            countdownText.current = copies.game.countdown.fight;
           }, step * 3);
           setTimeout(() => {
             countdownText.current = null;

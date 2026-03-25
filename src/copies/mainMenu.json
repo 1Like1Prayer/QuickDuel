@@ -1,0 +1,10 @@
+{
+  "playOffline": "Play - Offline",
+  "playOnline": "Play - Online",
+  "playOnlineAriaLabel": "Play Online",
+  "playOnlineOfflineAriaLabel": "Play Online (offline)",
+  "offlineBadge": "Offline",
+  "settings": "Settings",
+  "tutorial": "Tutorial",
+  "navAriaLabel": "Main menu"
+}

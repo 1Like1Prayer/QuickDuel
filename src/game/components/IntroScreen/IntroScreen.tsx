@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { useGameStore } from "../../../state";
 import type { Difficulty } from "../../../state";
+import { copies } from "../../../copies";
 import { MainMenu } from "./MainMenu/MainMenu";
 import { DifficultySelect } from "./DifficultySelect/DifficultySelect";
 import { Settings } from "./Settings/Settings";
@@ -32,7 +33,7 @@ export function IntroScreen() {
 
   return (
     <div className="intro-screen" onPointerDown={(e) => e.stopPropagation()}>
-      <h1 className="intro-title">Quick-Duel</h1>
+      <h1 className="intro-title">{copies.common.gameTitle}</h1>
 
       <div className="intro-content">
         {screen === "main" && (
