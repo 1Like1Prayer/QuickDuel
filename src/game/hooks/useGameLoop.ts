@@ -37,150 +37,144 @@ export function useGameLoop({
   dialGame,
   layout,
 }: GameLoopParams) {
-  const sparkGfx = useRef<Graphics | null>(null);
-  const explosionGfx = useRef<Graphics | null>(null);
+  const sparkGraphicsLayer = useRef<Graphics | null>(null);
+  const explosionGraphicsLayer = useRef<Graphics | null>(null);
 
-  // Win/Lose text state (read by Scene for rendering)
-  const showWinText = useRef(false);
-  const winTextAlpha = useRef(0);
-  const winnerText = useRef(copies.game.result.youWin);
+  const isResultTextVisible = useRef(false);
+  const resultTextOpacity = useRef(0);
+  const resultTextContent = useRef(copies.game.result.youWin);
 
-  // Countdown state (read by Scene for rendering)
-  const countdownText = useRef<string | null>(null);  // "3", "2", "1", "FIGHT!" or null
-  const ringAlpha = useRef(0);                        // fade-in alpha for the ring container
-  const laserImpactLerpX = useRef<number | null>(null); // lerped laser clash X position
+  const countdownLabel = useRef<string | null>(null);
+  const ringContainerOpacity = useRef(0);
+  const laserClashPointLerpedX = useRef<number | null>(null);
 
-  // Phase state machine
-  const phase = useRef<Phase>("intro");
+  const currentPhase = useRef<Phase>("intro");
 
-  // Character X positions — updated each tick from layout
-  const playerX = useRef(layout.positions.charStartX);
-  const opponentX = useRef(layout.positions.charEndX);
+  const playerPositionX = useRef(layout.positions.charStartX);
+  const opponentPositionX = useRef(layout.positions.charEndX);
 
-  const playerFrame = useRef(0);
-  const opponentFrame = useRef(0);
-  const playerElapsed = useRef(0);
-  const opponentElapsed = useRef(0);
-  const phaseAnimDone = useRef(false);
+  const playerAnimFrameIndex = useRef(0);
+  const opponentAnimFrameIndex = useRef(0);
+  const playerAnimTimer = useRef(0);
+  const opponentAnimTimer = useRef(0);
+  const isPhaseAnimationComplete = useRef(false);
 
-  // Whether the initial attack-intro animation has played (after which we loop last 2 frames)
-  const attackIntroPlayed = useRef(false);
+  const hasAttackIntroCompleted = useRef(false);
 
-  const shakeTimer = useRef(0);
-  const isShaking = useRef(false);
+  const screenShakeTimeRemaining = useRef(0);
+  const isScreenShaking = useRef(false);
 
   const sparkParticles = useRef<SparkParticle[]>([]);
   const explosionParticles = useRef<ExplosionParticle[]>([]);
 
-  // Laser hold SFX
-  const fireHoldSfx = useRef<HTMLAudioElement | null>(null);
-  if (!fireHoldSfx.current) {
-    const sfx = new Audio("/sounds/EM_FIRE_HOLD_4s.ogg");
-    sfx.loop = true;
-    sfx.volume = 0.8;
-    fireHoldSfx.current = sfx;
-  }
-  const lightHoldSfx = useRef<HTMLAudioElement | null>(null);
-  if (!lightHoldSfx.current) {
-    const sfx = new Audio("/sounds/EM_LIGHT_HOLD_5s.ogg");
-    sfx.loop = true;
-    sfx.volume = 0.8;
-    lightHoldSfx.current = sfx;
-  }
-  const laserCastSfx = useRef<HTMLAudioElement | null>(null);
-  if (!laserCastSfx.current) {
-    const sfx = new Audio("/sounds/EM_LIGHT_CAST_02_S.ogg");
-    sfx.loop = false;
-    sfx.volume = 0.8;
-    laserCastSfx.current = sfx;
-  }
-  const fireCastSfx = useRef<HTMLAudioElement | null>(null);
-  if (!fireCastSfx.current) {
-    const sfx = new Audio("/sounds/EM_FIRE_CAST_02.ogg");
-    sfx.loop = false;
-    sfx.volume = 0.8;
-    fireCastSfx.current = sfx;
-  }
-  const laserSfxPlaying = useRef(false);
+  // ── Sound effects ──
 
-  // Impact SFX
-  const fireImpactSfx = useRef<HTMLAudioElement | null>(null);
-  if (!fireImpactSfx.current) {
-    const sfx = new Audio("/sounds/EM_FIRE_IMPACT_01.ogg");
-    sfx.loop = false;
-    sfx.volume = 1.0;
-    fireImpactSfx.current = sfx;
+  const fireBeamLoopAudio = useRef<HTMLAudioElement | null>(null);
+  if (!fireBeamLoopAudio.current) {
+    const audio = new Audio("/sounds/EM_FIRE_HOLD_4s.ogg");
+    audio.loop = true;
+    audio.volume = 0.8;
+    fireBeamLoopAudio.current = audio;
   }
-  const lightImpactSfx = useRef<HTMLAudioElement | null>(null);
-  if (!lightImpactSfx.current) {
-    const sfx = new Audio("/sounds/EM_LIGHT_IMPACT_01.ogg");
-    sfx.loop = false;
-    sfx.volume = 1.0;
-    lightImpactSfx.current = sfx;
+  const lightBeamLoopAudio = useRef<HTMLAudioElement | null>(null);
+  if (!lightBeamLoopAudio.current) {
+    const audio = new Audio("/sounds/EM_LIGHT_HOLD_5s.ogg");
+    audio.loop = true;
+    audio.volume = 0.8;
+    lightBeamLoopAudio.current = audio;
   }
-  const fireLaunchSfx = useRef<HTMLAudioElement | null>(null);
-  if (!fireLaunchSfx.current) {
-    const sfx = new Audio("/sounds/EM_FIRE_LAUNCH_01.ogg");
-    sfx.loop = false;
-    sfx.volume = 1.0;
-    fireLaunchSfx.current = sfx;
+  const lightCastOneShotAudio = useRef<HTMLAudioElement | null>(null);
+  if (!lightCastOneShotAudio.current) {
+    const audio = new Audio("/sounds/EM_LIGHT_CAST_02_S.ogg");
+    audio.loop = false;
+    audio.volume = 0.8;
+    lightCastOneShotAudio.current = audio;
   }
-  const lightLaunchSfx = useRef<HTMLAudioElement | null>(null);
-  if (!lightLaunchSfx.current) {
-    const sfx = new Audio("/sounds/EM_LIGHT_LAUNCH_01.ogg");
-    sfx.loop = false;
-    sfx.volume = 1.0;
-    lightLaunchSfx.current = sfx;
+  const fireCastOneShotAudio = useRef<HTMLAudioElement | null>(null);
+  if (!fireCastOneShotAudio.current) {
+    const audio = new Audio("/sounds/EM_FIRE_CAST_02.ogg");
+    audio.loop = false;
+    audio.volume = 0.8;
+    fireCastOneShotAudio.current = audio;
   }
-  const clashSfx = useRef<HTMLAudioElement | null>(null);
-  if (!clashSfx.current) {
-    const sfx = new Audio("/sounds/dragon-studio-epic-spell-impact-478364.mp3");
-    sfx.loop = false;
-    sfx.volume = 1.0;
-    clashSfx.current = sfx;
+  const isBeamAudioPlaying = useRef(false);
+
+  const fireImpactAudio = useRef<HTMLAudioElement | null>(null);
+  if (!fireImpactAudio.current) {
+    const audio = new Audio("/sounds/EM_FIRE_IMPACT_01.ogg");
+    audio.loop = false;
+    audio.volume = 1.0;
+    fireImpactAudio.current = audio;
+  }
+  const lightImpactAudio = useRef<HTMLAudioElement | null>(null);
+  if (!lightImpactAudio.current) {
+    const audio = new Audio("/sounds/EM_LIGHT_IMPACT_01.ogg");
+    audio.loop = false;
+    audio.volume = 1.0;
+    lightImpactAudio.current = audio;
+  }
+  const fireLaunchAudio = useRef<HTMLAudioElement | null>(null);
+  if (!fireLaunchAudio.current) {
+    const audio = new Audio("/sounds/EM_FIRE_LAUNCH_01.ogg");
+    audio.loop = false;
+    audio.volume = 1.0;
+    fireLaunchAudio.current = audio;
+  }
+  const lightLaunchAudio = useRef<HTMLAudioElement | null>(null);
+  if (!lightLaunchAudio.current) {
+    const audio = new Audio("/sounds/EM_LIGHT_LAUNCH_01.ogg");
+    audio.loop = false;
+    audio.volume = 1.0;
+    lightLaunchAudio.current = audio;
+  }
+  const beamClashAudio = useRef<HTMLAudioElement | null>(null);
+  if (!beamClashAudio.current) {
+    const audio = new Audio("/sounds/dragon-studio-epic-spell-impact-478364.mp3");
+    audio.loop = false;
+    audio.volume = 1.0;
+    beamClashAudio.current = audio;
   }
 
-  // Laser animation state
-  const laserFrame = useRef(0);     // 0 = start frame, 1 = loop frame
-  const laserElapsed = useRef(0);
-  const laserStarted = useRef(false);
+  // ── Red laser animation state ──
 
-  // Blue laser animation state (opponent)
-  const blueLaserFrame = useRef(0);
-  const blueLaserElapsed = useRef(0);
-  const blueLaserStarted = useRef(false);
+  const redLaserFrameIndex = useRef(0);
+  const redLaserAnimTimer = useRef(0);
+  const redLaserInLoopPhase = useRef(false);
 
-  // CPU state
+  // ── Blue laser animation state ──
+
+  const blueLaserFrameIndex = useRef(0);
+  const blueLaserAnimTimer = useRef(0);
+  const blueLaserInLoopPhase = useRef(false);
+
+  // ── CPU state ──
+
   const cpuState = useRef(createCpuState());
-  const lastRegenCount = useRef(0);
+  const previousRegenGateCount = useRef(0);
   const cpuTurnTakenThisLap = useRef(false);
 
-  /** Reset all transient state when transitioning out of win/lose. */
-  const resetTransientState = () => {
-    showWinText.current = false;
-    winTextAlpha.current = 0;
-    countdownText.current = null;
-    ringAlpha.current = 0;
+  const resetAllTransientState = () => {
+    isResultTextVisible.current = false;
+    resultTextOpacity.current = 0;
+    countdownLabel.current = null;
+    ringContainerOpacity.current = 0;
     sparkParticles.current = [];
     cpuState.current = createCpuState();
-    lastRegenCount.current = 0;
+    previousRegenGateCount.current = 0;
     cpuTurnTakenThisLap.current = false;
-    attackIntroPlayed.current = false;
+    hasAttackIntroCompleted.current = false;
     explosionParticles.current = [];
-    // Fully reset dial game state
     dialGame.start();
     dialGame.stop();
-    // Hide ring container on full reset
     if (refs.ringContainer.current) {
       refs.ringContainer.current.visible = false;
       refs.ringContainer.current.alpha = 0;
     }
-    phase.current = "intro";
-    resetPhaseFrames();
+    currentPhase.current = "intro";
+    resetAnimationFrameCounters();
   };
 
-  /** Run the CPU's virtual turn and return the points scored (0 if miss). */
-  const doCpuTurn = (): number => {
+  const executeCpuTurn = (): number => {
     if (useGameStore.getState().phase === "ended") return 0;
     cpuTurnTakenThisLap.current = true;
     const difficulty = useGameStore.getState().difficulty;
@@ -189,132 +183,116 @@ export function useGameLoop({
     return result.hit ? result.points : 0;
   };
 
-  /** Resolve a round and trigger the appropriate attack/clash animation based on delta. */
-  const doResolveRound = (playerHit: number, cpuHit: number) => {
-    const delta = playerHit - cpuHit;
-    useGameStore.getState().resolveRound(playerHit, cpuHit);
+  const resolveRoundOutcome = (playerPoints: number, cpuPoints: number) => {
+    const pointDelta = playerPoints - cpuPoints;
+    useGameStore.getState().resolveRound(playerPoints, cpuPoints);
 
-    // Play impact SFX based on who got hit
-    const { sfxEnabled: sfxOn, muted } = useGameStore.getState();
-    const canSfx = sfxOn && !muted;
-    if (canSfx && delta > 0 && fireImpactSfx.current) {
-      fireImpactSfx.current.currentTime = 0;
-      fireImpactSfx.current.play().catch(() => {});
-    } else if (canSfx && delta < 0 && lightImpactSfx.current) {
-      lightImpactSfx.current.currentTime = 0;
-      lightImpactSfx.current.play().catch(() => {});
+    const { sfxEnabled, muted } = useGameStore.getState();
+    const canPlaySfx = sfxEnabled && !muted;
+    if (canPlaySfx && pointDelta > 0 && fireImpactAudio.current) {
+      fireImpactAudio.current.currentTime = 0;
+      fireImpactAudio.current.play().catch(() => {});
+    } else if (canPlaySfx && pointDelta < 0 && lightImpactAudio.current) {
+      lightImpactAudio.current.currentTime = 0;
+      lightImpactAudio.current.play().catch(() => {});
     }
 
-    // Check if round resolution triggered game-over
     const storePhase = useGameStore.getState().phase;
-    if (storePhase === "ended" && phase.current !== "player_lose" && phase.current !== "player_win") {
+    if (storePhase === "ended" && currentPhase.current !== "player_lose" && currentPhase.current !== "player_win") {
       const playerWon = useGameStore.getState().score > 0;
       if (playerWon) {
-        winnerText.current = copies.game.result.youWin;
-        phase.current = "player_win";
-        resetPhaseFrames();
+        resultTextContent.current = copies.game.result.youWin;
+        currentPhase.current = "player_win";
+        resetAnimationFrameCounters();
         dialGame.stop();
-        startShake();
-        // Spawn explosion particles on the opponent
+        triggerScreenShake();
         spawnExplosion(
           explosionParticles.current,
-          opponentX.current + layout.characters.charSize * 0.5,
+          opponentPositionX.current + layout.characters.charSize * 0.5,
           layout.positions.groundY + layout.characters.charSize * 0.4,
         );
-        // Play fire launch SFX on player win
-        if (canSfx && fireLaunchSfx.current) {
-          fireLaunchSfx.current.currentTime = 0;
-          fireLaunchSfx.current.play().catch(() => {});
+        if (canPlaySfx && fireLaunchAudio.current) {
+          fireLaunchAudio.current.currentTime = 0;
+          fireLaunchAudio.current.play().catch(() => {});
         }
       } else {
-        winnerText.current = copies.game.result.youLose;
-        phase.current = "player_lose";
-        resetPhaseFrames();
+        resultTextContent.current = copies.game.result.youLose;
+        currentPhase.current = "player_lose";
+        resetAnimationFrameCounters();
         dialGame.stop();
-        startShake();
-        // Spawn explosion particles on the player
+        triggerScreenShake();
         spawnExplosion(
           explosionParticles.current,
-          playerX.current + layout.characters.charSize * 0.5,
+          playerPositionX.current + layout.characters.charSize * 0.5,
           layout.positions.groundY + layout.characters.charSize * 0.4,
         );
-        // Play light launch SFX on player lose
-        if (canSfx && lightLaunchSfx.current) {
-          lightLaunchSfx.current.currentTime = 0;
-          lightLaunchSfx.current.play().catch(() => {});
+        if (canPlaySfx && lightLaunchAudio.current) {
+          lightLaunchAudio.current.currentTime = 0;
+          lightLaunchAudio.current.play().catch(() => {});
         }
       }
       return;
     }
 
-    // Choose animation based on delta
-    if (delta > 0) {
-      // Player hit — shake on opponent, stay in idle
-      startShake();
-    } else if (delta < 0) {
-      // Opponent hit — shake on player, stay in idle
-      startShake();
+    if (pointDelta > 0) {
+      triggerScreenShake();
+    } else if (pointDelta < 0) {
+      triggerScreenShake();
     } else {
-      // delta === 0: clash — shake + sparks at laser impact point
-      startShake();
-      const clashX = (laserImpactLerpX.current ?? layout.positions.meetX) - layout.characters.charSize * 0.3;
-      const clashY =
-        layout.positions.groundY + layout.characters.charSize * 0.66;
+      triggerScreenShake();
+      const clashX = (laserClashPointLerpedX.current ?? layout.positions.meetX) - layout.characters.charSize * 0.3;
+      const clashY = layout.positions.groundY + layout.characters.charSize * 0.66;
       spawnSparks(sparkParticles.current, clashX, clashY);
-      if (clashSfx.current) {
-        clashSfx.current.currentTime = 0;
-        if (canSfx) clashSfx.current.play().catch(() => {});
+      if (beamClashAudio.current) {
+        beamClashAudio.current.currentTime = 0;
+        if (canPlaySfx) beamClashAudio.current.play().catch(() => {});
       }
     }
   };
 
-  // â”€â”€ Attach Graphics layers to the container â”€â”€
+  // ── Attach particle graphics layers to container ──
 
   useEffect(() => {
     const container = refs.container.current;
     if (!container) return;
 
-    const sGfx = new Graphics();
-    const eGfx = new Graphics();
-    sparkGfx.current = sGfx;
-    explosionGfx.current = eGfx;
-    container.addChild(sGfx);
-    container.addChild(eGfx);
+    const sparkLayer = new Graphics();
+    const explosionLayer = new Graphics();
+    sparkGraphicsLayer.current = sparkLayer;
+    explosionGraphicsLayer.current = explosionLayer;
+    container.addChild(sparkLayer);
+    container.addChild(explosionLayer);
 
     return () => {
-      container.removeChild(sGfx);
-      container.removeChild(eGfx);
-      sGfx.destroy();
-      eGfx.destroy();
+      container.removeChild(sparkLayer);
+      container.removeChild(explosionLayer);
+      sparkLayer.destroy();
+      explosionLayer.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // â”€â”€ Input listener for dial game (Space / click / tap) â”€â”€
+  // ── Input listener for dial game (Space / click / tap) ──
 
   useEffect(() => {
-    const combatPhases: Phase[] = [
-      "idle",
-    ];
+    const inputAllowedPhases: Phase[] = ["idle"];
 
-    const handleInput = (e?: KeyboardEvent) => {
-      if (e && e.key !== " ") return;
-      if (e) e.preventDefault();
+    const handleInput = (event?: KeyboardEvent) => {
+      if (event && event.key !== " ") return;
+      if (event) event.preventDefault();
 
-      // Allow input during any combat phase (not fight_text / clash)
-      if (!combatPhases.includes(phase.current)) return;
+      if (!inputAllowedPhases.includes(currentPhase.current)) return;
       if (!dialGame.active.current) return;
 
-      const hit = dialGame.attempt();
-      if (hit === null) return; // already attempted this lap â€” ignore
+      const hitResult = dialGame.attempt();
+      if (hitResult === null) return;
 
-      // CPU also takes its turn
-      const cpuHit = doCpuTurn();
-      const playerHit = hit ? dialGame.lastHitPoints.current : 0;
-      doResolveRound(playerHit, cpuHit);
+      const cpuPoints = executeCpuTurn();
+      const playerPoints = hitResult ? dialGame.lastHitPoints.current : 0;
+      resolveRoundOutcome(playerPoints, cpuPoints);
     };
 
-    const onKeyDown = (e: KeyboardEvent) => handleInput(e);
+    const onKeyDown = (event: KeyboardEvent) => handleInput(event);
     const onPointerDown = () => handleInput();
 
     window.addEventListener("keydown", onKeyDown);
@@ -326,21 +304,21 @@ export function useGameLoop({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dialGame]);
 
-  const resetPhaseFrames = () => {
-    playerFrame.current = 0;
-    opponentFrame.current = 0;
-    playerElapsed.current = 0;
-    opponentElapsed.current = 0;
-    phaseAnimDone.current = false;
+  const resetAnimationFrameCounters = () => {
+    playerAnimFrameIndex.current = 0;
+    opponentAnimFrameIndex.current = 0;
+    playerAnimTimer.current = 0;
+    opponentAnimTimer.current = 0;
+    isPhaseAnimationComplete.current = false;
   };
 
-  const startShake = () => {
-    shakeTimer.current = SHAKE_DURATION;
-    isShaking.current = true;
+  const triggerScreenShake = () => {
+    screenShakeTimeRemaining.current = SHAKE_DURATION;
+    isScreenShaking.current = true;
   };
 
 
-  // â”€â”€ Main tick â”€â”€
+  // ── Main tick ──
 
   useTick((ticker) => {
     const { container, bg, player, opponent } = refs;
@@ -353,127 +331,116 @@ export function useGameLoop({
       return;
     if (!playerAnims || !opponentAnims) return;
 
-    // Scale background to cover the viewport
     if (bgTexture !== Texture.EMPTY) {
-      const sw = layout.base.width;
-      const sh = layout.base.height;
-      const s = Math.max(sw / bgTexture.width, sh / bgTexture.height);
-      bg.current.scale.set(s);
-      bg.current.x = (sw - bgTexture.width * s) / 2;
-      bg.current.y = (sh - bgTexture.height * s) / 2;
+      const screenWidth = layout.base.width;
+      const screenHeight = layout.base.height;
+      const bgCoverScale = Math.max(screenWidth / bgTexture.width, screenHeight / bgTexture.height);
+      bg.current.scale.set(bgCoverScale);
+      bg.current.x = (screenWidth - bgTexture.width * bgCoverScale) / 2;
+      bg.current.y = (screenHeight - bgTexture.height * bgCoverScale) / 2;
     }
 
-    const dt = ticker.deltaTime / 60;
-    const curPhase = phase.current;
+    const deltaSeconds = ticker.deltaTime / 60;
+    const activePhase = currentPhase.current;
 
-    // — Sprite animation stepping —
+    // ── Sprite animation stepping ──
 
-    const playerAnimName = getAnimName("player", curPhase);
-    const opponentAnimName = getAnimName("opponent", curPhase);
-    const playerAnim = playerAnims[playerAnimName];
-    const opponentAnim = opponentAnims[opponentAnimName];
+    const playerAnimName = getAnimName("player", activePhase);
+    const opponentAnimName = getAnimName("opponent", activePhase);
+    const playerAnimFrames = playerAnims[playerAnimName];
+    const opponentAnimFrames = opponentAnims[opponentAnimName];
 
-    if (curPhase !== "player_win" && curPhase !== "player_lose" && curPhase !== "attack_intro") {
-      if (attackIntroPlayed.current && playerAnimName === "Idle") {
-        // Hold last frame of attack animation instead of Idle
-        const atkAnim = playerAnims["Flame_jet"];
-        player.current.texture = atkAnim[atkAnim.length - 1];
+    if (activePhase !== "player_win" && activePhase !== "player_lose" && activePhase !== "attack_intro") {
+      if (hasAttackIntroCompleted.current && playerAnimName === "Idle") {
+        const playerAttackFrames = playerAnims["Flame_jet"];
+        player.current.texture = playerAttackFrames[playerAttackFrames.length - 1];
       } else {
-        playerElapsed.current += dt;
-        if (playerElapsed.current >= ANIM_SPEED) {
-          playerElapsed.current = 0;
-          playerFrame.current = (playerFrame.current + 1) % playerAnim.length;
-          player.current.texture = playerAnim[playerFrame.current];
+        playerAnimTimer.current += deltaSeconds;
+        if (playerAnimTimer.current >= ANIM_SPEED) {
+          playerAnimTimer.current = 0;
+          playerAnimFrameIndex.current = (playerAnimFrameIndex.current + 1) % playerAnimFrames.length;
+          player.current.texture = playerAnimFrames[playerAnimFrameIndex.current];
         }
       }
 
-      if (attackIntroPlayed.current && opponentAnimName === "Idle") {
-        // Hold last frame of attack animation instead of Idle
-        const atkAnim = opponentAnims["Magic_arrow"];
-        opponent.current.texture = atkAnim[atkAnim.length - 1];
+      if (hasAttackIntroCompleted.current && opponentAnimName === "Idle") {
+        const opponentAttackFrames = opponentAnims["Magic_arrow"];
+        opponent.current.texture = opponentAttackFrames[opponentAttackFrames.length - 1];
       } else {
-        opponentElapsed.current += dt;
-        if (opponentElapsed.current >= ANIM_SPEED) {
-          opponentElapsed.current = 0;
-          opponentFrame.current = (opponentFrame.current + 1) % opponentAnim.length;
-          opponent.current.texture = opponentAnim[opponentFrame.current];
+        opponentAnimTimer.current += deltaSeconds;
+        if (opponentAnimTimer.current >= ANIM_SPEED) {
+          opponentAnimTimer.current = 0;
+          opponentAnimFrameIndex.current = (opponentAnimFrameIndex.current + 1) % opponentAnimFrames.length;
+          opponent.current.texture = opponentAnimFrames[opponentAnimFrameIndex.current];
         }
       }
     }
-    switch (curPhase) {
+    switch (activePhase) {
       case "intro": {
-        // Characters visible and idle; waiting for store phase change
         if (useGameStore.getState().phase === "playing") {
-          // Make ring container visible but fully transparent
           if (refs.ringContainer.current) {
             refs.ringContainer.current.visible = true;
             refs.ringContainer.current.alpha = 0;
           }
-          ringAlpha.current = 0;
-          phase.current = "countdown";
-          countdownText.current = copies.game.countdown.three;
-          resetPhaseFrames();
-          const step = COUNTDOWN_STEP_MS;
-          setTimeout(() => { countdownText.current = copies.game.countdown.two; }, step);
-          setTimeout(() => { countdownText.current = copies.game.countdown.one; }, step * 2);
+          ringContainerOpacity.current = 0;
+          currentPhase.current = "countdown";
+          countdownLabel.current = copies.game.countdown.three;
+          resetAnimationFrameCounters();
+          const countdownStepMs = COUNTDOWN_STEP_MS;
+          setTimeout(() => { countdownLabel.current = copies.game.countdown.two; }, countdownStepMs);
+          setTimeout(() => { countdownLabel.current = copies.game.countdown.one; }, countdownStepMs * 2);
           setTimeout(() => {
-            countdownText.current = copies.game.countdown.fight;
-          }, step * 3);
+            countdownLabel.current = copies.game.countdown.fight;
+          }, countdownStepMs * 3);
           setTimeout(() => {
-            countdownText.current = null;
-            phase.current = "attack_intro";
-            resetPhaseFrames();
+            countdownLabel.current = null;
+            currentPhase.current = "attack_intro";
+            resetAnimationFrameCounters();
             dialGame.start();
-          }, step * 3 + COUNTDOWN_FIGHT_MS);
+          }, countdownStepMs * 3 + COUNTDOWN_FIGHT_MS);
         }
         break;
       }
 
 
       case "countdown": {
-        // Fade in ring/dial during countdown
-        if (ringAlpha.current < 1) {
-          ringAlpha.current = Math.min(1, ringAlpha.current + dt / RING_FADE_IN_DURATION);
+        if (ringContainerOpacity.current < 1) {
+          ringContainerOpacity.current = Math.min(1, ringContainerOpacity.current + deltaSeconds / RING_FADE_IN_DURATION);
           if (refs.ringContainer.current) {
-            refs.ringContainer.current.alpha = ringAlpha.current;
+            refs.ringContainer.current.alpha = ringContainerOpacity.current;
           }
         }
         break;
       }
 
       case "attack_intro": {
-        // Play each character's attack animation once (no wrapping)
-        const pAtk = playerAnims["Flame_jet"];
-        const oAtk = opponentAnims["Magic_arrow"];
+        const playerAttackFrames = playerAnims["Flame_jet"];
+        const opponentAttackFrames = opponentAnims["Magic_arrow"];
 
-        // Show current frame texture
-        player.current.texture = pAtk[playerFrame.current];
-        opponent.current.texture = oAtk[opponentFrame.current];
+        player.current.texture = playerAttackFrames[playerAnimFrameIndex.current];
+        opponent.current.texture = opponentAttackFrames[opponentAnimFrameIndex.current];
 
-        // Advance player
-        playerElapsed.current += dt;
-        if (playerElapsed.current >= ANIM_SPEED) {
-          playerElapsed.current = 0;
-          if (playerFrame.current < pAtk.length - 1) playerFrame.current++;
+        playerAnimTimer.current += deltaSeconds;
+        if (playerAnimTimer.current >= ANIM_SPEED) {
+          playerAnimTimer.current = 0;
+          if (playerAnimFrameIndex.current < playerAttackFrames.length - 1) playerAnimFrameIndex.current++;
         }
 
-        // Advance opponent
-        opponentElapsed.current += dt;
-        if (opponentElapsed.current >= ANIM_SPEED) {
-          opponentElapsed.current = 0;
-          if (opponentFrame.current < oAtk.length - 1) opponentFrame.current++;
+        opponentAnimTimer.current += deltaSeconds;
+        if (opponentAnimTimer.current >= ANIM_SPEED) {
+          opponentAnimTimer.current = 0;
+          if (opponentAnimFrameIndex.current < opponentAttackFrames.length - 1) opponentAnimFrameIndex.current++;
         }
 
-        // Transition to idle once both animations have completed
         if (
-          playerFrame.current >= pAtk.length - 1 &&
-          opponentFrame.current >= oAtk.length - 1 &&
-          !phaseAnimDone.current
+          playerAnimFrameIndex.current >= playerAttackFrames.length - 1 &&
+          opponentAnimFrameIndex.current >= opponentAttackFrames.length - 1 &&
+          !isPhaseAnimationComplete.current
         ) {
-          phaseAnimDone.current = true;
-          attackIntroPlayed.current = true;
-          phase.current = "idle";
-          resetPhaseFrames();
+          isPhaseAnimationComplete.current = true;
+          hasAttackIntroCompleted.current = true;
+          currentPhase.current = "idle";
+          resetAnimationFrameCounters();
         }
         break;
       }
@@ -486,44 +453,42 @@ export function useGameLoop({
       case "player_win": {
         const storePhase = useGameStore.getState().phase;
         if (storePhase !== "ended") {
-          resetTransientState();
+          resetAllTransientState();
           break;
         }
 
-        // Fade out ring during win phase
-        if (ringAlpha.current > 0) {
-          ringAlpha.current = Math.max(0, ringAlpha.current - dt / RING_FADE_IN_DURATION);
+        if (ringContainerOpacity.current > 0) {
+          ringContainerOpacity.current = Math.max(0, ringContainerOpacity.current - deltaSeconds / RING_FADE_IN_DURATION);
           if (refs.ringContainer.current) {
-            refs.ringContainer.current.alpha = ringAlpha.current;
-            if (ringAlpha.current <= 0) refs.ringContainer.current.visible = false;
+            refs.ringContainer.current.alpha = ringContainerOpacity.current;
+            if (ringContainerOpacity.current <= 0) refs.ringContainer.current.visible = false;
           }
         }
 
-        opponentElapsed.current += dt;
-        if (opponentElapsed.current >= SLOWMO_ANIM_SPEED) {
-          opponentElapsed.current = 0;
-          if (opponentFrame.current < opponentAnim.length - 1) {
-            opponentFrame.current++;
-            opponent.current.texture = opponentAnim[opponentFrame.current];
-          } else if (!phaseAnimDone.current) {
-            phaseAnimDone.current = true;
-            showWinText.current = true;
+        opponentAnimTimer.current += deltaSeconds;
+        if (opponentAnimTimer.current >= SLOWMO_ANIM_SPEED) {
+          opponentAnimTimer.current = 0;
+          if (opponentAnimFrameIndex.current < opponentAnimFrames.length - 1) {
+            opponentAnimFrameIndex.current++;
+            opponent.current.texture = opponentAnimFrames[opponentAnimFrameIndex.current];
+          } else if (!isPhaseAnimationComplete.current) {
+            isPhaseAnimationComplete.current = true;
+            isResultTextVisible.current = true;
           }
         }
 
-        // Animate winner (player) back to idle
         {
-          const idleAnim = playerAnims["Idle"];
-          playerElapsed.current += dt;
-          if (playerElapsed.current >= ANIM_SPEED) {
-            playerElapsed.current = 0;
-            playerFrame.current = (playerFrame.current + 1) % idleAnim.length;
-            player.current.texture = idleAnim[playerFrame.current];
+          const playerIdleFrames = playerAnims["Idle"];
+          playerAnimTimer.current += deltaSeconds;
+          if (playerAnimTimer.current >= ANIM_SPEED) {
+            playerAnimTimer.current = 0;
+            playerAnimFrameIndex.current = (playerAnimFrameIndex.current + 1) % playerIdleFrames.length;
+            player.current.texture = playerIdleFrames[playerAnimFrameIndex.current];
           }
         }
 
-        if (showWinText.current && winTextAlpha.current < 1) {
-          winTextAlpha.current = Math.min(1, winTextAlpha.current + dt / WIN_TEXT_FADE_DURATION);
+        if (isResultTextVisible.current && resultTextOpacity.current < 1) {
+          resultTextOpacity.current = Math.min(1, resultTextOpacity.current + deltaSeconds / WIN_TEXT_FADE_DURATION);
         }
         break;
         }
@@ -531,440 +496,422 @@ export function useGameLoop({
         case "player_lose": {
           const storePhase = useGameStore.getState().phase;
           if (storePhase !== "ended") {
-            resetTransientState();
+            resetAllTransientState();
             break;
           }
   
-          // Fade out ring during lose phase
-          if (ringAlpha.current > 0) {
-            ringAlpha.current = Math.max(0, ringAlpha.current - dt / RING_FADE_IN_DURATION);
+          if (ringContainerOpacity.current > 0) {
+            ringContainerOpacity.current = Math.max(0, ringContainerOpacity.current - deltaSeconds / RING_FADE_IN_DURATION);
             if (refs.ringContainer.current) {
-              refs.ringContainer.current.alpha = ringAlpha.current;
-              if (ringAlpha.current <= 0) refs.ringContainer.current.visible = false;
+              refs.ringContainer.current.alpha = ringContainerOpacity.current;
+              if (ringContainerOpacity.current <= 0) refs.ringContainer.current.visible = false;
             }
           }
 
-          // Slow-motion player death animation
-          playerElapsed.current += dt;
-          if (playerElapsed.current >= SLOWMO_ANIM_SPEED) {
-            playerElapsed.current = 0;
-            if (playerFrame.current < playerAnim.length - 1) {
-              playerFrame.current++;
-              player.current.texture = playerAnim[playerFrame.current];
-            } else if (!phaseAnimDone.current) {
-              phaseAnimDone.current = true;
-              showWinText.current = true;
+          playerAnimTimer.current += deltaSeconds;
+          if (playerAnimTimer.current >= SLOWMO_ANIM_SPEED) {
+            playerAnimTimer.current = 0;
+            if (playerAnimFrameIndex.current < playerAnimFrames.length - 1) {
+              playerAnimFrameIndex.current++;
+              player.current.texture = playerAnimFrames[playerAnimFrameIndex.current];
+            } else if (!isPhaseAnimationComplete.current) {
+              isPhaseAnimationComplete.current = true;
+              isResultTextVisible.current = true;
             }
           }
 
-          // Animate winner (opponent) back to idle
           {
-            const idleAnim = opponentAnims["Idle"];
-            opponentElapsed.current += dt;
-            if (opponentElapsed.current >= ANIM_SPEED) {
-              opponentElapsed.current = 0;
-              opponentFrame.current = (opponentFrame.current + 1) % idleAnim.length;
-              opponent.current.texture = idleAnim[opponentFrame.current];
+            const opponentIdleFrames = opponentAnims["Idle"];
+            opponentAnimTimer.current += deltaSeconds;
+            if (opponentAnimTimer.current >= ANIM_SPEED) {
+              opponentAnimTimer.current = 0;
+              opponentAnimFrameIndex.current = (opponentAnimFrameIndex.current + 1) % opponentIdleFrames.length;
+              opponent.current.texture = opponentIdleFrames[opponentAnimFrameIndex.current];
             }
           }
   
-          if (showWinText.current && winTextAlpha.current < 1) {
-            winTextAlpha.current = Math.min(1, winTextAlpha.current + dt / WIN_TEXT_FADE_DURATION);
+          if (isResultTextVisible.current && resultTextOpacity.current < 1) {
+            resultTextOpacity.current = Math.min(1, resultTextOpacity.current + deltaSeconds / WIN_TEXT_FADE_DURATION);
           }
           break;
         }
     }
 
-    // â”€â”€ CPU turn on block regeneration (only if no player hit triggered it already) â”€â”€
-    const currentRegen = dialGame.regenCount.current;
-    if (currentRegen > lastRegenCount.current) {
-      const isFirstGate = lastRegenCount.current === 0;
-      lastRegenCount.current = currentRegen;
-      // Skip the very first gate â€” blocks are just being generated, the player
-      // hasn't had a chance to act yet. Only resolve on subsequent gates.
-      if (!isFirstGate && !cpuTurnTakenThisLap.current && phase.current !== "attack_intro") {
-        // Player missed or skipped — player hit = 0, CPU takes a turn
-        const cpuHit = doCpuTurn();
-        doResolveRound(0, cpuHit);
+    // ── CPU turn on block regeneration gate ──
+    const currentRegenGateCount = dialGame.regenCount.current;
+    if (currentRegenGateCount > previousRegenGateCount.current) {
+      const isVeryFirstGate = previousRegenGateCount.current === 0;
+      previousRegenGateCount.current = currentRegenGateCount;
+      if (!isVeryFirstGate && !cpuTurnTakenThisLap.current && currentPhase.current !== "attack_intro") {
+        const cpuPoints = executeCpuTurn();
+        resolveRoundOutcome(0, cpuPoints);
       }
       cpuTurnTakenThisLap.current = false;
     }
 
-    // ── Sync positions from layout (reactive to resize) ──
+    // ── Sync character positions from layout (reactive to resize) ──
 
-    playerX.current = layout.positions.charStartX;
-    opponentX.current = layout.positions.charEndX;
+    playerPositionX.current = layout.positions.charStartX;
+    opponentPositionX.current = layout.positions.charEndX;
 
-    player.current.x = playerX.current;
+    player.current.x = playerPositionX.current;
     player.current.y = layout.positions.groundY;
     player.current.scale.set(layout.characters.charScale);
     player.current.scale.x = layout.characters.charScale;
     player.current.anchor.x = 0;
 
-    opponent.current.x = opponentX.current;
+    opponent.current.x = opponentPositionX.current;
     opponent.current.y = layout.positions.groundY;
     opponent.current.scale.set(layout.characters.charScale);
     opponent.current.scale.x = -layout.characters.charScale;
     opponent.current.anchor.x = 1;
 
-    // Update ring container position
     if (refs.ringContainer.current) {
       refs.ringContainer.current.x = layout.positions.meetX;
       refs.ringContainer.current.y = layout.positions.meetY;
     }
 
-    // ── Laser beam (visible only during attack-loop after intro) ──
+    // ── Red laser beam (player → right) ──
 
-    const laserSrc = refs.laserSource.current;
-    const laserMid = refs.laserMiddle.current;
-    const laserImp = refs.laserImpact.current;
+    const redLaserSource = refs.laserSource.current;
+    const redLaserMiddleContainer = refs.laserMiddle.current;
+    const redLaserImpact = refs.laserImpact.current;
 
-    if (laserSrc && laserMid && laserImp && laserFrames) {
-      // Show laser only while looping the last 2 attack frames (after attack_intro)
-      const showLaser =
-        attackIntroPlayed.current &&
-        curPhase !== "intro" &&
-        curPhase !== "attack_intro" &&
-        curPhase !== "player_win" &&
-        curPhase !== "player_lose";
+    if (redLaserSource && redLaserMiddleContainer && redLaserImpact && laserFrames) {
+      const shouldShowRedLaser =
+        hasAttackIntroCompleted.current &&
+        activePhase !== "intro" &&
+        activePhase !== "attack_intro" &&
+        activePhase !== "player_win" &&
+        activePhase !== "player_lose";
 
-      if (showLaser) {
-        laserSrc.visible = true;
-        laserMid.visible = true;
-        laserImp.visible = true;
+      if (shouldShowRedLaser) {
+        redLaserSource.visible = true;
+        redLaserMiddleContainer.visible = true;
+        redLaserImpact.visible = true;
 
-        // Start laser SFX when lasers first appear
-        if (!laserSfxPlaying.current) {
-          const { sfxEnabled: sfxEn, muted: isMuted } = useGameStore.getState();
-          const canPlay = sfxEn && !isMuted;
-          if (canPlay && fireHoldSfx.current) {
-            fireHoldSfx.current.currentTime = 0;
-            fireHoldSfx.current.play().catch(() => {});
+        if (!isBeamAudioPlaying.current) {
+          const { sfxEnabled, muted } = useGameStore.getState();
+          const canPlaySfx = sfxEnabled && !muted;
+          if (canPlaySfx && fireBeamLoopAudio.current) {
+            fireBeamLoopAudio.current.currentTime = 0;
+            fireBeamLoopAudio.current.play().catch(() => {});
           }
-          if (canPlay && lightHoldSfx.current) {
-            lightHoldSfx.current.currentTime = 0;
-            lightHoldSfx.current.play().catch(() => {});
+          if (canPlaySfx && lightBeamLoopAudio.current) {
+            lightBeamLoopAudio.current.currentTime = 0;
+            lightBeamLoopAudio.current.play().catch(() => {});
           }
-          // Play spell cast sounds (one-shot)
-          if (canPlay && laserCastSfx.current) {
-            laserCastSfx.current.currentTime = 0;
-            laserCastSfx.current.play().catch(() => {});
+          if (canPlaySfx && lightCastOneShotAudio.current) {
+            lightCastOneShotAudio.current.currentTime = 0;
+            lightCastOneShotAudio.current.play().catch(() => {});
           }
-          if (canPlay && fireCastSfx.current) {
-            fireCastSfx.current.currentTime = 0;
-            fireCastSfx.current.play().catch(() => {});
+          if (canPlaySfx && fireCastOneShotAudio.current) {
+            fireCastOneShotAudio.current.currentTime = 0;
+            fireCastOneShotAudio.current.play().catch(() => {});
           }
-          laserSfxPlaying.current = true;
+          isBeamAudioPlaying.current = true;
         }
 
-        // Pause/resume looping hold SFX when mute changes mid-game
-        if (laserSfxPlaying.current) {
-          const { sfxEnabled: sfxEn, muted: isMuted } = useGameStore.getState();
-          const shouldPlay = sfxEn && !isMuted;
-          if (!shouldPlay) {
-            if (fireHoldSfx.current && !fireHoldSfx.current.paused) fireHoldSfx.current.pause();
-            if (lightHoldSfx.current && !lightHoldSfx.current.paused) lightHoldSfx.current.pause();
+        if (isBeamAudioPlaying.current) {
+          const { sfxEnabled, muted } = useGameStore.getState();
+          const shouldPlayAudio = sfxEnabled && !muted;
+          if (!shouldPlayAudio) {
+            if (fireBeamLoopAudio.current && !fireBeamLoopAudio.current.paused) fireBeamLoopAudio.current.pause();
+            if (lightBeamLoopAudio.current && !lightBeamLoopAudio.current.paused) lightBeamLoopAudio.current.pause();
           } else {
-            if (fireHoldSfx.current && fireHoldSfx.current.paused) fireHoldSfx.current.play().catch(() => {});
-            if (lightHoldSfx.current && lightHoldSfx.current.paused) lightHoldSfx.current.play().catch(() => {});
+            if (fireBeamLoopAudio.current && fireBeamLoopAudio.current.paused) fireBeamLoopAudio.current.play().catch(() => {});
+            if (lightBeamLoopAudio.current && lightBeamLoopAudio.current.paused) lightBeamLoopAudio.current.play().catch(() => {});
           }
         }
 
-        // Advance laser animation at 24 fps
-        laserElapsed.current += dt;
-        if (laserElapsed.current >= LASER_ANIM_SPEED) {
-          laserElapsed.current = 0;
-          if (!laserStarted.current) {
-            // Playing start frames (0-3), then switch to loop
-            laserFrame.current++;
-            if (laserFrame.current >= 4) {
-              laserStarted.current = true;
-              laserFrame.current = 0; // begin loop frames
+        // Advance red laser animation at 24 fps
+        redLaserAnimTimer.current += deltaSeconds;
+        if (redLaserAnimTimer.current >= LASER_ANIM_SPEED) {
+          redLaserAnimTimer.current = 0;
+          if (!redLaserInLoopPhase.current) {
+            redLaserFrameIndex.current++;
+            if (redLaserFrameIndex.current >= 4) {
+              redLaserInLoopPhase.current = true;
+              redLaserFrameIndex.current = 0;
             }
           } else {
-            // Cycle through loop frames (0-3)
-            laserFrame.current = (laserFrame.current + 1) % 4;
+            redLaserFrameIndex.current = (redLaserFrameIndex.current + 1) % 4;
           }
         }
 
-        const fi = laserFrame.current;
-        const midTex = !laserStarted.current
-          ? laserFrames.middleStart[fi]
-          : laserFrames.middleLoop[fi];
+        const redFrameIdx = redLaserFrameIndex.current;
+        const redMiddleTexture = !redLaserInLoopPhase.current
+          ? laserFrames.middleStart[redFrameIdx]
+          : laserFrames.middleLoop[redFrameIdx];
 
-        if (!laserStarted.current) {
-          laserSrc.texture = laserFrames.sourceStart[fi];
-          laserImp.texture = laserFrames.impactStart[fi];
+        if (!redLaserInLoopPhase.current) {
+          redLaserSource.texture = laserFrames.sourceStart[redFrameIdx];
+          redLaserImpact.texture = laserFrames.impactStart[redFrameIdx];
         } else {
-          laserSrc.texture = laserFrames.sourceLoop[fi];
-          laserImp.texture = laserFrames.impactLoop[fi];
+          redLaserSource.texture = laserFrames.sourceLoop[redFrameIdx];
+          redLaserImpact.texture = laserFrames.impactLoop[redFrameIdx];
         }
 
         const charSize = layout.characters.charSize;
-        const frameW = laserFrames.sourceStart[0].width;  // 48
-        const frameH = laserFrames.sourceStart[0].height;  // 48
-        const beamHeight = charSize * 0.75;
-        const scaleY = beamHeight / frameH;
-        const scaledW = frameW * scaleY;
-        const beamY = layout.positions.groundY + charSize * 0.66;
+        const laserSpriteFrameWidth = laserFrames.sourceStart[0].width;
+        const laserSpriteFrameHeight = laserFrames.sourceStart[0].height;
+        const beamVisualHeight = charSize * 0.75;
+        const beamScale = beamVisualHeight / laserSpriteFrameHeight;
+        const scaledTileWidth = laserSpriteFrameWidth * beamScale;
+        const beamVerticalCenter = layout.positions.groundY + charSize * 0.66;
 
         // Source: at the fire mage's hands
-        const originX = playerX.current + charSize * 0.15;
-        laserSrc.x = originX;
-        laserSrc.y = beamY;
-        laserSrc.anchor.set(0, 0.5);
-        laserSrc.scale.set(scaleY, scaleY);
+        const redSourceX = playerPositionX.current + charSize * 0.15;
+        redLaserSource.x = redSourceX;
+        redLaserSource.y = beamVerticalCenter;
+        redLaserSource.anchor.set(0, 0.5);
+        redLaserSource.scale.set(beamScale, beamScale);
 
-        // Impact: shifts proportionally to score bar (smoothly lerped)
-        const smallScreen = layout.base.unit < 500;
-        const scorePct = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
-        const baseBarW = layout.ring.outerRadius * 2;
-        const widthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
-        const halfBarW = (baseBarW * widthMult) / 2;
-        const baseImpactX = layout.positions.meetX + charSize * (smallScreen ? 0.2 : 0.3);
-        const travelMult = smallScreen ? 0.8 : 1.5;
-        const targetImpactX = baseImpactX + halfBarW * scorePct * travelMult;
+        // Impact position shifts based on score (smoothly lerped)
+        const isSmallScreen = layout.base.unit < 500;
+        const scoreNormalized = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
+        const scoreBarBaseWidth = layout.ring.outerRadius * 2;
+        const scoreBarWidthMultiplier = Math.min(2.2, Math.max(1, layout.base.width / 800));
+        const scoreBarHalfWidth = (scoreBarBaseWidth * scoreBarWidthMultiplier) / 2;
+        const redImpactBaseX = layout.positions.meetX + charSize * (isSmallScreen ? 0.2 : 0.3);
+        const impactTravelMultiplier = isSmallScreen ? 0.8 : 1.5;
+        const redImpactTargetX = redImpactBaseX + scoreBarHalfWidth * scoreNormalized * impactTravelMultiplier;
 
-        // Smooth lerp toward target
-        if (laserImpactLerpX.current === null) {
-          laserImpactLerpX.current = targetImpactX;
+        if (laserClashPointLerpedX.current === null) {
+          laserClashPointLerpedX.current = redImpactTargetX;
         } else {
-          laserImpactLerpX.current += (targetImpactX - laserImpactLerpX.current) * 0.06;
+          laserClashPointLerpedX.current += (redImpactTargetX - laserClashPointLerpedX.current) * 0.06;
         }
-        const impactX = laserImpactLerpX.current;
+        const redImpactLerpedX = laserClashPointLerpedX.current;
 
-        laserImp.x = impactX;
-        laserImp.y = beamY;
-        laserImp.anchor.set(1, 0.5);
-        laserImp.scale.set(scaleY, scaleY);
+        redLaserImpact.x = redImpactLerpedX;
+        redLaserImpact.y = beamVerticalCenter;
+        redLaserImpact.anchor.set(1, 0.5);
+        redLaserImpact.scale.set(beamScale, beamScale);
 
-        // Tiled middle: start overlapping the source section
-        const midStartX = originX + scaledW * 0.30;
-        const midEndX = impactX - scaledW;
-        const midSpan = midEndX - midStartX;
+        // Tiled middle: fill gap between source and impact with overlapping tiles
+        const redMiddleTileStartX = redSourceX + scaledTileWidth * 0.30;
+        const redMiddleTileEndX = redImpactLerpedX - scaledTileWidth;
+        const redMiddleTotalSpan = redMiddleTileEndX - redMiddleTileStartX;
 
-        if (midSpan <= 0) {
-          // No room for middle tiles — hide mid, show only source + impact
-          laserMid.visible = false;
-          while (laserMid.children.length > 0) {
-            const removed = laserMid.removeChildAt(laserMid.children.length - 1);
+        if (redMiddleTotalSpan <= 0) {
+          redLaserMiddleContainer.visible = false;
+          while (redLaserMiddleContainer.children.length > 0) {
+            const removed = redLaserMiddleContainer.removeChildAt(redLaserMiddleContainer.children.length - 1);
             removed.destroy();
           }
         } else {
-          laserMid.visible = true;
-          const tileStep = scaledW * 0.3; // overlap each tile by 30%
-          const tileCount = Math.max(1, Math.ceil(midSpan / tileStep));
+          redLaserMiddleContainer.visible = true;
+          const tileOverlapStep = scaledTileWidth * 0.3;
+          const redMiddleTileCount = Math.max(1, Math.ceil(redMiddleTotalSpan / tileOverlapStep));
 
-        // Add/remove sprites to match tile count
-        while (laserMid.children.length < tileCount) {
-          const s = new Sprite();
-          s.anchor.set(0, 0.5);
-          laserMid.addChild(s);
+        while (redLaserMiddleContainer.children.length < redMiddleTileCount) {
+          const tileSprite = new Sprite();
+          tileSprite.anchor.set(0, 0.5);
+          redLaserMiddleContainer.addChild(tileSprite);
         }
-        while (laserMid.children.length > tileCount) {
-          const removed = laserMid.removeChildAt(laserMid.children.length - 1);
+        while (redLaserMiddleContainer.children.length > redMiddleTileCount) {
+          const removed = redLaserMiddleContainer.removeChildAt(redLaserMiddleContainer.children.length - 1);
           removed.destroy();
         }
 
-        // Position and texture each tile
-        for (let i = 0; i < tileCount; i++) {
-          const tile = laserMid.children[i] as Sprite;
-          tile.texture = midTex;
-          tile.x = midStartX + i * tileStep;
-          tile.y = beamY;
-          tile.scale.set(scaleY, scaleY);
+        for (let i = 0; i < redMiddleTileCount; i++) {
+          const tileSprite = redLaserMiddleContainer.children[i] as Sprite;
+          tileSprite.texture = redMiddleTexture;
+          tileSprite.x = redMiddleTileStartX + i * tileOverlapStep;
+          tileSprite.y = beamVerticalCenter;
+          tileSprite.scale.set(beamScale, beamScale);
         }
 
-        // Ensure source and impact render on top of middle tiles
         }
-        laserMid.zIndex = 0;
-        laserSrc.zIndex = 1;
-        laserImp.zIndex = 1;
+        redLaserMiddleContainer.zIndex = 0;
+        redLaserSource.zIndex = 1;
+        redLaserImpact.zIndex = 1;
       } else {
-        laserSrc.visible = false;
-        laserMid.visible = false;
-        laserImp.visible = false;
-        laserFrame.current = 0;
-        laserElapsed.current = 0;
-        laserStarted.current = false;
-        laserImpactLerpX.current = null;
+        redLaserSource.visible = false;
+        redLaserMiddleContainer.visible = false;
+        redLaserImpact.visible = false;
+        redLaserFrameIndex.current = 0;
+        redLaserAnimTimer.current = 0;
+        redLaserInLoopPhase.current = false;
+        laserClashPointLerpedX.current = null;
 
-        // Stop laser SFX when lasers hide
-        if (laserSfxPlaying.current) {
-          if (fireHoldSfx.current) fireHoldSfx.current.pause();
-          if (lightHoldSfx.current) lightHoldSfx.current.pause();
-          laserSfxPlaying.current = false;
+        if (isBeamAudioPlaying.current) {
+          if (fireBeamLoopAudio.current) fireBeamLoopAudio.current.pause();
+          if (lightBeamLoopAudio.current) lightBeamLoopAudio.current.pause();
+          isBeamAudioPlaying.current = false;
         }
       }
     }
-    // â"€â"€ Blue laser (opponent â†' left) â"€â"€
 
-    const blueSrc = refs.blueLaserSource.current;
-    const blueMid = refs.blueLaserMiddle.current;
-    const blueImp = refs.blueLaserImpact.current;
+    // ── Blue laser beam (opponent → left) ──
 
-    if (blueSrc && blueMid && blueImp && blueLaserFrames) {
-      const showBlueLaser =
-        attackIntroPlayed.current &&
-        curPhase !== "intro" &&
-        curPhase !== "attack_intro" &&
-        curPhase !== "player_win" &&
-        curPhase !== "player_lose";
+    const blueLaserSource = refs.blueLaserSource.current;
+    const blueLaserMiddleContainer = refs.blueLaserMiddle.current;
+    const blueLaserImpact = refs.blueLaserImpact.current;
 
-      if (showBlueLaser) {
-        blueSrc.visible = true;
-        blueMid.visible = true;
-        blueImp.visible = true;
+    if (blueLaserSource && blueLaserMiddleContainer && blueLaserImpact && blueLaserFrames) {
+      const shouldShowBlueLaser =
+        hasAttackIntroCompleted.current &&
+        activePhase !== "intro" &&
+        activePhase !== "attack_intro" &&
+        activePhase !== "player_win" &&
+        activePhase !== "player_lose";
+
+      if (shouldShowBlueLaser) {
+        blueLaserSource.visible = true;
+        blueLaserMiddleContainer.visible = true;
+        blueLaserImpact.visible = true;
 
         // Advance blue laser animation at 24 fps
-        blueLaserElapsed.current += dt;
-        if (blueLaserElapsed.current >= LASER_ANIM_SPEED) {
-          blueLaserElapsed.current = 0;
-          if (!blueLaserStarted.current) {
-            blueLaserFrame.current++;
-            if (blueLaserFrame.current >= 4) {
-              blueLaserStarted.current = true;
-              blueLaserFrame.current = 0;
+        blueLaserAnimTimer.current += deltaSeconds;
+        if (blueLaserAnimTimer.current >= LASER_ANIM_SPEED) {
+          blueLaserAnimTimer.current = 0;
+          if (!blueLaserInLoopPhase.current) {
+            blueLaserFrameIndex.current++;
+            if (blueLaserFrameIndex.current >= 4) {
+              blueLaserInLoopPhase.current = true;
+              blueLaserFrameIndex.current = 0;
             }
           } else {
-            blueLaserFrame.current = (blueLaserFrame.current + 1) % 4;
+            blueLaserFrameIndex.current = (blueLaserFrameIndex.current + 1) % 4;
           }
         }
 
-        const bfi = blueLaserFrame.current;
-        const blueMidTex = !blueLaserStarted.current
-          ? blueLaserFrames.middleStart[bfi]
-          : blueLaserFrames.middleLoop[bfi];
+        const blueFrameIdx = blueLaserFrameIndex.current;
+        const blueMiddleTexture = !blueLaserInLoopPhase.current
+          ? blueLaserFrames.middleStart[blueFrameIdx]
+          : blueLaserFrames.middleLoop[blueFrameIdx];
 
-        if (!blueLaserStarted.current) {
-          blueSrc.texture = blueLaserFrames.sourceStart[bfi];
-          blueImp.texture = blueLaserFrames.impactStart[bfi];
+        if (!blueLaserInLoopPhase.current) {
+          blueLaserSource.texture = blueLaserFrames.sourceStart[blueFrameIdx];
+          blueLaserImpact.texture = blueLaserFrames.impactStart[blueFrameIdx];
         } else {
-          blueSrc.texture = blueLaserFrames.sourceLoop[bfi];
-          blueImp.texture = blueLaserFrames.impactLoop[bfi];
+          blueLaserSource.texture = blueLaserFrames.sourceLoop[blueFrameIdx];
+          blueLaserImpact.texture = blueLaserFrames.impactLoop[blueFrameIdx];
         }
 
         const charSize = layout.characters.charSize;
-        const frameW = blueLaserFrames.sourceStart[0].width;
-        const frameH = blueLaserFrames.sourceStart[0].height;
-        const beamHeight = charSize * 0.75;
-        const scaleY = beamHeight / frameH;
-        const scaledW = frameW * scaleY;
-        const beamY = layout.positions.groundY + charSize * 0.66;
+        const blueFrameWidth = blueLaserFrames.sourceStart[0].width;
+        const blueFrameHeight = blueLaserFrames.sourceStart[0].height;
+        const blueBeamVisualHeight = charSize * 0.75;
+        const blueBeamScale = blueBeamVisualHeight / blueFrameHeight;
+        const blueScaledTileWidth = blueFrameWidth * blueBeamScale;
+        const blueBeamVerticalCenter = layout.positions.groundY + charSize * 0.66;
 
         // Source: at the wanderer mage's hands (mirrored — facing left)
-        const blueOriginX = opponentX.current + charSize * 0.65;
-        blueSrc.x = blueOriginX;
-        blueSrc.y = beamY;
-        blueSrc.anchor.set(0, 0.5);
-        blueSrc.scale.set(-scaleY, scaleY);
+        const blueSourceX = opponentPositionX.current + charSize * 0.65;
+        blueLaserSource.x = blueSourceX;
+        blueLaserSource.y = blueBeamVerticalCenter;
+        blueLaserSource.anchor.set(0, 0.5);
+        blueLaserSource.scale.set(-blueBeamScale, blueBeamScale);
 
-        // Impact: shifts proportionally to score bar (uses same lerped X)
-        const blueSmallScreen = layout.base.unit < 500;
-        const blueScorePct = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
-        const blueBaseBarW = layout.ring.outerRadius * 2;
-        const blueWidthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
-        const blueHalfBarW = (blueBaseBarW * blueWidthMult) / 2;
-        const blueBaseImpactX = layout.positions.meetX - charSize * (blueSmallScreen ? 0.31 : 0.21);
-        const blueTravelMult = blueSmallScreen ? 0.8 : 1.5;
-        const blueTargetImpactX = blueBaseImpactX + blueHalfBarW * blueScorePct * blueTravelMult;
+        // Impact position shifts based on score (uses same lerped X offset)
+        const blueIsSmallScreen = layout.base.unit < 500;
+        const blueScoreNormalized = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
+        const blueScoreBarBaseWidth = layout.ring.outerRadius * 2;
+        const blueScoreBarWidthMultiplier = Math.min(2.2, Math.max(1, layout.base.width / 800));
+        const blueScoreBarHalfWidth = (blueScoreBarBaseWidth * blueScoreBarWidthMultiplier) / 2;
+        const blueImpactBaseX = layout.positions.meetX - charSize * (blueIsSmallScreen ? 0.31 : 0.21);
+        const blueImpactTravelMultiplier = blueIsSmallScreen ? 0.8 : 1.5;
+        const blueImpactTargetX = blueImpactBaseX + blueScoreBarHalfWidth * blueScoreNormalized * blueImpactTravelMultiplier;
 
-        // Use same lerped offset for blue
-        const blueLerpedShift = (laserImpactLerpX.current ?? blueTargetImpactX) - (layout.positions.meetX + charSize * (blueSmallScreen ? 0.2 : 0.3));
-        const blueImpactX = blueBaseImpactX + blueLerpedShift;
+        const redLaserBaseImpactX = layout.positions.meetX + charSize * (blueIsSmallScreen ? 0.2 : 0.3);
+        const lerpedShiftFromCenter = (laserClashPointLerpedX.current ?? blueImpactTargetX) - redLaserBaseImpactX;
+        const blueImpactLerpedX = blueImpactBaseX + lerpedShiftFromCenter;
 
-        blueImp.x = blueImpactX;
-        blueImp.y = beamY;
-        blueImp.anchor.set(1, 0.5);
-        blueImp.scale.set(-scaleY, scaleY);
+        blueLaserImpact.x = blueImpactLerpedX;
+        blueLaserImpact.y = blueBeamVerticalCenter;
+        blueLaserImpact.anchor.set(1, 0.5);
+        blueLaserImpact.scale.set(-blueBeamScale, blueBeamScale);
 
         // Tiled middle: fill gap going right-to-left (mirrored)
-        const blueMidStartX = blueOriginX - scaledW * 0.30;
-        const blueMidEndX = blueImpactX + scaledW;
-        const blueMidSpan = blueMidStartX - blueMidEndX;
+        const blueMiddleTileStartX = blueSourceX - blueScaledTileWidth * 0.30;
+        const blueMiddleTileEndX = blueImpactLerpedX + blueScaledTileWidth;
+        const blueMiddleTotalSpan = blueMiddleTileStartX - blueMiddleTileEndX;
 
-        if (blueMidSpan <= 0) {
-          // No room for middle tiles — hide mid, show only source + impact
-          blueMid.visible = false;
-          while (blueMid.children.length > 0) {
-            const removed = blueMid.removeChildAt(blueMid.children.length - 1);
+        if (blueMiddleTotalSpan <= 0) {
+          blueLaserMiddleContainer.visible = false;
+          while (blueLaserMiddleContainer.children.length > 0) {
+            const removed = blueLaserMiddleContainer.removeChildAt(blueLaserMiddleContainer.children.length - 1);
             removed.destroy();
           }
         } else {
-          blueMid.visible = true;
-          const blueTileStep = scaledW * 0.3;
-          const blueTileCount = Math.max(1, Math.ceil(blueMidSpan / blueTileStep));
+          blueLaserMiddleContainer.visible = true;
+          const blueTileOverlapStep = blueScaledTileWidth * 0.3;
+          const blueMiddleTileCount = Math.max(1, Math.ceil(blueMiddleTotalSpan / blueTileOverlapStep));
 
-        while (blueMid.children.length < blueTileCount) {
-          const s = new Sprite();
-          s.anchor.set(0, 0.5);
-          blueMid.addChild(s);
+        while (blueLaserMiddleContainer.children.length < blueMiddleTileCount) {
+          const tileSprite = new Sprite();
+          tileSprite.anchor.set(0, 0.5);
+          blueLaserMiddleContainer.addChild(tileSprite);
         }
-        while (blueMid.children.length > blueTileCount) {
-          const removed = blueMid.removeChildAt(blueMid.children.length - 1);
+        while (blueLaserMiddleContainer.children.length > blueMiddleTileCount) {
+          const removed = blueLaserMiddleContainer.removeChildAt(blueLaserMiddleContainer.children.length - 1);
           removed.destroy();
         }
 
-        for (let i = 0; i < blueTileCount; i++) {
-          const tile = blueMid.children[i] as Sprite;
-          tile.texture = blueMidTex;
-          tile.x = blueMidStartX - i * blueTileStep;
-          tile.y = beamY;
-          tile.scale.set(-scaleY, scaleY); // flip horizontally
+        for (let i = 0; i < blueMiddleTileCount; i++) {
+          const tileSprite = blueLaserMiddleContainer.children[i] as Sprite;
+          tileSprite.texture = blueMiddleTexture;
+          tileSprite.x = blueMiddleTileStartX - i * blueTileOverlapStep;
+          tileSprite.y = blueBeamVerticalCenter;
+          tileSprite.scale.set(-blueBeamScale, blueBeamScale);
         }
 
         }
-        blueMid.zIndex = 0;
-        blueSrc.zIndex = 1;
-        blueImp.zIndex = 1;
+        blueLaserMiddleContainer.zIndex = 0;
+        blueLaserSource.zIndex = 1;
+        blueLaserImpact.zIndex = 1;
       } else {
-        blueSrc.visible = false;
-        blueMid.visible = false;
-        blueImp.visible = false;
-        blueLaserFrame.current = 0;
-        blueLaserElapsed.current = 0;
-        blueLaserStarted.current = false;
+        blueLaserSource.visible = false;
+        blueLaserMiddleContainer.visible = false;
+        blueLaserImpact.visible = false;
+        blueLaserFrameIndex.current = 0;
+        blueLaserAnimTimer.current = 0;
+        blueLaserInLoopPhase.current = false;
       }
     }
-    // â”€â”€ Screen shake â”€â”€
 
-    if (isShaking.current) {
-      shakeTimer.current -= dt;
-      if (shakeTimer.current <= 0) {
-        isShaking.current = false;
+    // ── Screen shake ──
+
+    if (isScreenShaking.current) {
+      screenShakeTimeRemaining.current -= deltaSeconds;
+      if (screenShakeTimeRemaining.current <= 0) {
+        isScreenShaking.current = false;
         container.current.x = 0;
         container.current.y = 0;
       } else {
-        const progress = shakeTimer.current / SHAKE_DURATION;
-        const intensity = layout.movement.shakeIntensity * progress;
-        container.current.x = (Math.random() - 0.5) * 2 * intensity;
-        container.current.y = (Math.random() - 0.5) * 2 * intensity;
+        const shakeProgress = screenShakeTimeRemaining.current / SHAKE_DURATION;
+        const shakeIntensity = layout.movement.shakeIntensity * shakeProgress;
+        container.current.x = (Math.random() - 0.5) * 2 * shakeIntensity;
+        container.current.y = (Math.random() - 0.5) * 2 * shakeIntensity;
       }
     }
 
 
     // ── Spark particles ──
 
-    const sGfx = sparkGfx.current;
-    if (sGfx) {
+    const sparkLayer = sparkGraphicsLayer.current;
+    if (sparkLayer) {
       sparkParticles.current = updateSparkParticles(
-        sGfx,
+        sparkLayer,
         sparkParticles.current,
-        dt,
+        deltaSeconds,
       );
     }
 
     // ── Explosion particles ──
 
-    const eGfx = explosionGfx.current;
-    if (eGfx) {
+    const explosionLayer = explosionGraphicsLayer.current;
+    if (explosionLayer) {
       explosionParticles.current = updateExplosionParticles(
-        eGfx,
+        explosionLayer,
         explosionParticles.current,
-        dt,
+        deltaSeconds,
       );
     }
   });
 
-  return { showWinText, winTextAlpha, winnerText, countdownText };
+  return { showWinText: isResultTextVisible, winTextAlpha: resultTextOpacity, winnerText: resultTextContent, countdownText: countdownLabel };
 }
