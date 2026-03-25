@@ -9,10 +9,10 @@ export function useLayout(screenWidth: number, screenHeight: number): Layout {
     const isLandscape = screenWidth > screenHeight;
 
     // In landscape the height is the bottleneck — scale the ring to fit
-    // In portrait use a fraction of the shorter side
+    // In portrait use a larger fraction so dials/circles are big enough on phones
     const outerRadius = isLandscape
-      ? screenHeight * 0.3
-      : unit * 0.18;
+      ? screenHeight * 0.25
+      : unit * 0.4;
 
     const ringWidth = outerRadius * 0.175;
     const ringGap = outerRadius * 0.1;
