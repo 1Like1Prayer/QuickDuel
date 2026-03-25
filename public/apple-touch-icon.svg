@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <rect width="180" height="180" rx="22" fill="#1a1a2e"/>
+  <text x="90" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="68" font-weight="bold" fill="#e94560">QD</text>
+  <line x1="36" y1="122" x2="144" y2="122" stroke="#e94560" stroke-width="3"/>
+  <text x="90" y="148" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#ffffff" opacity="0.8">QUICK DUEL</text>
+</svg>
