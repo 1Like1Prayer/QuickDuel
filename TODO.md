@@ -39,6 +39,9 @@
   - Screen size / device info tracking
   - Error logging & reporting (client-side errors forwarded to backend)
   - Gameplay metrics (match duration, win rates, popular difficulty, etc.)
+  - Posthog
+  - Sentry
+  - CloudFlare
 
 - [ ] **Infrastructure & security**
   - Cloudflare CDN & proxy
