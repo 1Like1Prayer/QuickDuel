@@ -9,29 +9,20 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-/** Stored deferred prompt so we can trigger native install from a user tap. */
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
-export function getDeferredPrompt() {
-  return deferredPrompt;
-}
+window.addEventListener("beforeinstallprompt", (e) => {
+  deferredPrompt = e as BeforeInstallPromptEvent;
+});
 
 export async function triggerInstall(): Promise<boolean> {
   if (!deferredPrompt) return false;
+  console.log('deferredPrompt', deferredPrompt);
   deferredPrompt.prompt();
   const { outcome } = await deferredPrompt.userChoice;
   deferredPrompt = null;
   return outcome === "accepted";
 }
-
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e as BeforeInstallPromptEvent;
-});
-
-window.addEventListener("appinstalled", () => {
-  deferredPrompt = null;
-});
 
 /* ── React root ── */
 

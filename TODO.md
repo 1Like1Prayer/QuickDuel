@@ -2,11 +2,12 @@
 
 ## 2026-03-24
 
-- [ ] Fix animations on small screen (laser offset on player)
+- [ ] Fix animations on small screen (laser offset on player) use 80% of the laser width and split to 7 (score from -7 to +7)
 - [x] Make it PWA
 - [x] Upgrade Vite 8
 - [ ] Go over each logic section and see how it can be improved either by code quality (splitting, unifying similar code, etc.) or changing the logic to something simpler — start from `Scene.tsx`
 - [x] Add offline gameplay support with PWA
+- [x] Add copies to the code
 - [ ] Proper tutorial with animations and PixiJS, not just showing a PNG
 - [ ] Implement IndexedDB — save tutorial-seen flag, pwa seen, UUID per player, ELO rating
 - [ ] Implement BE (backend) gameplay
@@ -42,7 +43,6 @@
   - Posthog
   - Sentry
   - CloudFlare
-  - checking
 
 - [ ] **Infrastructure & security**
   - Cloudflare CDN & proxy

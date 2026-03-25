@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { copies } from "../../../../copies";
 import "./MainMenu.css";
 
 function subscribeOnline(callback: () => void) {
@@ -25,33 +26,33 @@ export function MainMenu({ onPlay, onPlayOnline, onSettings, onTutorial }: MainM
   const isOnline = useSyncExternalStore(subscribeOnline, getOnlineSnapshot);
 
   return (
-    <nav className="intro-buttons" role="navigation" aria-label="Main menu">
+    <nav className="intro-buttons" role="navigation" aria-label={copies.mainMenu.navAriaLabel}>
       <button
         className="intro-btn intro-btn-primary"
         onClick={onPlay}
       >
-        Play - Offline
+        {copies.mainMenu.playOffline}
       </button>
       <button
         className="intro-btn intro-btn-secondary"
         disabled={!isOnline}
         onClick={isOnline ? onPlayOnline : undefined}
-        aria-label={isOnline ? "Play Online" : "Play Online (offline)"}
+        aria-label={isOnline ? copies.mainMenu.playOnlineAriaLabel : copies.mainMenu.playOnlineOfflineAriaLabel}
       >
-        Play - Online
-        {!isOnline && <span className="coming-soon-badge">Offline</span>}
+        {copies.mainMenu.playOnline}
+        {!isOnline && <span className="coming-soon-badge">{copies.mainMenu.offlineBadge}</span>}
       </button>
       <button
         className="intro-btn intro-btn-settings"
         onClick={onSettings}
       >
-        Settings
+        {copies.mainMenu.settings}
       </button>
       <button
         className="intro-btn intro-btn-settings"
         onClick={onTutorial}
       >
-        Tutorial
+        {copies.mainMenu.tutorial}
       </button>
     </nav>
   );

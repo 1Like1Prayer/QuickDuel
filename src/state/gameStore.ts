@@ -4,7 +4,7 @@ import type { Difficulty, GamePhase } from "./types";
 
 // ── Background music (singleton) ──
 const BGM_MAX_VOLUME = 0.3;
-const bgm = new Audio("/SFX/BGM11 Storm the enemy's land.Mastering.mp3");
+const bgm = new Audio("/sounds/BGM11 Storm the enemy's land.Mastering.mp3");
 bgm.loop = true;
 bgm.volume = BGM_MAX_VOLUME;
 

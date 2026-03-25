@@ -1,4 +1,5 @@
 import type { Difficulty } from "../../../../state";
+import { copies } from "../../../../copies";
 import "./DifficultySelect.css";
 
 interface DifficultySelectProps {
@@ -13,25 +14,25 @@ export function DifficultySelect({ onPick, onBack }: DifficultySelectProps) {
         className="intro-btn intro-btn-difficulty intro-btn-beginner"
         onClick={() => onPick("beginner")}
       >
-        Beginner
+        {copies.difficultySelect.beginner}
       </button>
       <button
         className="intro-btn intro-btn-difficulty intro-btn-intermediate"
         onClick={() => onPick("intermediate")}
       >
-        Intermediate
+        {copies.difficultySelect.intermediate}
       </button>
       <button
         className="intro-btn intro-btn-difficulty intro-btn-advanced"
         onClick={() => onPick("advanced")}
       >
-        Advanced
+        {copies.difficultySelect.advanced}
       </button>
       <button
         className="intro-btn intro-btn-back"
         onClick={onBack}
       >
-        Back
+        {copies.common.back}
       </button>
     </div>
   );

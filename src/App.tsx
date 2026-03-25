@@ -8,6 +8,7 @@ import { useGameStore } from "./state";
 
 import { IntroScreen } from "./game/components/IntroScreen/IntroScreen";
 import { Scene } from "./game/components/Scene";
+import { copies } from "./copies";
 
 extend({ Container, Graphics, Sprite, Text });
 
@@ -36,11 +37,11 @@ export default function App() {
         className={`mute-btn${muted ? " is-muted" : ""}`}
         onClick={() => toggleMute()}
         onPointerDown={(e) => e.stopPropagation()}
-        aria-label={muted ? "Unmute" : "Mute"}
+        aria-label={muted ? copies.game.muteAriaLabel.unmute : copies.game.muteAriaLabel.mute}
       >
         <img
-          src={muted ? "/mute.png" : "/sound.png"}
-          alt={muted ? "Unmute" : "Mute"}
+          src={muted ? "/logos/mute.png" : "/logos/sound.png"}
+          alt={muted ? copies.game.muteAlt.unmute : copies.game.muteAlt.mute}
         />
       </button>
     </>

@@ -1,0 +1,21 @@
+{
+  "iconAlt": "QuickDuel icon",
+  "title": "Install QuickDuel",
+  "description": "Play fullscreen, load instantly, and work offline — install QuickDuel on your home screen!",
+  "installButton": "Install App",
+  "installingButton": "Installing…",
+  "ios": {
+    "tap": "Tap",
+    "share": "Share",
+    "inSafariThen": "in Safari, then",
+    "addToHomeScreen": "\"Add\u00a0to\u00a0Home\u00a0Screen\""
+  },
+  "android": {
+    "tap": "Tap",
+    "inBrowserMenuThen": "in your browser menu, then",
+    "installApp": "\"Install\u00a0app\"",
+    "or": "or",
+    "addToHomeScreen": "\"Add\u00a0to\u00a0Home\u00a0Screen\""
+  },
+  "dismissButton": "Continue in Browser"
+}

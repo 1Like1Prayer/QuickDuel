@@ -1,20 +1,24 @@
 import { defineConfig } from 'vite'
-import react, { reactCompilerPreset } from '@vitejs/plugin-react'
-import babel from '@rolldown/plugin-babel'
+import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
-    babel({ presets: [reactCompilerPreset()] }),
+    basicSsl(),
+    react({
+      babel: {
+        plugins: ['babel-plugin-react-compiler'],
+      },
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
-        'favicon.svg',
-        'apple-touch-icon.svg',
-        'ARCADECLASSIC.TTF',
-        'dpcomic.ttf',
+        'logos/favicon.svg',
+        'logos/apple-touch-icon.svg',
+        'fonts/ARCADECLASSIC.TTF',
+        'fonts/dpcomic.ttf',
         'style.css',
       ],
       manifest: {
@@ -29,20 +33,20 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.svg',
+            src: 'logos/pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/svg+xml',
+            type: 'image/png',
           },
           {
-            src: 'pwa-512x512.svg',
+            src: 'logos/pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
           },
           {
-            src: 'pwa-512x512.svg',
+            src: 'logos/pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable',
+            type: 'image/png',
+            purpose: 'maskable',
           },
         ],
       },

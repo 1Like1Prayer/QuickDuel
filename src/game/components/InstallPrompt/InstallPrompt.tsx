@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { getDeferredPrompt, triggerInstall } from "../../../main";
+import { triggerInstall } from "../../../main";
+import { copies } from "../../../copies";
 import "./InstallPrompt.css";
 
 /* ── Helpers ── */
@@ -12,14 +13,6 @@ function isStandalone() {
   );
 }
 
-function isMobile() {
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
-
-function isIOS() {
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-
 /* ── Component ── */
 
 interface InstallPromptProps {
@@ -27,35 +20,43 @@ interface InstallPromptProps {
 }
 
 export function InstallPrompt({ onDismiss }: InstallPromptProps) {
-  const shouldShow = isMobile() && !isStandalone();
+  const [shouldShow] = useState(() => !isStandalone());
   const [installing, setInstalling] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
   const [closing, setClosing] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  /* Focus-trap: focus the modal on mount */
+  /* Auto-dismiss when already standalone */
+  useEffect(() => {
+    if (!shouldShow) onDismiss();
+  }, [shouldShow, onDismiss]);
+
+  /* Focus the modal on mount */
   useEffect(() => {
     if (shouldShow) modalRef.current?.focus();
   }, [shouldShow]);
 
-  /* Not on mobile or already installed — skip entirely */
-  if (!shouldShow) {
-    onDismiss();
-    return null;
-  }
-
-  const canPrompt = !!getDeferredPrompt();
+  if (!shouldShow) return null;
 
   const handleInstall = async () => {
     setInstalling(true);
     const accepted = await triggerInstall();
     setInstalling(false);
-    if (accepted) dismiss();
+    if (accepted) {
+      dismiss();
+    } else {
+      // Native prompt unavailable — show manual instructions
+      setShowFallback(true);
+    }
   };
 
   const dismiss = () => {
     setClosing(true);
     setTimeout(onDismiss, 280);
   };
+
+  const isIOS =
+    /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   return (
     <div className={`install-overlay${closing ? " install-overlay--closing" : ""}`}>
@@ -70,51 +71,47 @@ export function InstallPrompt({ onDismiss }: InstallPromptProps) {
       >
         {/* App icon */}
         <img
-          src="/pwa-192x192.svg"
-          alt="QuickDuel icon"
+          src="/logos/pwa-192x192.png"
+          alt={copies.installPrompt.iconAlt}
           className="install-icon-img"
           width={72}
           height={72}
         />
 
         <h2 id="install-title" className="install-title">
-          Install QuickDuel
+          {copies.installPrompt.title}
         </h2>
 
         <p className="install-desc">
-          Play fullscreen, load instantly, and work offline — install QuickDuel
-          on your home screen!
+          {copies.installPrompt.description}
         </p>
 
-        {canPrompt ? (
+        {!showFallback ? (
           <button
             className="intro-btn intro-btn-primary install-action-btn"
             onClick={handleInstall}
             disabled={installing}
           >
-            {installing ? "Installing…" : "Install App"}
+            {installing ? copies.installPrompt.installingButton : copies.installPrompt.installButton}
           </button>
-        ) : isIOS() ? (
-          <div className="install-instructions">
-            <p>
-              Tap{" "}
-              <span className="install-safari-icon" aria-hidden="true">
-                {/* Safari share icon approximation */}
-                ⬆
-              </span>{" "}
-              <strong>Share</strong> in Safari, then{" "}
-              <strong>"Add&nbsp;to&nbsp;Home&nbsp;Screen"</strong>.
-            </p>
-          </div>
         ) : (
           <div className="install-instructions">
-            <p>
-              Tap{" "}
-              <span className="install-menu-icon" aria-hidden="true">⋮</span>{" "}
-              in your browser, then{" "}
-              <strong>"Install&nbsp;app"</strong> or{" "}
-              <strong>"Add&nbsp;to&nbsp;Home&nbsp;Screen"</strong>.
-            </p>
+            {isIOS ? (
+              <p>
+                {copies.installPrompt.ios.tap}{" "}
+                <span className="install-safari-icon" aria-hidden="true">⬆</span>{" "}
+                <strong>{copies.installPrompt.ios.share}</strong> {copies.installPrompt.ios.inSafariThen}{" "}
+                <strong>{copies.installPrompt.ios.addToHomeScreen}</strong>.
+              </p>
+            ) : (
+              <p>
+                {copies.installPrompt.android.tap}{" "}
+                <span className="install-menu-icon" aria-hidden="true">⋮</span>{" "}
+                {copies.installPrompt.android.inBrowserMenuThen}{" "}
+                <strong>{copies.installPrompt.android.installApp}</strong> {copies.installPrompt.android.or}{" "}
+                <strong>{copies.installPrompt.android.addToHomeScreen}</strong>.
+              </p>
+            )}
           </div>
         )}
 
@@ -122,7 +119,7 @@ export function InstallPrompt({ onDismiss }: InstallPromptProps) {
           className="intro-btn intro-btn-settings install-dismiss-btn"
           onClick={dismiss}
         >
-          Continue in Browser
+          {copies.installPrompt.dismissButton}
         </button>
       </div>
     </div>

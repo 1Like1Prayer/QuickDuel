@@ -1,4 +1,5 @@
 import { useGameStore } from "../../../state";
+import { copies } from "../../../copies";
 import "./EndScreen.css";
 
 export function EndScreen() {
@@ -15,13 +16,13 @@ export function EndScreen() {
           className={`intro-btn ${playerWon ? "end-btn-win" : "end-btn-lose"}`}
           onClick={() => playAgain()}
         >
-          Play Again
+          {copies.endScreen.playAgain}
         </button>
         <button
           className="intro-btn end-btn-main-menu"
           onClick={() => reset()}
         >
-          Main Menu
+          {copies.endScreen.mainMenu}
         </button>
       </div>
     </div>

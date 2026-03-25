@@ -1,0 +1,8 @@
+{
+  "musicVolume": "Music Volume",
+  "musicVolumeAriaLabel": "Music volume",
+  "soundEffects": "Sound Effects",
+  "sfxToggleAriaLabel": "Toggle sound effects",
+  "on": "ON",
+  "off": "OFF"
+}

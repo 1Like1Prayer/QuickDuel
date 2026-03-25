@@ -1,3 +1,4 @@
+import { copies } from "../../../../copies";
 import "./Tutorial.css";
 
 type TutorialScreen = "tutorial-ask" | "tutorial-show" | "tutorial-show-menu";
@@ -20,18 +21,18 @@ export function Tutorial({
   if (screen === "tutorial-ask") {
     return (
       <div className="intro-buttons">
-        <p className="tutorial-prompt">Would you like to see the tutorial?</p>
+        <p className="tutorial-prompt">{copies.tutorial.prompt}</p>
         <button
           className="intro-btn intro-btn-primary"
           onClick={onShowTutorial}
         >
-          Show Tutorial
+          {copies.tutorial.showTutorial}
         </button>
         <button
           className="intro-btn intro-btn-settings"
           onClick={onSkip}
         >
-          Skip
+          {copies.tutorial.skip}
         </button>
       </div>
     );
@@ -41,15 +42,15 @@ export function Tutorial({
     return (
       <div className="tutorial-panel">
         <img
-          src="/Tutorial.jpg"
-          alt="Tutorial"
+          src="/tutorial/Tutorial.jpg"
+          alt={copies.tutorial.imageAlt}
           className="tutorial-image"
         />
         <button
           className="intro-btn intro-btn-primary tutorial-start-btn"
           onClick={onStartGame}
         >
-          Start Game
+          {copies.tutorial.startGame}
         </button>
       </div>
     );
@@ -59,15 +60,15 @@ export function Tutorial({
   return (
     <div className="tutorial-panel">
       <img
-        src="/Tutorial.jpg"
-        alt="Tutorial"
+        src="/tutorial/Tutorial.jpg"
+        alt={copies.tutorial.imageAlt}
         className="tutorial-image"
       />
       <button
         className="intro-btn intro-btn-back"
         onClick={onBack}
       >
-        Back
+        {copies.common.back}
       </button>
     </div>
   );
