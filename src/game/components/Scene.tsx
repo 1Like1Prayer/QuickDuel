@@ -335,9 +335,9 @@ export function Scene() {
         scoreBarGfx.alpha = scoreBarAlphaRef.current;
 
         const score = useGameStore.getState().score;
-        // Wider bar on bigger screens: scale with screen width, clamped
+        // Wider bar on bigger screens; on landscape mobile stretch to fill more width
         const baseBarW = layout.ring.outerRadius * 2;
-        const widthMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
+        const widthMult = Math.min(3.5, Math.max(1, layout.base.width / 400));
         const barWidth = baseBarW * widthMult;
         const barHeight = Math.max(10, layout.ring.outerRadius * 0.14);
         const halfW = barWidth / 2;
