@@ -13,9 +13,6 @@ export const LASER_ANIM_SPEED = 1 / 24;   // 24 fps for laser beam frames
 // --- Screen Shake ---
 export const SHAKE_DURATION = 0.08;
 
-// --- "FIGHT!" text display ---
-export const FIGHT_TEXT_DURATION_MS = 1200;
-
 // --- Countdown (3 → 2 → 1 → FIGHT!) ---
 export const COUNTDOWN_STEP_MS = 700;       // ms per number
 export const COUNTDOWN_FIGHT_MS = 800;      // ms the "FIGHT!" label stays

@@ -1,0 +1,178 @@
+/* ── Settings panel ── */
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.2rem, 4vw, 2rem);
+  width: 100%;
+  max-width: 340px;
+  animation: fadeInUp 0.35s ease-out;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.settings-label {
+  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
+  font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+  font-weight: 700;
+  color: #ffcc00;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Volume slider ── */
+.settings-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+}
+
+.settings-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #333 0%, #555 100%);
+  outline: none;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+.settings-slider:hover,
+.settings-slider:focus {
+  box-shadow: 0 0 8px rgba(255, 204, 0, 0.3);
+}
+
+.settings-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffcc00 0%, #b8860b 100%);
+  border: 2px solid #ffdd44;
+  box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.settings-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 16px rgba(255, 204, 0, 0.7);
+}
+
+.settings-slider:active::-webkit-slider-thumb {
+  transform: scale(0.95);
+}
+
+.settings-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffcc00 0%, #b8860b 100%);
+  border: 2px solid #ffdd44;
+  box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+  cursor: pointer;
+}
+
+.settings-value {
+  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
+  font-size: clamp(0.8rem, 2vw, 1rem);
+  color: #ffffff;
+  min-width: 3.5em;
+  text-align: right;
+}
+
+/* ── Toggle switch (replaces plain button) ── */
+.settings-toggle-track {
+  position: relative;
+  width: 64px;
+  height: 34px;
+  border-radius: 17px;
+  border: 2px solid;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  background: none;
+  padding: 0;
+}
+
+.settings-toggle-track:focus-visible {
+  outline: 2px solid #ffcc00;
+  outline-offset: 3px;
+}
+
+.settings-toggle-track-on {
+  background: linear-gradient(180deg, #228833 0%, #115522 100%);
+  border-color: #33aa44;
+  box-shadow: 0 0 12px rgba(34, 136, 51, 0.4);
+}
+
+.settings-toggle-track-off {
+  background: linear-gradient(180deg, #3a2222 0%, #221111 100%);
+  border-color: #663333;
+  box-shadow: 0 0 6px rgba(85, 34, 34, 0.3);
+}
+
+.settings-toggle-track:hover {
+  transform: scale(1.05);
+}
+
+.settings-toggle-track:active {
+  transform: scale(0.96);
+}
+
+.settings-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.settings-toggle-track-on .settings-toggle-thumb {
+  left: calc(100% - 27px);
+}
+
+.settings-toggle-track-off .settings-toggle-thumb {
+  left: 3px;
+}
+
+.settings-toggle-label {
+  font-family: "ARCADECLASSIC", "Arial Black", Impact, sans-serif;
+  font-size: clamp(0.75rem, 2vw, 0.9rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: 0.6rem;
+  user-select: none;
+}
+
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Landscape compact ── */
+@media (max-height: 440px) {
+  .settings-panel {
+    gap: 0.8rem;
+  }
+}

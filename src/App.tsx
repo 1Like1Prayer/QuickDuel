@@ -1,9 +1,10 @@
 import { Application, extend } from "@pixi/react";
 import { Container, Graphics, Sprite, Text } from "pixi.js";
 
+import { EndScreen } from "./game/components/EndScreen/EndScreen";
 import { useGameStore } from "./state";
-import { EndScreen } from "./game/components/EndScreen";
-import { IntroScreen } from "./game/components/IntroScreen";
+
+import { IntroScreen } from "./game/components/IntroScreen/IntroScreen";
 import { Scene } from "./game/components/Scene";
 
 extend({ Container, Graphics, Sprite, Text });
@@ -21,16 +22,18 @@ export default function App() {
         <Scene />
       </Application>
       {phase === "intro" && <IntroScreen />}
+
       {phase === "ended" && <EndScreen />}
       <button
-        className="mute-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleMute();
-        }}
+        className={`mute-btn${muted ? " is-muted" : ""}`}
+        onClick={() => toggleMute()}
         onPointerDown={(e) => e.stopPropagation()}
+        aria-label={muted ? "Unmute" : "Mute"}
       >
-        <img src={muted ? "/mute.png" : "/sound.png"} alt={muted ? "Unmute" : "Mute"} />
+        <img
+          src={muted ? "/mute.png" : "/sound.png"}
+          alt={muted ? "Unmute" : "Mute"}
+        />
       </button>
     </>
   );

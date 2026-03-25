@@ -1,0 +1,111 @@
+/* ── End screen overlay ── */
+.end-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.end-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.7rem, 2.5vw, 1rem);
+  margin-top: 15vh;
+  animation: end-fade-in 0.7s ease-out both;
+  animation-delay: 1.8s;
+  pointer-events: none;
+  width: 90%;
+  max-width: 400px;
+}
+
+@keyframes end-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.95);
+    pointer-events: none;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+}
+
+/* ── Play Again — Win variant (green) ── */
+.end-btn-win {
+  background: linear-gradient(180deg, #228833 0%, #115522 100%);
+  border-color: #33aa44;
+  color: #ffffff;
+  box-shadow:
+    0 0 20px rgba(34, 136, 51, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: fadeInUp 0.5s ease-out 1.8s both;
+}
+
+.end-btn-win:hover {
+  background: linear-gradient(180deg, #33aa44 0%, #227733 100%);
+  box-shadow: 0 0 32px rgba(34, 136, 51, 0.7);
+  transform: scale(1.03);
+}
+
+.end-btn-win:active {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+/* ── Play Again — Lose variant (red) ── */
+.end-btn-lose {
+  background: linear-gradient(180deg, #cc3311 0%, #881100 100%);
+  border-color: #ee4422;
+  color: #ffffff;
+  box-shadow:
+    0 0 20px rgba(204, 51, 17, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: fadeInUp 0.5s ease-out 1.8s both;
+}
+
+.end-btn-lose:hover {
+  background: linear-gradient(180deg, #dd4422 0%, #992211 100%);
+  box-shadow: 0 0 32px rgba(204, 51, 17, 0.7);
+  transform: scale(1.03);
+}
+
+.end-btn-lose:active {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+/* ── Main Menu button ── */
+.end-btn-main-menu {
+  background: linear-gradient(180deg, #333333 0%, #1a1a1a 100%);
+  border-color: #555555;
+  color: #bbbbbb;
+  box-shadow:
+    0 0 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: fadeInUp 0.5s ease-out 2s both;
+}
+
+.end-btn-main-menu:hover {
+  background: linear-gradient(180deg, #444444 0%, #222222 100%);
+  box-shadow: 0 0 20px rgba(100, 100, 100, 0.4);
+  transform: scale(1.03);
+  color: #ffffff;
+}
+
+.end-btn-main-menu:active {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+/* ── Landscape mobile ── */
+@media (max-height: 440px) {
+  .end-content {
+    margin-top: 8vh;
+    gap: 0.5rem;
+  }
+}

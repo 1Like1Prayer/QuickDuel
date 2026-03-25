@@ -1,6 +1,6 @@
 ﻿import { useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, Sprite, Text, Texture } from "pixi.js";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   BLOCK_ALPHA,
@@ -32,8 +32,19 @@ import { useLayout } from "../hooks/useLayout";
 export function Scene() {
   const { app } = useApplication();
 
-  // Responsive layout
-  const layout = useLayout(app.screen.width, app.screen.height);
+  // Track screen size reactively so layout updates on resize
+  const [screenSize, setScreenSize] = useState({ w: app.screen.width, h: app.screen.height });
+  const onResize = useCallback(() => {
+    setScreenSize({ w: app.screen.width, h: app.screen.height });
+  }, [app]);
+
+  useEffect(() => {
+    app.renderer.on("resize", onResize);
+    return () => { app.renderer.off("resize", onResize); };
+  }, [app, onResize]);
+
+  // Responsive layout — recomputes when screen size changes
+  const layout = useLayout(screenSize.w, screenSize.h);
 
   // Sprite refs
   const containerRef = useRef<Container>(null);
@@ -75,8 +86,6 @@ export function Scene() {
   // Miss line layer (red radial line from inner to outer ring)
   const missLineGfxRef = useRef<Graphics>(null);
 
-
-
   // Load assets
   const bgTexture = useBackgroundTexture();
   const bricksTexture = useBricksTexture();
@@ -98,7 +107,6 @@ export function Scene() {
 
   // Run game loop
   const { showWinText, winTextAlpha, winnerText, countdownText } = useGameLoop({
-    app,
     refs: {
       container: containerRef,
       bg: bgRef,
@@ -525,10 +533,10 @@ export function Scene() {
         ref={countdownTextRef}
         text="3"
         anchor={0.5}
-        x={app.screen.width / 2}
-        y={app.screen.height / 2 - layout.fightText.fightFontSize * 0.8}
+        x={screenSize.w / 2}
+        y={screenSize.h / 2 - layout.fightText.fightFontSize * 0.8}
         style={{
-          fontFamily: "Arial Black, Impact, sans-serif",
+          fontFamily: "ARCADECLASSIC, Arial Black, Impact, sans-serif",
           fontSize: layout.fightText.fightFontSize * 1.5,
           fontWeight: "bold" as const,
           fill: 0xffffff,
@@ -549,10 +557,10 @@ export function Scene() {
         ref={winTextRef}
         text="You Win"
         anchor={0.5}
-        x={app.screen.width / 2}
-        y={app.screen.height * 0.22}
+        x={screenSize.w / 2}
+        y={screenSize.h * 0.22}
         style={{
-          fontFamily: "Arial Black, Impact, sans-serif",
+          fontFamily: "dpcomic, Arial Black, Impact, sans-serif",
           fontSize: layout.fightText.fightFontSize * 1.8,
           fontWeight: "bold" as const,
           fill: 0xffcc00,

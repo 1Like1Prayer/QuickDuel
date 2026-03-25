@@ -1,0 +1,46 @@
+/* ── Difficulty buttons ── */
+.intro-btn-difficulty {
+  color: #ffffff;
+  box-shadow:
+    0 0 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.intro-btn-difficulty:hover {
+  transform: scale(1.03);
+}
+
+.intro-btn-difficulty:active {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+.intro-btn-beginner {
+  background: linear-gradient(180deg, #228833 0%, #115522 100%);
+  border-color: #33aa44;
+}
+
+.intro-btn-beginner:hover {
+  background: linear-gradient(180deg, #33aa44 0%, #227733 100%);
+  box-shadow: 0 0 24px rgba(34, 136, 51, 0.6);
+}
+
+.intro-btn-intermediate {
+  background: linear-gradient(180deg, #cc8800 0%, #996600 100%);
+  border-color: #ddaa22;
+}
+
+.intro-btn-intermediate:hover {
+  background: linear-gradient(180deg, #ddaa22 0%, #aa7700 100%);
+  box-shadow: 0 0 24px rgba(204, 136, 0, 0.6);
+}
+
+.intro-btn-advanced {
+  background: linear-gradient(180deg, #cc2222 0%, #881111 100%);
+  border-color: #ee3333;
+}
+
+.intro-btn-advanced:hover {
+  background: linear-gradient(180deg, #dd3333 0%, #992222 100%);
+  box-shadow: 0 0 24px rgba(204, 34, 34, 0.6);
+}

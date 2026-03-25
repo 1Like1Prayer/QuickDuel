@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 
+import { FRAME_SIZE } from "../constants";
 import type { Layout } from "./types/useLayout.types";
-
-const FRAME_SIZE = 128;
 
 export function useLayout(screenWidth: number, screenHeight: number): Layout {
   return useMemo(() => {
