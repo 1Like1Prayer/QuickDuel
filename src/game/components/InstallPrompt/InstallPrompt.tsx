@@ -71,7 +71,7 @@ export function InstallPrompt({ onDismiss }: InstallPromptProps) {
       >
         {/* App icon */}
         <img
-          src="/pwa-192x192.png"
+          src="/logos/pwa-192x192.png"
           alt={copies.installPrompt.iconAlt}
           className="install-icon-img"
           width={72}

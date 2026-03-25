@@ -15,10 +15,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
-        'favicon.svg',
-        'apple-touch-icon.svg',
-        'ARCADECLASSIC.TTF',
-        'dpcomic.ttf',
+        'logos/favicon.svg',
+        'logos/apple-touch-icon.svg',
+        'fonts/ARCADECLASSIC.TTF',
+        'fonts/dpcomic.ttf',
         'style.css',
       ],
       manifest: {
@@ -33,17 +33,17 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'logos/pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'logos/pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'logos/pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

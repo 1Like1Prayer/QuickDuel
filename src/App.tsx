@@ -40,7 +40,7 @@ export default function App() {
         aria-label={muted ? copies.game.muteAriaLabel.unmute : copies.game.muteAriaLabel.mute}
       >
         <img
-          src={muted ? "/mute.png" : "/sound.png"}
+          src={muted ? "/logos/mute.png" : "/logos/sound.png"}
           alt={muted ? copies.game.muteAlt.unmute : copies.game.muteAlt.mute}
         />
       </button>

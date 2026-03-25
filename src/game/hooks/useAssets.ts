@@ -10,7 +10,7 @@ export function useBackgroundTexture() {
 
   useEffect(() => {
     if (bgTexture === Texture.EMPTY) {
-      Assets.load("/Battleground/Battleground.png").then(
+      Assets.load("/textures/Battleground/Battleground.png").then(
         setBgTexture,
       );
     }
@@ -25,7 +25,7 @@ export function useBricksTexture() {
 
   useEffect(() => {
     if (bricksTexture === Texture.EMPTY) {
-      Assets.load("/Ring_Texture.png").then(setBricksTexture);
+      Assets.load("/textures/Ring_Texture.png").then(setBricksTexture);
     }
   }, [bricksTexture]);
 
@@ -45,7 +45,7 @@ export function useLaserFrames() {
 
   useEffect(() => {
     if (!laserFrames) {
-      Assets.load("/Laser_Beam_Spritesheet_RED.png").then((sheet: Texture) => {
+      Assets.load("/lasers/Laser_Beam_Spritesheet_RED.png").then((sheet: Texture) => {
         const rowFrames = (r: number): Texture[] => {
           const frames: Texture[] = [];
           for (let c = 0; c < LASER_COLS; c++) {
@@ -81,7 +81,7 @@ export function useBlueLaserFrames() {
 
   useEffect(() => {
     if (!laserFrames) {
-      Assets.load("/Laser_Beam_Spritesheet_BLUE.png").then((sheet: Texture) => {
+      Assets.load("/lasers/Laser_Beam_Spritesheet_BLUE.png").then((sheet: Texture) => {
         const rowFrames = (r: number): Texture[] => {
           const frames: Texture[] = [];
           for (let c = 0; c < LASER_COLS; c++) {
@@ -120,7 +120,7 @@ export function useCharacterAnims() {
     const loadAnims = async (charName: string): Promise<CharAnims> => {
       const anims: CharAnims = {};
       for (const [animName, frameCount] of Object.entries(ANIM_FRAMES[charName])) {
-        const sheet = await Assets.load(`/${charName}/${animName}.png`);
+        const sheet = await Assets.load(`/characters/${charName}/${animName}.png`);
         anims[animName] = sliceFrames(sheet, frameCount);
       }
       return anims;

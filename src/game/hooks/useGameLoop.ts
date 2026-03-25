@@ -75,28 +75,28 @@ export function useGameLoop({
   // Laser hold SFX
   const fireHoldSfx = useRef<HTMLAudioElement | null>(null);
   if (!fireHoldSfx.current) {
-    const sfx = new Audio("/SFX/EM_FIRE_HOLD_4s.ogg");
+    const sfx = new Audio("/sounds/EM_FIRE_HOLD_4s.ogg");
     sfx.loop = true;
     sfx.volume = 0.8;
     fireHoldSfx.current = sfx;
   }
   const lightHoldSfx = useRef<HTMLAudioElement | null>(null);
   if (!lightHoldSfx.current) {
-    const sfx = new Audio("/SFX/EM_LIGHT_HOLD_5s.ogg");
+    const sfx = new Audio("/sounds/EM_LIGHT_HOLD_5s.ogg");
     sfx.loop = true;
     sfx.volume = 0.8;
     lightHoldSfx.current = sfx;
   }
   const laserCastSfx = useRef<HTMLAudioElement | null>(null);
   if (!laserCastSfx.current) {
-    const sfx = new Audio("/SFX/EM_LIGHT_CAST_02_S.ogg");
+    const sfx = new Audio("/sounds/EM_LIGHT_CAST_02_S.ogg");
     sfx.loop = false;
     sfx.volume = 0.8;
     laserCastSfx.current = sfx;
   }
   const fireCastSfx = useRef<HTMLAudioElement | null>(null);
   if (!fireCastSfx.current) {
-    const sfx = new Audio("/SFX/EM_FIRE_CAST_02.ogg");
+    const sfx = new Audio("/sounds/EM_FIRE_CAST_02.ogg");
     sfx.loop = false;
     sfx.volume = 0.8;
     fireCastSfx.current = sfx;
@@ -106,35 +106,35 @@ export function useGameLoop({
   // Impact SFX
   const fireImpactSfx = useRef<HTMLAudioElement | null>(null);
   if (!fireImpactSfx.current) {
-    const sfx = new Audio("/SFX/EM_FIRE_IMPACT_01.ogg");
+    const sfx = new Audio("/sounds/EM_FIRE_IMPACT_01.ogg");
     sfx.loop = false;
     sfx.volume = 1.0;
     fireImpactSfx.current = sfx;
   }
   const lightImpactSfx = useRef<HTMLAudioElement | null>(null);
   if (!lightImpactSfx.current) {
-    const sfx = new Audio("/SFX/EM_LIGHT_IMPACT_01.ogg");
+    const sfx = new Audio("/sounds/EM_LIGHT_IMPACT_01.ogg");
     sfx.loop = false;
     sfx.volume = 1.0;
     lightImpactSfx.current = sfx;
   }
   const fireLaunchSfx = useRef<HTMLAudioElement | null>(null);
   if (!fireLaunchSfx.current) {
-    const sfx = new Audio("/SFX/EM_FIRE_LAUNCH_01.ogg");
+    const sfx = new Audio("/sounds/EM_FIRE_LAUNCH_01.ogg");
     sfx.loop = false;
     sfx.volume = 1.0;
     fireLaunchSfx.current = sfx;
   }
   const lightLaunchSfx = useRef<HTMLAudioElement | null>(null);
   if (!lightLaunchSfx.current) {
-    const sfx = new Audio("/SFX/EM_LIGHT_LAUNCH_01.ogg");
+    const sfx = new Audio("/sounds/EM_LIGHT_LAUNCH_01.ogg");
     sfx.loop = false;
     sfx.volume = 1.0;
     lightLaunchSfx.current = sfx;
   }
   const clashSfx = useRef<HTMLAudioElement | null>(null);
   if (!clashSfx.current) {
-    const sfx = new Audio("/SFX/dragon-studio-epic-spell-impact-478364.mp3");
+    const sfx = new Audio("/sounds/dragon-studio-epic-spell-impact-478364.mp3");
     sfx.loop = false;
     sfx.volume = 1.0;
     clashSfx.current = sfx;

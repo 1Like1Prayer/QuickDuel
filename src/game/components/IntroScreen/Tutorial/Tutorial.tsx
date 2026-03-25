@@ -42,7 +42,7 @@ export function Tutorial({
     return (
       <div className="tutorial-panel">
         <img
-          src="/Tutorial.jpg"
+          src="/tutorial/Tutorial.jpg"
           alt={copies.tutorial.imageAlt}
           className="tutorial-image"
         />
@@ -60,7 +60,7 @@ export function Tutorial({
   return (
     <div className="tutorial-panel">
       <img
-        src="/Tutorial.jpg"
+        src="/tutorial/Tutorial.jpg"
         alt={copies.tutorial.imageAlt}
         className="tutorial-image"
       />
