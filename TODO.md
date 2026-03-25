@@ -42,6 +42,7 @@
   - Posthog
   - Sentry
   - CloudFlare
+  - checking
 
 - [ ] **Infrastructure & security**
   - Cloudflare CDN & proxy
