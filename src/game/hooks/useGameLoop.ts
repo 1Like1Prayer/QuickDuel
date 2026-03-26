@@ -1,4 +1,4 @@
-﻿import { useTick } from "@pixi/react";
+import { useTick } from "@pixi/react";
 import { Graphics, Sprite, Texture } from "pixi.js";
 import { useEffect, useRef } from "react";
 import { copies } from "../../copies";
@@ -47,6 +47,7 @@ export function useGameLoop({
   const countdownLabel = useRef<string | null>(null);
   const ringContainerOpacity = useRef(0);
   const laserClashPointLerpedX = useRef<number | null>(null);
+  const redImpactClampedX = useRef<number | null>(null);
 
   const currentPhase = useRef<Phase>("intro");
 
@@ -129,7 +130,9 @@ export function useGameLoop({
   }
   const beamClashAudio = useRef<HTMLAudioElement | null>(null);
   if (!beamClashAudio.current) {
-    const audio = new Audio("/sounds/dragon-studio-epic-spell-impact-478364.mp3");
+    const audio = new Audio(
+      "/sounds/dragon-studio-epic-spell-impact-478364.mp3",
+    );
     audio.loop = false;
     audio.volume = 1.0;
     beamClashAudio.current = audio;
@@ -198,7 +201,11 @@ export function useGameLoop({
     }
 
     const storePhase = useGameStore.getState().phase;
-    if (storePhase === "ended" && currentPhase.current !== "player_lose" && currentPhase.current !== "player_win") {
+    if (
+      storePhase === "ended" &&
+      currentPhase.current !== "player_lose" &&
+      currentPhase.current !== "player_win"
+    ) {
       const playerWon = useGameStore.getState().score > 0;
       if (playerWon) {
         resultTextContent.current = copies.game.result.youWin;
@@ -240,8 +247,11 @@ export function useGameLoop({
       triggerScreenShake();
     } else {
       triggerScreenShake();
-      const clashX = (laserClashPointLerpedX.current ?? layout.positions.meetX) - layout.characters.charSize * 0.3;
-      const clashY = layout.positions.groundY + layout.characters.charSize * 0.66;
+      const clashX =
+        (laserClashPointLerpedX.current ?? layout.positions.meetX) -
+        layout.characters.charSize * 0.3;
+      const clashY =
+        layout.positions.groundY + layout.characters.charSize * 0.66;
       spawnSparks(sparkParticles.current, clashX, clashY);
       if (beamClashAudio.current) {
         beamClashAudio.current.currentTime = 0;
@@ -304,6 +314,31 @@ export function useGameLoop({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dialGame]);
 
+  // -- Debug key listener (1 -> score -6, 2 -> -5, 3 -> 5, 4 -> 6) --
+
+  useEffect(() => {
+    const DEBUG_SCORE_MAP: Record<string, number> = {
+      "1": -9,
+      "2": -8,
+      "3": 9,
+      "4": 8,
+    };
+
+    const onDebugKey = (event: KeyboardEvent) => {
+      const targetScore = DEBUG_SCORE_MAP[event.key];
+      if (
+        targetScore !== undefined &&
+        useGameStore.getState().phase === "playing"
+      ) {
+        useGameStore.getState().debugSetScore(targetScore);
+      }
+    };
+
+    window.addEventListener("keydown", onDebugKey);
+    return () => {
+      window.removeEventListener("keydown", onDebugKey);
+    };
+  }, []);
   const resetAnimationFrameCounters = () => {
     playerAnimFrameIndex.current = 0;
     opponentAnimFrameIndex.current = 0;
@@ -316,7 +351,6 @@ export function useGameLoop({
     screenShakeTimeRemaining.current = SHAKE_DURATION;
     isScreenShaking.current = true;
   };
-
 
   // ── Main tick ──
 
@@ -334,7 +368,10 @@ export function useGameLoop({
     if (bgTexture !== Texture.EMPTY) {
       const screenWidth = layout.base.width;
       const screenHeight = layout.base.height;
-      const bgCoverScale = Math.max(screenWidth / bgTexture.width, screenHeight / bgTexture.height);
+      const bgCoverScale = Math.max(
+        screenWidth / bgTexture.width,
+        screenHeight / bgTexture.height,
+      );
       bg.current.scale.set(bgCoverScale);
       bg.current.x = (screenWidth - bgTexture.width * bgCoverScale) / 2;
       bg.current.y = (screenHeight - bgTexture.height * bgCoverScale) / 2;
@@ -350,28 +387,38 @@ export function useGameLoop({
     const playerAnimFrames = playerAnims[playerAnimName];
     const opponentAnimFrames = opponentAnims[opponentAnimName];
 
-    if (activePhase !== "player_win" && activePhase !== "player_lose" && activePhase !== "attack_intro") {
+    if (
+      activePhase !== "player_win" &&
+      activePhase !== "player_lose" &&
+      activePhase !== "attack_intro"
+    ) {
       if (hasAttackIntroCompleted.current && playerAnimName === "Idle") {
         const playerAttackFrames = playerAnims["Flame_jet"];
-        player.current.texture = playerAttackFrames[playerAttackFrames.length - 1];
+        player.current.texture =
+          playerAttackFrames[playerAttackFrames.length - 1];
       } else {
         playerAnimTimer.current += deltaSeconds;
         if (playerAnimTimer.current >= ANIM_SPEED) {
           playerAnimTimer.current = 0;
-          playerAnimFrameIndex.current = (playerAnimFrameIndex.current + 1) % playerAnimFrames.length;
-          player.current.texture = playerAnimFrames[playerAnimFrameIndex.current];
+          playerAnimFrameIndex.current =
+            (playerAnimFrameIndex.current + 1) % playerAnimFrames.length;
+          player.current.texture =
+            playerAnimFrames[playerAnimFrameIndex.current];
         }
       }
 
       if (hasAttackIntroCompleted.current && opponentAnimName === "Idle") {
         const opponentAttackFrames = opponentAnims["Magic_arrow"];
-        opponent.current.texture = opponentAttackFrames[opponentAttackFrames.length - 1];
+        opponent.current.texture =
+          opponentAttackFrames[opponentAttackFrames.length - 1];
       } else {
         opponentAnimTimer.current += deltaSeconds;
         if (opponentAnimTimer.current >= ANIM_SPEED) {
           opponentAnimTimer.current = 0;
-          opponentAnimFrameIndex.current = (opponentAnimFrameIndex.current + 1) % opponentAnimFrames.length;
-          opponent.current.texture = opponentAnimFrames[opponentAnimFrameIndex.current];
+          opponentAnimFrameIndex.current =
+            (opponentAnimFrameIndex.current + 1) % opponentAnimFrames.length;
+          opponent.current.texture =
+            opponentAnimFrames[opponentAnimFrameIndex.current];
         }
       }
     }
@@ -387,25 +434,34 @@ export function useGameLoop({
           countdownLabel.current = copies.game.countdown.three;
           resetAnimationFrameCounters();
           const countdownStepMs = COUNTDOWN_STEP_MS;
-          setTimeout(() => { countdownLabel.current = copies.game.countdown.two; }, countdownStepMs);
-          setTimeout(() => { countdownLabel.current = copies.game.countdown.one; }, countdownStepMs * 2);
+          setTimeout(() => {
+            countdownLabel.current = copies.game.countdown.two;
+          }, countdownStepMs);
+          setTimeout(() => {
+            countdownLabel.current = copies.game.countdown.one;
+          }, countdownStepMs * 2);
           setTimeout(() => {
             countdownLabel.current = copies.game.countdown.fight;
           }, countdownStepMs * 3);
-          setTimeout(() => {
-            countdownLabel.current = null;
-            currentPhase.current = "attack_intro";
-            resetAnimationFrameCounters();
-            dialGame.start();
-          }, countdownStepMs * 3 + COUNTDOWN_FIGHT_MS);
+          setTimeout(
+            () => {
+              countdownLabel.current = null;
+              currentPhase.current = "attack_intro";
+              resetAnimationFrameCounters();
+              dialGame.start();
+            },
+            countdownStepMs * 3 + COUNTDOWN_FIGHT_MS,
+          );
         }
         break;
       }
 
-
       case "countdown": {
         if (ringContainerOpacity.current < 1) {
-          ringContainerOpacity.current = Math.min(1, ringContainerOpacity.current + deltaSeconds / RING_FADE_IN_DURATION);
+          ringContainerOpacity.current = Math.min(
+            1,
+            ringContainerOpacity.current + deltaSeconds / RING_FADE_IN_DURATION,
+          );
           if (refs.ringContainer.current) {
             refs.ringContainer.current.alpha = ringContainerOpacity.current;
           }
@@ -417,19 +473,23 @@ export function useGameLoop({
         const playerAttackFrames = playerAnims["Flame_jet"];
         const opponentAttackFrames = opponentAnims["Magic_arrow"];
 
-        player.current.texture = playerAttackFrames[playerAnimFrameIndex.current];
-        opponent.current.texture = opponentAttackFrames[opponentAnimFrameIndex.current];
+        player.current.texture =
+          playerAttackFrames[playerAnimFrameIndex.current];
+        opponent.current.texture =
+          opponentAttackFrames[opponentAnimFrameIndex.current];
 
         playerAnimTimer.current += deltaSeconds;
         if (playerAnimTimer.current >= ANIM_SPEED) {
           playerAnimTimer.current = 0;
-          if (playerAnimFrameIndex.current < playerAttackFrames.length - 1) playerAnimFrameIndex.current++;
+          if (playerAnimFrameIndex.current < playerAttackFrames.length - 1)
+            playerAnimFrameIndex.current++;
         }
 
         opponentAnimTimer.current += deltaSeconds;
         if (opponentAnimTimer.current >= ANIM_SPEED) {
           opponentAnimTimer.current = 0;
-          if (opponentAnimFrameIndex.current < opponentAttackFrames.length - 1) opponentAnimFrameIndex.current++;
+          if (opponentAnimFrameIndex.current < opponentAttackFrames.length - 1)
+            opponentAnimFrameIndex.current++;
         }
 
         if (
@@ -458,10 +518,14 @@ export function useGameLoop({
         }
 
         if (ringContainerOpacity.current > 0) {
-          ringContainerOpacity.current = Math.max(0, ringContainerOpacity.current - deltaSeconds / RING_FADE_IN_DURATION);
+          ringContainerOpacity.current = Math.max(
+            0,
+            ringContainerOpacity.current - deltaSeconds / RING_FADE_IN_DURATION,
+          );
           if (refs.ringContainer.current) {
             refs.ringContainer.current.alpha = ringContainerOpacity.current;
-            if (ringContainerOpacity.current <= 0) refs.ringContainer.current.visible = false;
+            if (ringContainerOpacity.current <= 0)
+              refs.ringContainer.current.visible = false;
           }
         }
 
@@ -470,7 +534,8 @@ export function useGameLoop({
           opponentAnimTimer.current = 0;
           if (opponentAnimFrameIndex.current < opponentAnimFrames.length - 1) {
             opponentAnimFrameIndex.current++;
-            opponent.current.texture = opponentAnimFrames[opponentAnimFrameIndex.current];
+            opponent.current.texture =
+              opponentAnimFrames[opponentAnimFrameIndex.current];
           } else if (!isPhaseAnimationComplete.current) {
             isPhaseAnimationComplete.current = true;
             isResultTextVisible.current = true;
@@ -482,59 +547,74 @@ export function useGameLoop({
           playerAnimTimer.current += deltaSeconds;
           if (playerAnimTimer.current >= ANIM_SPEED) {
             playerAnimTimer.current = 0;
-            playerAnimFrameIndex.current = (playerAnimFrameIndex.current + 1) % playerIdleFrames.length;
-            player.current.texture = playerIdleFrames[playerAnimFrameIndex.current];
+            playerAnimFrameIndex.current =
+              (playerAnimFrameIndex.current + 1) % playerIdleFrames.length;
+            player.current.texture =
+              playerIdleFrames[playerAnimFrameIndex.current];
           }
         }
 
         if (isResultTextVisible.current && resultTextOpacity.current < 1) {
-          resultTextOpacity.current = Math.min(1, resultTextOpacity.current + deltaSeconds / WIN_TEXT_FADE_DURATION);
+          resultTextOpacity.current = Math.min(
+            1,
+            resultTextOpacity.current + deltaSeconds / WIN_TEXT_FADE_DURATION,
+          );
         }
         break;
-        }
-  
-        case "player_lose": {
-          const storePhase = useGameStore.getState().phase;
-          if (storePhase !== "ended") {
-            resetAllTransientState();
-            break;
-          }
-  
-          if (ringContainerOpacity.current > 0) {
-            ringContainerOpacity.current = Math.max(0, ringContainerOpacity.current - deltaSeconds / RING_FADE_IN_DURATION);
-            if (refs.ringContainer.current) {
-              refs.ringContainer.current.alpha = ringContainerOpacity.current;
-              if (ringContainerOpacity.current <= 0) refs.ringContainer.current.visible = false;
-            }
-          }
+      }
 
-          playerAnimTimer.current += deltaSeconds;
-          if (playerAnimTimer.current >= SLOWMO_ANIM_SPEED) {
-            playerAnimTimer.current = 0;
-            if (playerAnimFrameIndex.current < playerAnimFrames.length - 1) {
-              playerAnimFrameIndex.current++;
-              player.current.texture = playerAnimFrames[playerAnimFrameIndex.current];
-            } else if (!isPhaseAnimationComplete.current) {
-              isPhaseAnimationComplete.current = true;
-              isResultTextVisible.current = true;
-            }
-          }
-
-          {
-            const opponentIdleFrames = opponentAnims["Idle"];
-            opponentAnimTimer.current += deltaSeconds;
-            if (opponentAnimTimer.current >= ANIM_SPEED) {
-              opponentAnimTimer.current = 0;
-              opponentAnimFrameIndex.current = (opponentAnimFrameIndex.current + 1) % opponentIdleFrames.length;
-              opponent.current.texture = opponentIdleFrames[opponentAnimFrameIndex.current];
-            }
-          }
-  
-          if (isResultTextVisible.current && resultTextOpacity.current < 1) {
-            resultTextOpacity.current = Math.min(1, resultTextOpacity.current + deltaSeconds / WIN_TEXT_FADE_DURATION);
-          }
+      case "player_lose": {
+        const storePhase = useGameStore.getState().phase;
+        if (storePhase !== "ended") {
+          resetAllTransientState();
           break;
         }
+
+        if (ringContainerOpacity.current > 0) {
+          ringContainerOpacity.current = Math.max(
+            0,
+            ringContainerOpacity.current - deltaSeconds / RING_FADE_IN_DURATION,
+          );
+          if (refs.ringContainer.current) {
+            refs.ringContainer.current.alpha = ringContainerOpacity.current;
+            if (ringContainerOpacity.current <= 0)
+              refs.ringContainer.current.visible = false;
+          }
+        }
+
+        playerAnimTimer.current += deltaSeconds;
+        if (playerAnimTimer.current >= SLOWMO_ANIM_SPEED) {
+          playerAnimTimer.current = 0;
+          if (playerAnimFrameIndex.current < playerAnimFrames.length - 1) {
+            playerAnimFrameIndex.current++;
+            player.current.texture =
+              playerAnimFrames[playerAnimFrameIndex.current];
+          } else if (!isPhaseAnimationComplete.current) {
+            isPhaseAnimationComplete.current = true;
+            isResultTextVisible.current = true;
+          }
+        }
+
+        {
+          const opponentIdleFrames = opponentAnims["Idle"];
+          opponentAnimTimer.current += deltaSeconds;
+          if (opponentAnimTimer.current >= ANIM_SPEED) {
+            opponentAnimTimer.current = 0;
+            opponentAnimFrameIndex.current =
+              (opponentAnimFrameIndex.current + 1) % opponentIdleFrames.length;
+            opponent.current.texture =
+              opponentIdleFrames[opponentAnimFrameIndex.current];
+          }
+        }
+
+        if (isResultTextVisible.current && resultTextOpacity.current < 1) {
+          resultTextOpacity.current = Math.min(
+            1,
+            resultTextOpacity.current + deltaSeconds / WIN_TEXT_FADE_DURATION,
+          );
+        }
+        break;
+      }
     }
 
     // ── CPU turn on block regeneration gate ──
@@ -542,7 +622,11 @@ export function useGameLoop({
     if (currentRegenGateCount > previousRegenGateCount.current) {
       const isVeryFirstGate = previousRegenGateCount.current === 0;
       previousRegenGateCount.current = currentRegenGateCount;
-      if (!isVeryFirstGate && !cpuTurnTakenThisLap.current && currentPhase.current !== "attack_intro") {
+      if (
+        !isVeryFirstGate &&
+        !cpuTurnTakenThisLap.current &&
+        currentPhase.current !== "attack_intro"
+      ) {
         const cpuPoints = executeCpuTurn();
         resolveRoundOutcome(0, cpuPoints);
       }
@@ -577,7 +661,12 @@ export function useGameLoop({
     const redLaserMiddleContainer = refs.laserMiddle.current;
     const redLaserImpact = refs.laserImpact.current;
 
-    if (redLaserSource && redLaserMiddleContainer && redLaserImpact && laserFrames) {
+    if (
+      redLaserSource &&
+      redLaserMiddleContainer &&
+      redLaserImpact &&
+      laserFrames
+    ) {
       const shouldShowRedLaser =
         hasAttackIntroCompleted.current &&
         activePhase !== "intro" &&
@@ -616,11 +705,18 @@ export function useGameLoop({
           const { sfxEnabled, muted } = useGameStore.getState();
           const shouldPlayAudio = sfxEnabled && !muted;
           if (!shouldPlayAudio) {
-            if (fireBeamLoopAudio.current && !fireBeamLoopAudio.current.paused) fireBeamLoopAudio.current.pause();
-            if (lightBeamLoopAudio.current && !lightBeamLoopAudio.current.paused) lightBeamLoopAudio.current.pause();
+            if (fireBeamLoopAudio.current && !fireBeamLoopAudio.current.paused)
+              fireBeamLoopAudio.current.pause();
+            if (
+              lightBeamLoopAudio.current &&
+              !lightBeamLoopAudio.current.paused
+            )
+              lightBeamLoopAudio.current.pause();
           } else {
-            if (fireBeamLoopAudio.current && fireBeamLoopAudio.current.paused) fireBeamLoopAudio.current.play().catch(() => {});
-            if (lightBeamLoopAudio.current && lightBeamLoopAudio.current.paused) lightBeamLoopAudio.current.play().catch(() => {});
+            if (fireBeamLoopAudio.current && fireBeamLoopAudio.current.paused)
+              fireBeamLoopAudio.current.play().catch(() => {});
+            if (lightBeamLoopAudio.current && lightBeamLoopAudio.current.paused)
+              lightBeamLoopAudio.current.play().catch(() => {});
           }
         }
 
@@ -669,20 +765,41 @@ export function useGameLoop({
 
         // Impact position shifts based on score (smoothly lerped)
         const isSmallScreen = layout.base.unit < 500;
-        const scoreNormalized = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
+        const scoreNormalized = Math.min(
+          1,
+          Math.max(-1, useGameStore.getState().score / (WIN_POINTS + 1)),
+        );
         const scoreBarBaseWidth = layout.ring.outerRadius * 2;
-        const scoreBarWidthMultiplier = Math.min(2.2, Math.max(1, layout.base.width / 800));
-        const scoreBarHalfWidth = (scoreBarBaseWidth * scoreBarWidthMultiplier) / 2;
-        const redImpactBaseX = layout.positions.meetX + charSize * (isSmallScreen ? 0.2 : 0.3);
+        const scoreBarWidthMultiplier = Math.min(
+          2.2,
+          Math.max(1, layout.base.width / 800),
+        );
+        const scoreBarHalfWidth =
+          (scoreBarBaseWidth * scoreBarWidthMultiplier) / 2;
+        const redImpactBaseX =
+          layout.positions.meetX + charSize * (isSmallScreen ? 0.2 : 0.3);
         const impactTravelMultiplier = isSmallScreen ? 0.8 : 1.5;
-        const redImpactTargetX = redImpactBaseX + scoreBarHalfWidth * scoreNormalized * impactTravelMultiplier;
+        const redImpactTargetX =
+          redImpactBaseX +
+          scoreBarHalfWidth * scoreNormalized * impactTravelMultiplier;
 
         if (laserClashPointLerpedX.current === null) {
           laserClashPointLerpedX.current = redImpactTargetX;
         } else {
-          laserClashPointLerpedX.current += (redImpactTargetX - laserClashPointLerpedX.current) * 0.06;
+          laserClashPointLerpedX.current +=
+            (redImpactTargetX - laserClashPointLerpedX.current) * 0.06;
         }
-        const redImpactLerpedX = laserClashPointLerpedX.current;
+        // Clamp: red laser minimum length (can't shrink past 1.2 tiles from source)
+        const redLaserMinimumEndX = redSourceX + scaledTileWidth * 1.2;
+        // Clamp: red laser must not extend past the blue laser's minimum end position
+        const blueSourceXForClamp = opponentPositionX.current + charSize * 0.65;
+        const blueLaserMinEndForRedClamp =
+          blueSourceXForClamp - scaledTileWidth * 0.5;
+        const redImpactLerpedX = Math.min(
+          blueLaserMinEndForRedClamp,
+          Math.max(laserClashPointLerpedX.current, redLaserMinimumEndX),
+        );
+        redImpactClampedX.current = redImpactLerpedX;
 
         redLaserImpact.x = redImpactLerpedX;
         redLaserImpact.y = beamVerticalCenter;
@@ -690,39 +807,45 @@ export function useGameLoop({
         redLaserImpact.scale.set(beamScale, beamScale);
 
         // Tiled middle: fill gap between source and impact with overlapping tiles
-        const redMiddleTileStartX = redSourceX + scaledTileWidth * 0.30;
+        const redMiddleTileStartX = redSourceX + scaledTileWidth * 0.3;
         const redMiddleTileEndX = redImpactLerpedX - scaledTileWidth;
         const redMiddleTotalSpan = redMiddleTileEndX - redMiddleTileStartX;
 
         if (redMiddleTotalSpan <= 0) {
           redLaserMiddleContainer.visible = false;
           while (redLaserMiddleContainer.children.length > 0) {
-            const removed = redLaserMiddleContainer.removeChildAt(redLaserMiddleContainer.children.length - 1);
+            const removed = redLaserMiddleContainer.removeChildAt(
+              redLaserMiddleContainer.children.length - 1,
+            );
             removed.destroy();
           }
         } else {
           redLaserMiddleContainer.visible = true;
           const tileOverlapStep = scaledTileWidth * 0.3;
-          const redMiddleTileCount = Math.max(1, Math.ceil(redMiddleTotalSpan / tileOverlapStep));
+          const redMiddleTileCount = Math.max(
+            1,
+            Math.ceil(redMiddleTotalSpan / tileOverlapStep),
+          );
 
-        while (redLaserMiddleContainer.children.length < redMiddleTileCount) {
-          const tileSprite = new Sprite();
-          tileSprite.anchor.set(0, 0.5);
-          redLaserMiddleContainer.addChild(tileSprite);
-        }
-        while (redLaserMiddleContainer.children.length > redMiddleTileCount) {
-          const removed = redLaserMiddleContainer.removeChildAt(redLaserMiddleContainer.children.length - 1);
-          removed.destroy();
-        }
+          while (redLaserMiddleContainer.children.length < redMiddleTileCount) {
+            const tileSprite = new Sprite();
+            tileSprite.anchor.set(0, 0.5);
+            redLaserMiddleContainer.addChild(tileSprite);
+          }
+          while (redLaserMiddleContainer.children.length > redMiddleTileCount) {
+            const removed = redLaserMiddleContainer.removeChildAt(
+              redLaserMiddleContainer.children.length - 1,
+            );
+            removed.destroy();
+          }
 
-        for (let i = 0; i < redMiddleTileCount; i++) {
-          const tileSprite = redLaserMiddleContainer.children[i] as Sprite;
-          tileSprite.texture = redMiddleTexture;
-          tileSprite.x = redMiddleTileStartX + i * tileOverlapStep;
-          tileSprite.y = beamVerticalCenter;
-          tileSprite.scale.set(beamScale, beamScale);
-        }
-
+          for (let i = 0; i < redMiddleTileCount; i++) {
+            const tileSprite = redLaserMiddleContainer.children[i] as Sprite;
+            tileSprite.texture = redMiddleTexture;
+            tileSprite.x = redMiddleTileStartX + i * tileOverlapStep;
+            tileSprite.y = beamVerticalCenter;
+            tileSprite.scale.set(beamScale, beamScale);
+          }
         }
         redLaserMiddleContainer.zIndex = 0;
         redLaserSource.zIndex = 1;
@@ -750,7 +873,12 @@ export function useGameLoop({
     const blueLaserMiddleContainer = refs.blueLaserMiddle.current;
     const blueLaserImpact = refs.blueLaserImpact.current;
 
-    if (blueLaserSource && blueLaserMiddleContainer && blueLaserImpact && blueLaserFrames) {
+    if (
+      blueLaserSource &&
+      blueLaserMiddleContainer &&
+      blueLaserImpact &&
+      blueLaserFrames
+    ) {
       const shouldShowBlueLaser =
         hasAttackIntroCompleted.current &&
         activePhase !== "intro" &&
@@ -797,7 +925,8 @@ export function useGameLoop({
         const blueBeamVisualHeight = charSize * 0.75;
         const blueBeamScale = blueBeamVisualHeight / blueFrameHeight;
         const blueScaledTileWidth = blueFrameWidth * blueBeamScale;
-        const blueBeamVerticalCenter = layout.positions.groundY + charSize * 0.66;
+        const blueBeamVerticalCenter =
+          layout.positions.groundY + charSize * 0.66;
 
         // Source: at the wanderer mage's hands (mirrored — facing left)
         const blueSourceX = opponentPositionX.current + charSize * 0.65;
@@ -806,19 +935,27 @@ export function useGameLoop({
         blueLaserSource.anchor.set(0, 0.5);
         blueLaserSource.scale.set(-blueBeamScale, blueBeamScale);
 
-        // Impact position shifts based on score (uses same lerped X offset)
+        // Impact position derived from the red laser's clamped impact X
         const blueIsSmallScreen = layout.base.unit < 500;
-        const blueScoreNormalized = Math.min(1, Math.max(-1, useGameStore.getState().score / WIN_POINTS));
-        const blueScoreBarBaseWidth = layout.ring.outerRadius * 2;
-        const blueScoreBarWidthMultiplier = Math.min(2.2, Math.max(1, layout.base.width / 800));
-        const blueScoreBarHalfWidth = (blueScoreBarBaseWidth * blueScoreBarWidthMultiplier) / 2;
-        const blueImpactBaseX = layout.positions.meetX - charSize * (blueIsSmallScreen ? 0.31 : 0.21);
-        const blueImpactTravelMultiplier = blueIsSmallScreen ? 0.8 : 1.5;
-        const blueImpactTargetX = blueImpactBaseX + blueScoreBarHalfWidth * blueScoreNormalized * blueImpactTravelMultiplier;
+        const blueImpactBaseX =
+          layout.positions.meetX - charSize * (blueIsSmallScreen ? 0.31 : 0.21);
 
-        const redLaserBaseImpactX = layout.positions.meetX + charSize * (blueIsSmallScreen ? 0.2 : 0.3);
-        const lerpedShiftFromCenter = (laserClashPointLerpedX.current ?? blueImpactTargetX) - redLaserBaseImpactX;
-        const blueImpactLerpedX = blueImpactBaseX + lerpedShiftFromCenter;
+        const redLaserBaseImpactX =
+          layout.positions.meetX + charSize * (blueIsSmallScreen ? 0.2 : 0.3);
+        // Use the clamped red impact X so the blue laser respects the red's minimum length
+        const effectiveRedImpactX =
+          redImpactClampedX.current ??
+          laserClashPointLerpedX.current ??
+          layout.positions.meetX;
+        const lerpedShiftFromCenter = effectiveRedImpactX - redLaserBaseImpactX;
+        const blueImpactUnclampedX = blueImpactBaseX + lerpedShiftFromCenter;
+        // Clamp: blue laser must maintain minimum length of 1.2 tiles from its source (same as red)
+        // Blue goes right-to-left, so its impact X must not exceed this value (prevents shrinkage)
+        const blueLaserMinimumEndX = blueSourceX - blueScaledTileWidth * 1.2;
+        const blueImpactLerpedX = Math.min(
+          blueImpactUnclampedX,
+          blueLaserMinimumEndX,
+        );
 
         blueLaserImpact.x = blueImpactLerpedX;
         blueLaserImpact.y = blueBeamVerticalCenter;
@@ -826,39 +963,49 @@ export function useGameLoop({
         blueLaserImpact.scale.set(-blueBeamScale, blueBeamScale);
 
         // Tiled middle: fill gap going right-to-left (mirrored)
-        const blueMiddleTileStartX = blueSourceX - blueScaledTileWidth * 0.30;
+        const blueMiddleTileStartX = blueSourceX - blueScaledTileWidth * 0.3;
         const blueMiddleTileEndX = blueImpactLerpedX + blueScaledTileWidth;
         const blueMiddleTotalSpan = blueMiddleTileStartX - blueMiddleTileEndX;
 
         if (blueMiddleTotalSpan <= 0) {
           blueLaserMiddleContainer.visible = false;
           while (blueLaserMiddleContainer.children.length > 0) {
-            const removed = blueLaserMiddleContainer.removeChildAt(blueLaserMiddleContainer.children.length - 1);
+            const removed = blueLaserMiddleContainer.removeChildAt(
+              blueLaserMiddleContainer.children.length - 1,
+            );
             removed.destroy();
           }
         } else {
           blueLaserMiddleContainer.visible = true;
           const blueTileOverlapStep = blueScaledTileWidth * 0.3;
-          const blueMiddleTileCount = Math.max(1, Math.ceil(blueMiddleTotalSpan / blueTileOverlapStep));
+          const blueMiddleTileCount = Math.max(
+            1,
+            Math.ceil(blueMiddleTotalSpan / blueTileOverlapStep),
+          );
 
-        while (blueLaserMiddleContainer.children.length < blueMiddleTileCount) {
-          const tileSprite = new Sprite();
-          tileSprite.anchor.set(0, 0.5);
-          blueLaserMiddleContainer.addChild(tileSprite);
-        }
-        while (blueLaserMiddleContainer.children.length > blueMiddleTileCount) {
-          const removed = blueLaserMiddleContainer.removeChildAt(blueLaserMiddleContainer.children.length - 1);
-          removed.destroy();
-        }
+          while (
+            blueLaserMiddleContainer.children.length < blueMiddleTileCount
+          ) {
+            const tileSprite = new Sprite();
+            tileSprite.anchor.set(0, 0.5);
+            blueLaserMiddleContainer.addChild(tileSprite);
+          }
+          while (
+            blueLaserMiddleContainer.children.length > blueMiddleTileCount
+          ) {
+            const removed = blueLaserMiddleContainer.removeChildAt(
+              blueLaserMiddleContainer.children.length - 1,
+            );
+            removed.destroy();
+          }
 
-        for (let i = 0; i < blueMiddleTileCount; i++) {
-          const tileSprite = blueLaserMiddleContainer.children[i] as Sprite;
-          tileSprite.texture = blueMiddleTexture;
-          tileSprite.x = blueMiddleTileStartX - i * blueTileOverlapStep;
-          tileSprite.y = blueBeamVerticalCenter;
-          tileSprite.scale.set(-blueBeamScale, blueBeamScale);
-        }
-
+          for (let i = 0; i < blueMiddleTileCount; i++) {
+            const tileSprite = blueLaserMiddleContainer.children[i] as Sprite;
+            tileSprite.texture = blueMiddleTexture;
+            tileSprite.x = blueMiddleTileStartX - i * blueTileOverlapStep;
+            tileSprite.y = blueBeamVerticalCenter;
+            tileSprite.scale.set(-blueBeamScale, blueBeamScale);
+          }
         }
         blueLaserMiddleContainer.zIndex = 0;
         blueLaserSource.zIndex = 1;
@@ -889,7 +1036,6 @@ export function useGameLoop({
       }
     }
 
-
     // ── Spark particles ──
 
     const sparkLayer = sparkGraphicsLayer.current;
@@ -913,5 +1059,10 @@ export function useGameLoop({
     }
   });
 
-  return { showWinText: isResultTextVisible, winTextAlpha: resultTextOpacity, winnerText: resultTextContent, countdownText: countdownLabel };
+  return {
+    showWinText: isResultTextVisible,
+    winTextAlpha: resultTextOpacity,
+    winnerText: resultTextContent,
+    countdownText: countdownLabel,
+  };
 }

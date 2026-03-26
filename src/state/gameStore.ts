@@ -41,6 +41,8 @@ export interface GameActions {
   setSfxEnabled: (enabled: boolean) => void;
   toggleMute: () => void;
   markTutorialSeen: () => void;
+  /** Debug: directly set the score to a specific value (clamped to ±WIN_POINTS). */
+  debugSetScore: (score: number) => void;
 }
 
 const INITIAL_STATE: GameState = {
@@ -95,4 +97,9 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
     }),
 
   markTutorialSeen: () => set({ tutorialSeen: true }),
+
+  debugSetScore: (score: number) =>
+    set(() => ({
+      score: Math.max(-WIN_POINTS, Math.min(WIN_POINTS, score)),
+    })),
 }));
