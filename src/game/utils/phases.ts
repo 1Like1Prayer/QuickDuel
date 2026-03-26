@@ -1,22 +1,26 @@
 import type { Phase } from "../types";
 
-/** Map a (character, phase) pair to the correct animation key. */
+/** Map a (character, phase) pair to the correct spritesheet animation key.
+ *
+ *  The returned string must match one of the keys in the `CharAnims` record
+ *  loaded by `useCharacterAnims` (e.g. "Idle", "Flame_jet", "Dead"). */
 export function getAnimName(
-  char: "player" | "opponent",
+  character: "player" | "opponent",
   phase: Phase,
 ): string {
   switch (phase) {
     case "intro":
-      return "Idle";
     case "countdown":
     case "idle":
     case "fight_text":
       return "Idle";
     case "attack_intro":
-      return char === "player" ? "Flame_jet" : "Magic_arrow";
+      // Each character has a unique casting animation
+      return character === "player" ? "Flame_jet" : "Magic_arrow";
     case "player_win":
-      return char === "opponent" ? "Dead" : "Idle";
+      // Winner idles, loser plays death animation
+      return character === "opponent" ? "Dead" : "Idle";
     case "player_lose":
-      return char === "player" ? "Dead" : "Idle";
+      return character === "player" ? "Dead" : "Idle";
   }
 }

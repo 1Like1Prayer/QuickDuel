@@ -2,7 +2,7 @@ import { Assets, Rectangle, Texture } from "pixi.js";
 import { useEffect, useState } from "react";
 
 import type { CharAnims, LaserFrames } from "../types";
-import { ANIM_FRAMES, sliceFrames } from "../utils/sprites";
+import { ANIM_FRAMES, sliceFrames } from "../utils";
 
 /** Load and return the battleground background texture. */
 export function useBackgroundTexture() {
@@ -32,41 +32,54 @@ export function useBricksTexture() {
   return bricksTexture;
 }
 
-/** Laser spritesheet: 192×288, 6 rows × 4 cols, each frame 48×48.
- *  Rows 0-1 = source, 2-3 = middle, 4-5 = impact.
- *  Even rows = loop frames, odd rows = start frames. */
-const LASER_COLS = 4;
-const LASER_FRAME_W = 48;
-const LASER_FRAME_H = 48;
+/** Laser spritesheet layout: 192×288 px, 6 rows × 4 columns, each frame 48×48 px.
+ *
+ *  | Row | Content         | Usage      |
+ *  |-----|-----------------|------------|
+ *  | 0   | source loop     | repeating  |
+ *  | 1   | source start    | one-shot   |
+ *  | 2   | middle loop     | repeating  |
+ *  | 3   | middle start    | one-shot   |
+ *  | 4   | impact loop     | repeating  |
+ *  | 5   | impact start    | one-shot   |
+ */
+const LASER_COLUMNS_PER_ROW = 4;
+const LASER_FRAME_WIDTH = 48;
+const LASER_FRAME_HEIGHT = 48;
 
-/** Load and return laser beam section frames. */
+/** Extract all frame textures for a single row of a laser spritesheet. */
+function extractRowFrames(sheet: Texture, rowIndex: number): Texture[] {
+  const frames: Texture[] = [];
+  for (let columnIndex = 0; columnIndex < LASER_COLUMNS_PER_ROW; columnIndex++) {
+    frames.push(
+      new Texture({
+        source: sheet.source,
+        frame: new Rectangle(
+          columnIndex * LASER_FRAME_WIDTH,
+          rowIndex * LASER_FRAME_HEIGHT,
+          LASER_FRAME_WIDTH,
+          LASER_FRAME_HEIGHT,
+        ),
+      }),
+    );
+  }
+  return frames;
+}
+
+/** Load and return red laser beam section frames (for the player). */
 export function useLaserFrames() {
   const [laserFrames, setLaserFrames] = useState<LaserFrames | null>(null);
 
   useEffect(() => {
     if (!laserFrames) {
       Assets.load("/lasers/Laser_Beam_Spritesheet_RED.png").then((sheet: Texture) => {
-        const rowFrames = (r: number): Texture[] => {
-          const frames: Texture[] = [];
-          for (let c = 0; c < LASER_COLS; c++) {
-            frames.push(
-              new Texture({
-                source: sheet.source,
-                frame: new Rectangle(
-                  c * LASER_FRAME_W, r * LASER_FRAME_H, LASER_FRAME_W, LASER_FRAME_H,
-                ),
-              }),
-            );
-          }
-          return frames;
-        };
         setLaserFrames({
-          sourceStart: rowFrames(1),
-          sourceLoop: rowFrames(0),
-          middleStart: rowFrames(3),
-          middleLoop: rowFrames(2),
-          impactStart: rowFrames(5),
-          impactLoop: rowFrames(4),
+          sourceStart: extractRowFrames(sheet, 1),
+          sourceLoop: extractRowFrames(sheet, 0),
+          middleStart: extractRowFrames(sheet, 3),
+          middleLoop: extractRowFrames(sheet, 2),
+          impactStart: extractRowFrames(sheet, 5),
+          impactLoop: extractRowFrames(sheet, 4),
         });
       });
     }
@@ -75,34 +88,20 @@ export function useLaserFrames() {
   return laserFrames;
 }
 
-/** Load and return blue laser beam section frames (for opponent). */
+/** Load and return blue laser beam section frames (for the opponent). */
 export function useBlueLaserFrames() {
   const [laserFrames, setLaserFrames] = useState<LaserFrames | null>(null);
 
   useEffect(() => {
     if (!laserFrames) {
       Assets.load("/lasers/Laser_Beam_Spritesheet_BLUE.png").then((sheet: Texture) => {
-        const rowFrames = (r: number): Texture[] => {
-          const frames: Texture[] = [];
-          for (let c = 0; c < LASER_COLS; c++) {
-            frames.push(
-              new Texture({
-                source: sheet.source,
-                frame: new Rectangle(
-                  c * LASER_FRAME_W, r * LASER_FRAME_H, LASER_FRAME_W, LASER_FRAME_H,
-                ),
-              }),
-            );
-          }
-          return frames;
-        };
         setLaserFrames({
-          sourceStart: rowFrames(1),
-          sourceLoop: rowFrames(0),
-          middleStart: rowFrames(3),
-          middleLoop: rowFrames(2),
-          impactStart: rowFrames(5),
-          impactLoop: rowFrames(4),
+          sourceStart: extractRowFrames(sheet, 1),
+          sourceLoop: extractRowFrames(sheet, 0),
+          middleStart: extractRowFrames(sheet, 3),
+          middleLoop: extractRowFrames(sheet, 2),
+          impactStart: extractRowFrames(sheet, 5),
+          impactLoop: extractRowFrames(sheet, 4),
         });
       });
     }
