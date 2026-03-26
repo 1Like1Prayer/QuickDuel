@@ -170,7 +170,7 @@ export function Scene() {
     // Advance dial via game logic
     const angle = dialGame.tick(dt);
 
-    // â”€â”€ Draw dial line â”€â”€
+    //  Draw dial line 
     dial.clear();
     dial.moveTo(0, 0);
     dial.lineTo(
@@ -179,7 +179,7 @@ export function Scene() {
     );
     dial.stroke({ color: 0xcc3311, width: layout.dial.dialLineWidth, alpha: 0.9 });
 
-    // â”€â”€ Draw hit-zone blocks with gradient colouring â”€â”€
+    //  Draw hit-zone blocks with gradient colouring 
     if (blocksGfx) {
       blocksGfx.clear();
       const currentBlocks = dialGame.blocks.current;
@@ -214,7 +214,7 @@ export function Scene() {
       }
     }
 
-    // â”€â”€ Hit glow pulse (targeted to hit block only) â”€â”€
+    //  Hit glow pulse (targeted to hit block only) 
     if (glowGfx) {
       glowGfx.clear();
       const glowT = dialGame.hitGlowTimer.current;
@@ -255,12 +255,12 @@ export function Scene() {
       }
     }
 
-    // â”€â”€ Miss pulse (red hollow ring outlines) â”€â”€
+    //  Miss pulse (red hollow ring outlines) 
     if (missPulseGfx) {
       missPulseGfx.clear();
       const missT = dialGame.missPulseTimer.current;
       if (missT > 0) {
-        const progress = missT / MISS_PULSE_DURATION; // 1 â†’ 0
+        const progress = missT / MISS_PULSE_DURATION; // 1 → 0
         const alpha = progress * MISS_PULSE_MAX_ALPHA;
         const pulseScale = 1 + 0.08 * (1 - progress); // expand outward as it fades
         missPulseGfx.scale.set(pulseScale);
@@ -287,7 +287,7 @@ export function Scene() {
       }
     }
 
-    // â”€â”€ Miss line (red radial line from inner edge of inner ring to outer edge of outer ring) â”€â”€
+    //  Miss line (red radial line from inner edge of inner ring to outer edge of outer ring) 
     if (missLineGfx) {
       missLineGfx.clear();
       const mAngle = dialGame.missAngle.current;
