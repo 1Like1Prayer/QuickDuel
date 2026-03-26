@@ -2,7 +2,7 @@ import { Assets, Rectangle, Texture } from "pixi.js";
 import { useEffect, useState } from "react";
 
 import type { CharAnims, LaserFrames } from "../types";
-import { ANIM_FRAMES, sliceFrames } from "../utils/sprites";
+import { ANIM_FRAMES, sliceFrames } from "../utils";
 
 /** Load and return the battleground background texture. */
 export function useBackgroundTexture() {
