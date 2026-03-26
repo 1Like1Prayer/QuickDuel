@@ -4,10 +4,15 @@ import { useGameStore } from "../../state";
 import { cpuTakeTurn, createCpuState, type CpuState } from "../services/cpuService";
 
 export interface CpuOpponent {
+  /** Internal CPU difficulty/roll state. */
   state: React.RefObject<CpuState>;
+  /** How many block-regeneration gate crossings the CPU has seen (used to detect new laps). */
   previousRegenGateCount: React.RefObject<number>;
+  /** Whether the CPU already took a turn in the current dial lap. */
   turnTakenThisLap: React.RefObject<boolean>;
+  /** Execute the CPU's turn and return the points scored (0 if missed). */
   executeTurn: () => number;
+  /** Reset all CPU state for a new game. */
   reset: () => void;
 }
 

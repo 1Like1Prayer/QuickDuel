@@ -3,23 +3,34 @@ import { useRef } from "react";
 import { useGameStore } from "../../state";
 
 export interface AudioManager {
+  /** Fire wizard hit impact SFX. */
   fireImpact: React.RefObject<HTMLAudioElement | null>;
+  /** Light wizard hit impact SFX. */
   lightImpact: React.RefObject<HTMLAudioElement | null>;
+  /** Fire wizard finishing-blow launch SFX. */
   fireLaunch: React.RefObject<HTMLAudioElement | null>;
+  /** Light wizard finishing-blow launch SFX. */
   lightLaunch: React.RefObject<HTMLAudioElement | null>;
+  /** Beam-vs-beam clash SFX (tied rounds). */
   beamClash: React.RefObject<HTMLAudioElement | null>;
+  /** Whether the continuous beam loop audio is currently playing. */
   isBeamPlaying: React.RefObject<boolean>;
+  /** Play a one-shot SFX from start (respects mute/sfx settings). */
   playOneShot: (ref: React.RefObject<HTMLAudioElement | null>) => void;
+  /** Start all beam-related audio loops (fire hold, light hold, cast one-shots). */
   startBeamLoops: () => void;
+  /** Pause all beam loop audio. */
   stopBeamLoops: () => void;
+  /** Sync beam loop play/pause state with the current mute/sfx settings. */
   syncBeamLoopMute: () => void;
 }
 
+/** Create a pre-configured HTMLAudioElement. */
 function makeAudio(src: string, loop: boolean, volume: number): HTMLAudioElement {
-  const a = new Audio(src);
-  a.loop = loop;
-  a.volume = volume;
-  return a;
+  const audioElement = new Audio(src);
+  audioElement.loop = loop;
+  audioElement.volume = volume;
+  return audioElement;
 }
 
 /** Manages all game sound effects via refs. No React state — pure imperative audio. */
@@ -71,6 +82,7 @@ export function useAudioManager(): AudioManager {
     beamClash.current = makeAudio("/sounds/dragon-studio-epic-spell-impact-478364.mp3", false, 1.0);
   }
 
+  /** Check whether SFX playback is currently allowed (not muted, sfx enabled). */
   const canPlay = (): boolean => {
     const { sfxEnabled, muted } = useGameStore.getState();
     return sfxEnabled && !muted;

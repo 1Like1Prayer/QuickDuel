@@ -144,16 +144,17 @@ export function useGameLoop({
     if (!player.current || !opponent.current || !container.current || !bg.current) return;
     if (!playerAnims || !opponentAnims) return;
 
-    // Background cover scaling
+    // Background "cover" scaling — fill screen while preserving aspect ratio
     if (bgTexture !== Texture.EMPTY) {
-      const sw = layout.base.width;
-      const sh = layout.base.height;
-      const bgScale = Math.max(sw / bgTexture.width, sh / bgTexture.height);
-      bg.current.scale.set(bgScale);
-      bg.current.x = (sw - bgTexture.width * bgScale) / 2;
-      bg.current.y = (sh - bgTexture.height * bgScale) / 2;
+      const screenWidth = layout.base.width;
+      const screenHeight = layout.base.height;
+      const bgCoverScale = Math.max(screenWidth / bgTexture.width, screenHeight / bgTexture.height);
+      bg.current.scale.set(bgCoverScale);
+      bg.current.x = (screenWidth - bgTexture.width * bgCoverScale) / 2;
+      bg.current.y = (screenHeight - bgTexture.height * bgCoverScale) / 2;
     }
 
+    /** Normalised delta time (seconds per tick at 60 fps). */
     const dt = ticker.deltaTime / 60;
     const activePhase = phase.currentPhase.current;
 
@@ -176,12 +177,12 @@ export function useGameLoop({
       ringContainer: refs.ringContainer.current,
     });
 
-    // CPU turn on block regeneration gate
-    const regenCount = dialGame.regenCount.current;
-    if (regenCount > cpu.previousRegenGateCount.current) {
-      const isFirst = cpu.previousRegenGateCount.current === 0;
-      cpu.previousRegenGateCount.current = regenCount;
-      if (!isFirst && !cpu.turnTakenThisLap.current && phase.currentPhase.current !== "attack_intro") {
+    // CPU takes a turn each time the dial crosses the regeneration gate
+    const currentRegenCount = dialGame.regenCount.current;
+    if (currentRegenCount > cpu.previousRegenGateCount.current) {
+      const isFirstCrossing = cpu.previousRegenGateCount.current === 0;
+      cpu.previousRegenGateCount.current = currentRegenCount;
+      if (!isFirstCrossing && !cpu.turnTakenThisLap.current && phase.currentPhase.current !== "attack_intro") {
         const cpuPoints = cpu.executeTurn();
         resolveRoundOutcome(0, cpuPoints);
       }

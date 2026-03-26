@@ -9,8 +9,10 @@
 - [x] Add offline gameplay support with PWA
 - [x] Add copies to the code
 - [ ] Proper tutorial with animations and PixiJS, not just showing a PNG
+- [ ] Add Multiplayer Searching, Game Mode selection, etc..
 - [ ] Implement IndexedDB — save tutorial-seen flag, pwa seen, UUID per player, ELO rating
 - [ ] Implement BE (backend) gameplay
+- [ ] Remove Debug Functionality
 
 ---
 

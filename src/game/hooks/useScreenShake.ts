@@ -4,33 +4,38 @@ import type { Container } from "pixi.js";
 import { SHAKE_DURATION } from "../constants";
 
 export interface ScreenShakeState {
+  /** Start a new screen shake (resets the timer). */
   trigger: () => void;
-  update: (dt: number, container: Container, shakeIntensity: number) => void;
+  /** Per-tick update: applies a decaying random offset to the container. */
+  update: (dt: number, container: Container, maxShakeIntensity: number) => void;
 }
 
-/** Manages screen shake via refs. */
+/** Manages screen shake via refs — applies a random offset that decays over `SHAKE_DURATION`. */
 export function useScreenShake(): ScreenShakeState {
   const timeRemaining = useRef(0);
-  const active = useRef(false);
+  const isShaking = useRef(false);
 
   const trigger = () => {
     timeRemaining.current = SHAKE_DURATION;
-    active.current = true;
+    isShaking.current = true;
   };
 
-  const update = (dt: number, container: Container, shakeIntensity: number) => {
-    if (!active.current) return;
+  const update = (dt: number, container: Container, maxShakeIntensity: number) => {
+    if (!isShaking.current) return;
 
     timeRemaining.current -= dt;
     if (timeRemaining.current <= 0) {
-      active.current = false;
+      // Shake finished — reset container to its resting position
+      isShaking.current = false;
       container.x = 0;
       container.y = 0;
     } else {
-      const progress = timeRemaining.current / SHAKE_DURATION;
-      const intensity = shakeIntensity * progress;
-      container.x = (Math.random() - 0.5) * 2 * intensity;
-      container.y = (Math.random() - 0.5) * 2 * intensity;
+      /** 1 → 0 decay ratio: shake starts strong and fades to nothing. */
+      const decayProgress = timeRemaining.current / SHAKE_DURATION;
+      /** Current shake magnitude (pixels). */
+      const currentIntensity = maxShakeIntensity * decayProgress;
+      container.x = (Math.random() - 0.5) * 2 * currentIntensity;
+      container.y = (Math.random() - 0.5) * 2 * currentIntensity;
     }
   };
 

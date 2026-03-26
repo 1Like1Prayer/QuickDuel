@@ -8,9 +8,13 @@ import type { Layout } from "./types/useLayout.types";
 import type { AudioManager } from "./useAudioManager";
 
 export interface LaserRendererState {
+  /** Smoothly interpolated x-position where the two beams clash. */
   laserClashPointLerpedX: React.RefObject<number | null>;
+  /** Clamped x-position of the red beam's impact sprite (used by blue beam to mirror). */
   redImpactClampedX: React.RefObject<number | null>;
+  /** Per-tick update: positions, animates, and tiles both beams. */
   update: (params: LaserUpdateParams) => void;
+  /** Reset all animation state (called on game restart). */
   reset: () => void;
 }
 
@@ -27,59 +31,69 @@ export interface LaserUpdateParams {
   blueImpact: Sprite | null;
 }
 
-/** Advance a laser's frame animation (4-frame start → 4-frame loop). */
-function advanceLaserAnim(
-  timer: React.MutableRefObject<number>,
-  frameIdx: React.MutableRefObject<number>,
-  inLoop: React.MutableRefObject<boolean>,
+/** Number of frames in each start / loop row of the laser spritesheet. */
+const FRAMES_PER_ROW = 4;
+
+/** Advance a laser through its 4-frame "start" sequence, then cycle the 4-frame "loop". */
+function advanceLaserAnimation(
+  animTimer: React.MutableRefObject<number>,
+  frameIndex: React.MutableRefObject<number>,
+  isInLoopPhase: React.MutableRefObject<boolean>,
   dt: number,
 ) {
-  timer.current += dt;
-  if (timer.current >= LASER_ANIM_SPEED) {
-    timer.current = 0;
-    if (!inLoop.current) {
-      frameIdx.current++;
-      if (frameIdx.current >= 4) {
-        inLoop.current = true;
-        frameIdx.current = 0;
+  animTimer.current += dt;
+  if (animTimer.current >= LASER_ANIM_SPEED) {
+    animTimer.current = 0;
+    if (!isInLoopPhase.current) {
+      // Still playing the one-shot "start" sequence
+      frameIndex.current++;
+      if (frameIndex.current >= FRAMES_PER_ROW) {
+        isInLoopPhase.current = true;
+        frameIndex.current = 0;
       }
     } else {
-      frameIdx.current = (frameIdx.current + 1) % 4;
+      // Cycling through the repeating "loop" sequence
+      frameIndex.current = (frameIndex.current + 1) % FRAMES_PER_ROW;
     }
   }
 }
 
-/** Sync the tile count of a middle container to match the required span. */
+/** Add or remove children in `container` so it has exactly `tileCount` sprites,
+ *  then position each tile along a line starting at `originX` with `tileStep` spacing. */
 function syncMiddleTiles(
   container: Container,
   tileCount: number,
   texture: Texture,
-  startX: number,
-  step: number,
+  originX: number,
+  tileStep: number,
   y: number,
   scaleX: number,
   scaleY: number,
 ) {
   container.visible = true;
+
+  // Grow sprite pool if needed
   while (container.children.length < tileCount) {
-    const s = new Sprite();
-    s.anchor.set(0, 0.5);
-    container.addChild(s);
+    const tile = new Sprite();
+    tile.anchor.set(0, 0.5);
+    container.addChild(tile);
   }
+  // Shrink sprite pool if needed
   while (container.children.length > tileCount) {
     const removed = container.removeChildAt(container.children.length - 1);
     removed.destroy();
   }
+
   for (let i = 0; i < tileCount; i++) {
-    const s = container.children[i] as Sprite;
-    s.texture = texture;
-    s.x = startX + i * step;
-    s.y = y;
-    s.scale.set(scaleX, scaleY);
+    const tile = container.children[i] as Sprite;
+    tile.texture = texture;
+    tile.x = originX + i * tileStep;
+    tile.y = y;
+    tile.scale.set(scaleX, scaleY);
   }
 }
 
-/** Clear all children from a middle container. */
+/** Destroy all children and hide the middle-section container. */
 function clearMiddleTiles(container: Container) {
   container.visible = false;
   while (container.children.length > 0) {
@@ -105,8 +119,9 @@ export function useLaserRenderer(
   const blueAnimTimer = useRef(0);
   const blueInLoop = useRef(false);
 
-  // Shared clash point
+  /** Smoothly interpolated clash-point x (shared between both beams). */
   const laserClashPointLerpedX = useRef<number | null>(null);
+  /** Red impact sprite's clamped x (used by blue beam to mirror its position). */
   const redImpactClampedX = useRef<number | null>(null);
 
   const update = ({
@@ -121,7 +136,10 @@ export function useLaserRenderer(
     blueMiddle,
     blueImpact,
   }: LaserUpdateParams) => {
-    // ── Red laser beam (player → right) ──
+    const charSize = layout.characters.charSize;
+    const isSmallScreen = layout.base.unit < 500;
+
+    // ── Red laser beam (player → right) ─────────────────────
     if (laserFrames) {
       if (shouldShow) {
         redSource.visible = true;
@@ -131,78 +149,94 @@ export function useLaserRenderer(
         audio.startBeamLoops();
         audio.syncBeamLoopMute();
 
-        advanceLaserAnim(redAnimTimer, redFrameIndex, redInLoop, dt);
+        // Advance animation frame
+        advanceLaserAnimation(redAnimTimer, redFrameIndex, redInLoop, dt);
 
-        const fi = redFrameIndex.current;
-        const middleTex = !redInLoop.current
-          ? laserFrames.middleStart[fi]
-          : laserFrames.middleLoop[fi];
+        const currentFrame = redFrameIndex.current;
+        const middleTexture = !redInLoop.current
+          ? laserFrames.middleStart[currentFrame]
+          : laserFrames.middleLoop[currentFrame];
 
+        // Select source/impact textures based on start vs loop phase
         if (!redInLoop.current) {
-          redSource.texture = laserFrames.sourceStart[fi];
-          redImpact.texture = laserFrames.impactStart[fi];
+          redSource.texture = laserFrames.sourceStart[currentFrame];
+          redImpact.texture = laserFrames.impactStart[currentFrame];
         } else {
-          redSource.texture = laserFrames.sourceLoop[fi];
-          redImpact.texture = laserFrames.impactLoop[fi];
+          redSource.texture = laserFrames.sourceLoop[currentFrame];
+          redImpact.texture = laserFrames.impactLoop[currentFrame];
         }
 
-        const charSize = layout.characters.charSize;
-        const frameW = laserFrames.sourceStart[0].width;
-        const frameH = laserFrames.sourceStart[0].height;
-        const beamH = charSize * 0.75;
-        const beamScale = beamH / frameH;
-        const scaledTileW = frameW * beamScale;
+        // ── Beam geometry ──
+        const spriteFrameWidth = laserFrames.sourceStart[0].width;
+        const spriteFrameHeight = laserFrames.sourceStart[0].height;
+        /** Scale factor so each beam sprite matches 75% of the character height. */
+        const beamScale = (charSize * 0.75) / spriteFrameHeight;
+        /** Width of one tile sprite after scaling. */
+        const scaledTileWidth = spriteFrameWidth * beamScale;
+        /** Vertical centre of the beam (character torso level). */
         const beamY = layout.positions.groundY + charSize * 0.66;
 
-        const srcX = playerX + charSize * 0.15;
-        redSource.x = srcX;
+        // ── Source sprite — anchored at the player's casting hand ──
+        const sourceX = playerX + charSize * 0.15;
+        redSource.x = sourceX;
         redSource.y = beamY;
         redSource.anchor.set(0, 0.5);
         redSource.scale.set(beamScale, beamScale);
 
-        // Impact target based on score
-        const isSmall = layout.base.unit < 500;
-        const scoreNorm = Math.min(1, Math.max(-1, useGameStore.getState().score / (WIN_POINTS + 1)));
-        const barBaseW = layout.ring.outerRadius * 2;
-        const barMult = Math.min(2.2, Math.max(1, layout.base.width / 800));
-        const barHalfW = (barBaseW * barMult) / 2;
-        const impactBaseX = layout.positions.meetX + charSize * (isSmall ? 0.2 : 0.3);
-        const travelMult = isSmall ? 0.8 : 1.5;
-        const impactTargetX = impactBaseX + barHalfW * scoreNorm * travelMult;
+        // ── Compute score-driven clash point ──
+        /** Normalised score: -1 (opponent winning) → 0 (tied) → +1 (player winning). */
+        const scoreNormalized = Math.min(1, Math.max(-1, useGameStore.getState().score / (WIN_POINTS + 1)));
+        /** Base width of the travel zone (matches the score bar). */
+        const travelZoneBaseWidth = layout.ring.outerRadius * 2;
+        /** Responsive multiplier — wider travel zone on larger screens. */
+        const travelZoneMultiplier = Math.min(2.2, Math.max(1, layout.base.width / 800));
+        const travelZoneHalfWidth = (travelZoneBaseWidth * travelZoneMultiplier) / 2;
 
+        /** Resting x of the clash point when score is 0 (slightly right of meet-point). */
+        const clashRestingX = layout.positions.meetX + charSize * (isSmallScreen ? 0.2 : 0.3);
+        /** How far the clash can travel per unit of scoreNormalized. */
+        const clashTravelScale = isSmallScreen ? 0.8 : 1.5;
+        /** Target x the clash point should move toward this frame. */
+        const clashTargetX = clashRestingX + travelZoneHalfWidth * scoreNormalized * clashTravelScale;
+
+        // Smooth lerp so the clash slides instead of jumping
         if (laserClashPointLerpedX.current === null) {
-          laserClashPointLerpedX.current = impactTargetX;
+          laserClashPointLerpedX.current = clashTargetX;
         } else {
-          laserClashPointLerpedX.current += (impactTargetX - laserClashPointLerpedX.current) * 0.06;
+          laserClashPointLerpedX.current += (clashTargetX - laserClashPointLerpedX.current) * 0.06;
         }
 
-        const minEndX = srcX + scaledTileW * 1.2;
-        const blueSourceXClamp = opponentX + charSize * 0.65;
-        const blueMinEndClamp = blueSourceXClamp - scaledTileW * 0.5;
-        const impactLerpedX = Math.min(blueMinEndClamp, Math.max(laserClashPointLerpedX.current, minEndX));
-        redImpactClampedX.current = impactLerpedX;
+        // Clamp so red impact never overlaps its own source or crosses into the blue source
+        const redMinImpactX = sourceX + scaledTileWidth * 1.2;
+        const blueSourceEdgeX = opponentX + charSize * 0.65;
+        const blueMinImpactClamp = blueSourceEdgeX - scaledTileWidth * 0.5;
+        const redImpactX = Math.min(blueMinImpactClamp, Math.max(laserClashPointLerpedX.current, redMinImpactX));
+        redImpactClampedX.current = redImpactX;
 
-        redImpact.x = impactLerpedX;
+        // ── Impact sprite ──
+        redImpact.x = redImpactX;
         redImpact.y = beamY;
         redImpact.anchor.set(1, 0.5);
         redImpact.scale.set(beamScale, beamScale);
 
-        // Tiled middle
-        const midStartX = srcX + scaledTileW * 0.3;
-        const midEndX = impactLerpedX - scaledTileW;
-        const midSpan = midEndX - midStartX;
+        // ── Tiled middle section ──
+        const middleStartX = sourceX + scaledTileWidth * 0.3;
+        const middleEndX = redImpactX - scaledTileWidth;
+        const middleSpan = middleEndX - middleStartX;
 
-        if (midSpan <= 0) {
+        if (middleSpan <= 0) {
           clearMiddleTiles(redMiddle);
         } else {
-          const step = scaledTileW * 0.3;
-          const count = Math.max(1, Math.ceil(midSpan / step));
-          syncMiddleTiles(redMiddle, count, middleTex, midStartX, step, beamY, beamScale, beamScale);
+          const tileStep = scaledTileWidth * 0.3;
+          const tileCount = Math.max(1, Math.ceil(middleSpan / tileStep));
+          syncMiddleTiles(redMiddle, tileCount, middleTexture, middleStartX, tileStep, beamY, beamScale, beamScale);
         }
+        // Source & impact render above the tiled middle
         redMiddle.zIndex = 0;
         redSource.zIndex = 1;
         redImpact.zIndex = 1;
       } else {
+        // Hide beam & reset animation
         redSource.visible = false;
         redMiddle.visible = false;
         redImpact.visible = false;
@@ -214,71 +248,80 @@ export function useLaserRenderer(
       }
     }
 
-    // ── Blue laser beam (opponent → left) ──
+    // ── Blue laser beam (opponent → left) ────────────────────
     if (blueSource && blueMiddle && blueImpact && blueLaserFrames) {
       if (shouldShow) {
         blueSource.visible = true;
         blueMiddle.visible = true;
         blueImpact.visible = true;
 
-        advanceLaserAnim(blueAnimTimer, blueFrameIndex, blueInLoop, dt);
+        // Advance animation frame
+        advanceLaserAnimation(blueAnimTimer, blueFrameIndex, blueInLoop, dt);
 
-        const fi = blueFrameIndex.current;
-        const middleTex = !blueInLoop.current
-          ? blueLaserFrames.middleStart[fi]
-          : blueLaserFrames.middleLoop[fi];
+        const currentFrame = blueFrameIndex.current;
+        const middleTexture = !blueInLoop.current
+          ? blueLaserFrames.middleStart[currentFrame]
+          : blueLaserFrames.middleLoop[currentFrame];
 
         if (!blueInLoop.current) {
-          blueSource.texture = blueLaserFrames.sourceStart[fi];
-          blueImpact.texture = blueLaserFrames.impactStart[fi];
+          blueSource.texture = blueLaserFrames.sourceStart[currentFrame];
+          blueImpact.texture = blueLaserFrames.impactStart[currentFrame];
         } else {
-          blueSource.texture = blueLaserFrames.sourceLoop[fi];
-          blueImpact.texture = blueLaserFrames.impactLoop[fi];
+          blueSource.texture = blueLaserFrames.sourceLoop[currentFrame];
+          blueImpact.texture = blueLaserFrames.impactLoop[currentFrame];
         }
 
-        const charSize = layout.characters.charSize;
-        const frameW = blueLaserFrames.sourceStart[0].width;
-        const frameH = blueLaserFrames.sourceStart[0].height;
-        const beamH = charSize * 0.75;
-        const bScale = beamH / frameH;
-        const scaledTileW = frameW * bScale;
+        // ── Beam geometry (same formula, different spritesheet) ──
+        const spriteFrameWidth = blueLaserFrames.sourceStart[0].width;
+        const spriteFrameHeight = blueLaserFrames.sourceStart[0].height;
+        const beamScale = (charSize * 0.75) / spriteFrameHeight;
+        const scaledTileWidth = spriteFrameWidth * beamScale;
         const beamY = layout.positions.groundY + charSize * 0.66;
 
-        const srcX = opponentX + charSize * 0.65;
-        blueSource.x = srcX;
+        // ── Source sprite — anchored at the opponent's casting hand (flipped) ──
+        const sourceX = opponentX + charSize * 0.65;
+        blueSource.x = sourceX;
         blueSource.y = beamY;
         blueSource.anchor.set(0, 0.5);
-        blueSource.scale.set(-bScale, bScale);
+        blueSource.scale.set(-beamScale, beamScale); // negative scaleX = mirrored
 
-        const isSmall = layout.base.unit < 500;
-        const impactBaseX = layout.positions.meetX - charSize * (isSmall ? 0.31 : 0.21);
-        const redBaseImpactX = layout.positions.meetX + charSize * (isSmall ? 0.2 : 0.3);
-        const effectiveRedX = redImpactClampedX.current ?? laserClashPointLerpedX.current ?? layout.positions.meetX;
-        const shift = effectiveRedX - redBaseImpactX;
-        const unclampedX = impactBaseX + shift;
-        const minEndX = srcX - scaledTileW * 1.2;
-        const impactLerpedX = Math.min(unclampedX, minEndX);
+        // ── Mirror the red beam's clash-point for the blue impact position ──
+        /** Blue beam's resting impact x (slightly left of meet-point). */
+        const blueClashRestingX = layout.positions.meetX - charSize * (isSmallScreen ? 0.31 : 0.21);
+        /** Red beam's resting impact x (for calculating the offset). */
+        const redClashRestingX = layout.positions.meetX + charSize * (isSmallScreen ? 0.2 : 0.3);
+        /** Use the red impact's actual position to compute how far the clash shifted. */
+        const effectiveRedImpactX = redImpactClampedX.current ?? laserClashPointLerpedX.current ?? layout.positions.meetX;
+        const clashShift = effectiveRedImpactX - redClashRestingX;
+        const unclampedBlueImpactX = blueClashRestingX + clashShift;
 
-        blueImpact.x = impactLerpedX;
+        // Clamp so blue impact never crosses past its own source
+        const blueMinImpactX = sourceX - scaledTileWidth * 1.2;
+        const blueImpactX = Math.min(unclampedBlueImpactX, blueMinImpactX);
+
+        // ── Impact sprite (flipped) ──
+        blueImpact.x = blueImpactX;
         blueImpact.y = beamY;
         blueImpact.anchor.set(1, 0.5);
-        blueImpact.scale.set(-bScale, bScale);
+        blueImpact.scale.set(-beamScale, beamScale);
 
-        const midStartX = srcX - scaledTileW * 0.3;
-        const midEndX = impactLerpedX + scaledTileW;
-        const midSpan = midStartX - midEndX;
+        // ── Tiled middle section (right-to-left) ──
+        const middleStartX = sourceX - scaledTileWidth * 0.3;
+        const middleEndX = blueImpactX + scaledTileWidth;
+        const middleSpan = middleStartX - middleEndX;
 
-        if (midSpan <= 0) {
+        if (middleSpan <= 0) {
           clearMiddleTiles(blueMiddle);
         } else {
-          const step = scaledTileW * 0.3;
-          const count = Math.max(1, Math.ceil(midSpan / step));
-          syncMiddleTiles(blueMiddle, count, middleTex, midStartX, -step, beamY, -bScale, bScale);
+          const tileStep = scaledTileWidth * 0.3;
+          const tileCount = Math.max(1, Math.ceil(middleSpan / tileStep));
+          syncMiddleTiles(blueMiddle, tileCount, middleTexture, middleStartX, -tileStep, beamY, -beamScale, beamScale);
         }
         blueMiddle.zIndex = 0;
         blueSource.zIndex = 1;
         blueImpact.zIndex = 1;
       } else {
+        // Hide beam & reset animation
         blueSource.visible = false;
         blueMiddle.visible = false;
         blueImpact.visible = false;

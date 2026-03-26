@@ -26,45 +26,49 @@ import {
 export function useDialGame({
   baseSpeed,
 }: UseDialGameParams): UseDialGameReturn {
-  const dialAngle = useRef(-Math.PI / 2); // start at top
+  /** Current rotation angle of the dial in radians (starts at top = -π/2). */
+  const dialAngle = useRef(-Math.PI / 2);
+  /** Multiplier applied to baseSpeed (increases on hit, decreases on miss). */
   const speedMultiplier = useRef(INITIAL_SPEED);
+  /** How many hit-zone blocks are currently shown on the ring. */
   const blockCount = useRef(INITIAL_BLOCK_COUNT);
+  /** The actual hit-zone block objects with angular positions. */
   const blocks = useRef<HitZoneBlock[]>([]);
+  /** Result of the player's last attempt: true = hit, false = miss, null = no attempt yet. */
   const lastHit = useRef<boolean | null>(null);
+  /** Whether the dial is actively spinning. */
   const active = useRef(false);
 
-  // Glow timer (counts down from HIT_GLOW_DURATION on hit)
+  /** Countdown timer for the glow effect on a hit block (counts down from HIT_GLOW_DURATION). */
   const hitGlowTimer = useRef(0);
-
-  // Angles of the last hit block (for targeted glow)
+  /** Angular bounds of the block that was last hit (drives the targeted glow wedge). */
   const hitBlockAngles = useRef<{ startAngle: number; endAngle: number } | null>(null);
 
-  // Miss pulse timer (counts down from MISS_PULSE_DURATION on miss)
+  /** Countdown timer for the miss pulse effect (counts down from MISS_PULSE_DURATION). */
   const missPulseTimer = useRef(0);
-
-  // Dial angle where the miss occurred (radial red line)
+  /** Dial angle (radians) where the miss occurred (drives the red radial line). */
   const missAngle = useRef<number | null>(null);
 
-  // Points scored by the player on the latest hit (0 if miss), consumed by game loop
+  /** Points scored by the player on the latest hit (0 if miss), consumed by the game loop. */
   const lastHitPoints = useRef(0);
 
-  // Index-based color stack — consistent across regenerations
+  /** Ordered colour palette for the current block set (index 0 = palest/lowest-value). */
   const colorStack = useRef<number[]>(buildColorStack(INITIAL_BLOCK_COUNT));
 
-  // Whether the player made an attempt (hit or miss tap) this lap.
-  // If no attempt was made by the next gate crossing, it counts as a miss.
+  /** Whether the player tapped (hit or miss) during this dial lap.
+   *  Reset each time the dial crosses the regeneration gate. */
   const attemptedThisLap = useRef(false);
 
-  // Whether a hit occurred and the palest color should be trimmed at the next regen.
+  /** Deferred flag: on the next regen, trim the palest colour from the stack (after a hit that reduced block count). */
   const pendingColorTrim = useRef(false);
 
-  // Whether the color stack should be restored to full at the next regen (after a miss).
+  /** Deferred flag: on the next regen, rebuild the colour stack to full (after a miss that increased block count). */
   const pendingColorRestore = useRef(false);
 
-  // Track the previous normalised angle to detect the 30° gate crossing.
-  const prevNorm = useRef(normalizeAngle(-Math.PI / 2));
+  /** Previous normalised angle — used to detect when the dial crosses the regeneration gate. */
+  const previousNormalizedAngle = useRef(normalizeAngle(-Math.PI / 2));
 
-  // Increments each time blocks regenerate (gate crossing)
+  /** How many times blocks have regenerated (gate crossings). Consumed by the game loop for CPU turn timing. */
   const regenCount = useRef(0);
 
 
@@ -73,7 +77,7 @@ export function useDialGame({
   const start = useCallback(() => {
     active.current = true;
     dialAngle.current = -Math.PI / 2;
-    prevNorm.current = normalizeAngle(-Math.PI / 2);
+    previousNormalizedAngle.current = normalizeAngle(-Math.PI / 2);
     speedMultiplier.current = INITIAL_SPEED;
     blockCount.current = INITIAL_BLOCK_COUNT;
     blocks.current = [];
@@ -95,6 +99,7 @@ export function useDialGame({
 
   // ── Handle input ──
 
+  /** Handle a player tap: check for a hit, adjust speed/blocks, trigger effects. */
   const attempt = useCallback((): boolean | null => {
     if (!active.current) return null;
     if (attemptedThisLap.current) return null;
@@ -105,8 +110,7 @@ export function useDialGame({
     attemptedThisLap.current = true;
 
     if (hit) {
-      // Decrease blocks (min 1)
-      const prevCount = blockCount.current;
+      const previousBlockCount = blockCount.current;
       blockCount.current = Math.max(
         MIN_BLOCK_COUNT,
         blockCount.current - 1,
@@ -123,8 +127,8 @@ export function useDialGame({
       const points = BLOCK_POINTS[color] ?? 1;
       lastHitPoints.current = points;
 
-      // Defer color removal until blocks regenerate (only if count actually decreased)
-      if (blockCount.current < prevCount) {
+      // Defer colour removal until blocks regenerate (only if count actually decreased)
+      if (blockCount.current < previousBlockCount) {
         pendingColorTrim.current = true;
       }
     } else {
@@ -155,30 +159,29 @@ export function useDialGame({
     (dt: number): number => {
       if (!active.current) return dialAngle.current;
 
-      const speed = baseSpeed * speedMultiplier.current;
-      dialAngle.current += speed * dt;
+      /** Effective rotation speed this tick (base × current multiplier). */
+      const effectiveSpeed = baseSpeed * speedMultiplier.current;
+      dialAngle.current += effectiveSpeed * dt;
 
-      // Decrement glow timer
+      // Tick down visual effect timers
       if (hitGlowTimer.current > 0) {
         hitGlowTimer.current = Math.max(0, hitGlowTimer.current - dt);
       }
-
-      // Decrement miss pulse timer
       if (missPulseTimer.current > 0) {
         missPulseTimer.current = Math.max(0, missPulseTimer.current - dt);
       }
 
-      // Detect the 30° gate crossing
-      const curNorm = normalizeAngle(dialAngle.current);
-      const prev = prevNorm.current;
+      // ── Detect the regeneration gate crossing (at REGEN_GATE_RAD radians) ──
+      const currentNormalizedAngle = normalizeAngle(dialAngle.current);
+      const previousAngle = previousNormalizedAngle.current;
 
-      // Crossing = previous angle was below the gate AND current is at/above it
-      const crossed =
-        prev < REGEN_GATE_RAD && curNorm >= REGEN_GATE_RAD;
+      /** True when the dial crosses the regeneration gate this tick. */
+      const crossedGate =
+        previousAngle < REGEN_GATE_RAD && currentNormalizedAngle >= REGEN_GATE_RAD;
 
-      if (crossed) {
-        // If the player didn't make an attempt this lap, it's a miss
-        // (skipped on the first crossing because blocks start empty)
+      if (crossedGate) {
+        // If the player didn't tap this lap, treat it as a miss
+        // (skipped on the very first crossing because blocks start empty)
         if (!attemptedThisLap.current && blocks.current.length > 0) {
           lastHit.current = false;
 
@@ -194,17 +197,18 @@ export function useDialGame({
           pendingColorRestore.current = true;
         }
 
-        // Clear miss visuals on block regeneration
+        // Clear miss visuals when blocks regenerate
         missAngle.current = null;
         missPulseTimer.current = 0;
 
-        // Always regenerate blocks at new positions
-        // Apply deferred color changes
+        // Apply deferred colour-stack changes, then regenerate blocks at new angular positions
         if (pendingColorRestore.current) {
+          // Miss → rebuild full colour stack for the new block count
           colorStack.current = buildColorStack(blockCount.current);
           pendingColorRestore.current = false;
           pendingColorTrim.current = false; // restore overrides any pending trim
         } else if (pendingColorTrim.current) {
+          // Hit → remove the palest (lowest-value) colour
           colorStack.current = colorStack.current.slice(1);
           pendingColorTrim.current = false;
         }
@@ -213,7 +217,7 @@ export function useDialGame({
         regenCount.current++;
       }
 
-      prevNorm.current = curNorm;
+      previousNormalizedAngle.current = currentNormalizedAngle;
       return dialAngle.current;
     },
     [baseSpeed],

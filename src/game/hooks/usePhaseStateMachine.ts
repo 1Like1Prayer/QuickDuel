@@ -169,25 +169,27 @@ export function usePhaseStateMachine(
       }
 
       case "attack_intro": {
-        const pFrames = playerAnims["Flame_jet"];
-        const oFrames = opponentAnims["Magic_arrow"];
-        player.texture = pFrames[playerAnimFrameIndex.current];
-        opponent.texture = oFrames[opponentAnimFrameIndex.current];
+        // Play each character's casting animation once (non-looping)
+        const playerAttackFrames = playerAnims["Flame_jet"];
+        const opponentAttackFrames = opponentAnims["Magic_arrow"];
+        player.texture = playerAttackFrames[playerAnimFrameIndex.current];
+        opponent.texture = opponentAttackFrames[opponentAnimFrameIndex.current];
 
         playerAnimTimer.current += dt;
         if (playerAnimTimer.current >= ANIM_SPEED) {
           playerAnimTimer.current = 0;
-          if (playerAnimFrameIndex.current < pFrames.length - 1) playerAnimFrameIndex.current++;
+          if (playerAnimFrameIndex.current < playerAttackFrames.length - 1) playerAnimFrameIndex.current++;
         }
         opponentAnimTimer.current += dt;
         if (opponentAnimTimer.current >= ANIM_SPEED) {
           opponentAnimTimer.current = 0;
-          if (opponentAnimFrameIndex.current < oFrames.length - 1) opponentAnimFrameIndex.current++;
+          if (opponentAnimFrameIndex.current < opponentAttackFrames.length - 1) opponentAnimFrameIndex.current++;
         }
 
+        // Both animations finished → transition to idle (gameplay begins)
         if (
-          playerAnimFrameIndex.current >= pFrames.length - 1 &&
-          opponentAnimFrameIndex.current >= oFrames.length - 1 &&
+          playerAnimFrameIndex.current >= playerAttackFrames.length - 1 &&
+          opponentAnimFrameIndex.current >= opponentAttackFrames.length - 1 &&
           !isPhaseAnimationComplete.current
         ) {
           isPhaseAnimationComplete.current = true;
